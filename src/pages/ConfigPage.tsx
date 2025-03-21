@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -19,7 +20,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { Settings, Network, MonitorPlay, Save, RefreshCw, AlertTriangle } from 'lucide-react';
 
 const ConfigPage = () => {
@@ -87,14 +88,20 @@ const ConfigPage = () => {
     const newPort = parseInt(portValue, 10);
     
     if (isNaN(newPort) || newPort < 1 || newPort > 65535) {
-      toast.error('Veuillez entrer un numéro de port valide (1-65535)');
+      toast({
+        title: 'Veuillez entrer un numéro de port valide (1-65535)',
+        variant: "destructive",
+      });
       return;
     }
     
     const ipPattern = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
     
     if (!ipPattern.test(ipValue)) {
-      toast.error('Veuillez entrer une adresse IP valide');
+      toast({
+        title: 'Veuillez entrer une adresse IP valide',
+        variant: "destructive",
+      });
       return;
     }
     
@@ -104,7 +111,9 @@ const ConfigPage = () => {
       setBasePort(newPort);
       setBaseIpAddress(ipValue);
       setIsSaving(false);
-      toast.success('Configuration réseau mise à jour');
+      toast({
+        title: 'Configuration réseau mise à jour',
+      });
     }, 500);
   };
   
@@ -118,23 +127,32 @@ const ConfigPage = () => {
         detectedIp = await getLocalIpAddress();
       } catch (error) {
         console.log("Erreur avec la méthode principale:", error);
-        toast.warning('La méthode principale de détection a échoué, utilisation de la méthode alternative');
+        toast({
+          title: 'La méthode principale de détection a échoué',
+          description: 'Utilisation de la méthode alternative',
+        });
         detectedIp = getFallbackIpAddress();
       }
       
       if (detectedIp) {
         setIpValue(detectedIp);
-        toast.success('Adresse IP locale détectée: ' + detectedIp);
+        toast({
+          title: 'Adresse IP locale détectée: ' + detectedIp,
+        });
       } else {
         toast({
           title: "Détection impossible",
           description: "Impossible de détecter l'adresse IP automatiquement. Veuillez l'entrer manuellement.",
-          icon: <AlertTriangle className="text-amber-500" />
+          variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Erreur finale:', error);
-      toast.error("Détection d'IP impossible. Veuillez vérifier votre connexion réseau.");
+      toast({
+        title: "Détection d'IP impossible",
+        description: "Veuillez vérifier votre connexion réseau.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
