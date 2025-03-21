@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -114,15 +115,18 @@ const ContentPage = () => {
       
       const fileInfo = uploadResult.file;
       
+      // Fix: Convert the metadata object to a JSON string
+      const metadataString = JSON.stringify({
+        filePath: fileInfo.path,
+        serverUrl: serverUrl,
+        size: fileInfo.size
+      });
+      
       addContent(
         selectedFile,
         contentType, 
         fileInfo.url,
-        JSON.stringify({
-          filePath: fileInfo.path,
-          serverUrl: serverUrl,
-          size: fileInfo.size
-        })
+        metadataString
       );
       
       resetContentForm();
@@ -501,4 +505,3 @@ const ContentPage = () => {
 };
 
 export default ContentPage;
-
