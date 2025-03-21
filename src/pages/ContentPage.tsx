@@ -8,11 +8,14 @@ import ContentList from '@/components/content/ContentList';
 import AddContentDialog from '@/components/content/AddContentDialog';
 import EditContentDialog from '@/components/content/EditContentDialog';
 import AssignContentDialog from '@/components/content/AssignContentDialog';
+import { toast } from 'sonner';
 
 const ContentPage = () => {
   const contents = useAppStore((state) => state.contents);
   const screens = useAppStore((state) => state.screens);
   const removeContent = useAppStore((state) => state.removeContent);
+  const apiUrl = useAppStore((state) => state.apiUrl);
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   
   // UI state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -37,8 +40,48 @@ const ContentPage = () => {
     setIsEditDialogOpen(true);
   };
   
-  const handleDeleteContent = (id: string) => {
-    removeContent(id);
+  const handleDeleteContent = async (id: string) => {
+    try {
+      const content = contents.find(c => c.id === id);
+      if (!content) {
+        throw new Error("Contenu non trouvé");
+      }
+      
+      // Préparer l'URL de l'API
+      let baseUrl = apiUrl;
+      if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+      }
+      
+      // Remplacer localhost par l'adresse IP si nécessaire
+      const formattedApiUrl = baseUrl.replace('localhost', baseIpAddress);
+      
+      console.log(`Suppression du contenu ${id} sur le serveur: ${formattedApiUrl}/api/content/${id}`);
+      
+      // Appel à l'API pour supprimer le contenu
+      const response = await fetch(`${formattedApiUrl}/api/content/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Erreur HTTP ${response.status}`);
+      }
+      
+      // Supprimer le contenu localement
+      removeContent(id);
+      toast.success(`Le contenu "${content.name}" a été supprimé`);
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      toast.error(`Échec de la suppression: ${errorMessage}`);
+      
+      // On supprime quand même localement
+      removeContent(id);
+    }
   };
   
   const handleOpenAssignDialog = (content: Content) => {

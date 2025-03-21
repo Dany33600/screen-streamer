@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -55,7 +54,6 @@ const upload = multer({
   }
 });
 
-// Fonctions de gestion des serveurs
 function startServer(port, html, contentType = 'html') {
   if (runningServers.has(port)) {
     stopServer(port);
@@ -146,7 +144,6 @@ function updateServer(port, html, contentType = 'html') {
   return startServer(port, html, contentType);
 }
 
-// Fonction améliorée pour enregistrer les données de contenu
 function saveContentData(contentId, contentData) {
   try {
     // Logs pour le débogage
@@ -168,7 +165,6 @@ function saveContentData(contentId, contentData) {
   }
 }
 
-// Fonction améliorée pour récupérer les données de contenu
 function getContentData(contentId) {
   try {
     console.log(`Recherche du contenu avec ID: ${contentId}`);
@@ -247,12 +243,47 @@ function listAllContent() {
 
 function deleteContent(contentId) {
   try {
-    const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
+    console.log(`Suppression du contenu ${contentId} demandée`);
+    
+    // 1. Récupérer les informations du contenu pour connaître le chemin du fichier
+    const contentData = getContentData(contentId);
+    if (!contentData) {
+      console.warn(`Contenu ${contentId} non trouvé pour suppression`);
+      return false;
+    }
+    
+    // 2. Supprimer le fichier JSON de métadonnées
+    const sanitizedContentId = contentId.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const contentPath = path.join(CONTENT_DIR, `${sanitizedContentId}.json`);
+    
     if (fs.existsSync(contentPath)) {
       fs.unlinkSync(contentPath);
-      return true;
+      console.log(`Fichier de métadonnées supprimé: ${contentPath}`);
+    } else {
+      console.warn(`Fichier de métadonnées non trouvé: ${contentPath}`);
     }
-    return false;
+    
+    // 3. Supprimer le fichier physique si nous avons le chemin
+    if (contentData.filePath && fs.existsSync(contentData.filePath)) {
+      fs.unlinkSync(contentData.filePath);
+      console.log(`Fichier physique supprimé: ${contentData.filePath}`);
+    } else if (contentData.url) {
+      // Si nous n'avons pas le chemin direct, essayons d'extraire le nom du fichier de l'URL
+      try {
+        const fileName = contentData.url.split('/').pop();
+        if (fileName) {
+          const filePath = path.join(UPLOADS_DIR, fileName);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`Fichier physique supprimé (depuis URL): ${filePath}`);
+          }
+        }
+      } catch (e) {
+        console.warn(`Impossible d'extraire et supprimer le fichier depuis l'URL: ${contentData.url}`);
+      }
+    }
+    
+    return true;
   } catch (error) {
     console.error(`Erreur lors de la suppression du contenu ${contentId}:`, error);
     return false;
@@ -609,6 +640,7 @@ function createApiServer(apiPort = 5000) {
         return res.status(400).json({ success: false, message: 'ID de contenu requis' });
       }
       
+      console.log(`Traitement de la suppression pour ${contentId}`);
       const success = deleteContent(contentId);
       
       if (success) {
