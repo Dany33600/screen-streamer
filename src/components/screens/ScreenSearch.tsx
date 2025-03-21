@@ -17,6 +17,10 @@ export const ScreenSearch: React.FC<ScreenSearchProps> = ({
   isConfigMode,
   onAddClick,
 }) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onSearchChange(e.target.value);
+  };
+
   return (
     <div className="flex items-center gap-3">
       <div className="relative">
@@ -26,7 +30,7 @@ export const ScreenSearch: React.FC<ScreenSearchProps> = ({
           placeholder="Rechercher..."
           className="pl-8 w-full md:w-[260px]"
           value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
+          onChange={handleSearchChange}
         />
       </div>
       {isConfigMode && (
@@ -38,3 +42,5 @@ export const ScreenSearch: React.FC<ScreenSearchProps> = ({
     </div>
   );
 };
+
+export default ScreenSearch;
