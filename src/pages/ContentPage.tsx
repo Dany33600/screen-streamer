@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -46,6 +47,8 @@ const ContentPage = () => {
         throw new Error("Contenu non trouvé");
       }
       
+      console.log(`Suppression du contenu avec ID exact: "${id}"`);
+      
       // Préparer l'URL de l'API
       let baseUrl = apiUrl;
       if (baseUrl.endsWith('/')) {
@@ -62,7 +65,7 @@ const ContentPage = () => {
       // Supprimer le contenu localement avant l'appel API pour améliorer la réactivité de l'UI
       removeContent(id);
       
-      // Appel à l'API pour supprimer le contenu - utiliser l'ID tel quel
+      // Appel à l'API pour supprimer le contenu - utiliser l'ID exact
       const response = await fetch(`${formattedApiUrl}/api/content/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
