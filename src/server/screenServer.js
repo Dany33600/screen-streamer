@@ -19,14 +19,17 @@ const UPLOADS_DIR = path.join(STORAGE_DIR, 'uploads');
 // Créer les répertoires de stockage s'ils n'existent pas
 if (!fs.existsSync(STORAGE_DIR)) {
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
+  console.log(`Répertoire de stockage créé: ${STORAGE_DIR}`);
 }
 
 if (!fs.existsSync(CONTENT_DIR)) {
   fs.mkdirSync(CONTENT_DIR, { recursive: true });
+  console.log(`Répertoire de contenu créé: ${CONTENT_DIR}`);
 }
 
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  console.log(`Répertoire d'uploads créé: ${UPLOADS_DIR}`);
 }
 
 // Map pour stocker les serveurs en cours d'exécution
@@ -35,16 +38,23 @@ const runningServers = new Map();
 // Configuration de multer pour le stockage des fichiers
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    console.log(`Stockage du fichier dans: ${UPLOADS_DIR}`);
     cb(null, UPLOADS_DIR);
   },
   filename: function (req, file, cb) {
     // Utiliser le format: contentId-filename
-    const uniqueFilename = `${req.body.contentId || Date.now()}-${file.originalname}`;
+    const uniqueFilename = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    console.log(`Nom de fichier généré: ${uniqueFilename}`);
     cb(null, uniqueFilename);
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100 MB
+  }
+});
 
 /**
  * Démarre un nouveau serveur HTTP sur le port spécifié
@@ -294,41 +304,53 @@ function createApiServer(apiPort = 5000) {
   });
   
   // Route pour l'upload de fichiers
-  app.post('/api/upload', upload.single('file'), (req, res) => {
-    try {
-      console.log('Upload request received:', req.body);
-      
-      if (!req.file) {
-        console.error('No file received in upload request');
-        return res.status(400).json({ 
+  app.post('/api/upload', (req, res) => {
+    console.log('Requête d\'upload reçue');
+    
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        console.error('Erreur Multer lors de l\'upload:', err);
+        return res.status(500).json({ 
           success: false, 
-          message: 'Aucun fichier reçu' 
+          message: `Erreur lors de l'upload: ${err.message}` 
         });
       }
       
-      console.log('File uploaded:', req.file);
-      
-      // Construire l'URL relative pour accéder au fichier
-      const fileUrl = `/uploads/${req.file.filename}`;
-      
-      res.json({
-        success: true,
-        message: 'Fichier uploadé avec succès',
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        url: fileUrl,
-        filePath: req.file.path
-      });
-    } catch (error) {
-      console.error('Error in file upload:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur lors de l\'upload du fichier',
-        error: error.message
-      });
-    }
+      try {
+        console.log('Corps de la requête d\'upload:', req.body);
+        
+        if (!req.file) {
+          console.error('Aucun fichier reçu dans la requête d\'upload');
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Aucun fichier reçu' 
+          });
+        }
+        
+        console.log('Fichier uploadé:', req.file);
+        
+        // Construire l'URL relative pour accéder au fichier
+        const fileUrl = `/uploads/${req.file.filename}`;
+        
+        res.json({
+          success: true,
+          message: 'Fichier uploadé avec succès',
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+          url: fileUrl,
+          filePath: req.file.path
+        });
+      } catch (error) {
+        console.error('Erreur dans le gestionnaire d\'upload:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Erreur lors de l\'upload du fichier',
+          error: error.message
+        });
+      }
+    });
   });
   
   // Route pour démarrer un serveur

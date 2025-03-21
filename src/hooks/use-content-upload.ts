@@ -21,6 +21,10 @@ export const useContentUpload = () => {
     setIsLoading(true);
 
     try {
+      if (!apiUrl) {
+        throw new Error("L'URL de l'API n'est pas configurée");
+      }
+      
       console.log(`Uploading to API URL: ${apiUrl}/api/upload`);
       
       // Create form data to send the file
@@ -32,6 +36,7 @@ export const useContentUpload = () => {
       // Use the full API URL from the store
       const uploadUrl = `${apiUrl}/api/upload`;
       console.log(`Sending upload request to: ${uploadUrl}`);
+      console.log(`File details: ${file.name}, size: ${file.size}, type: ${file.type}`);
 
       // Upload to server
       const response = await fetch(uploadUrl, {
@@ -39,13 +44,31 @@ export const useContentUpload = () => {
         body: formData,
       });
 
+      console.log(`Upload response status: ${response.status} ${response.statusText}`);
+      
+      // Traiter les erreurs HTTP
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        let errorMessage = `Erreur HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // Si la réponse n'est pas un JSON valide, utiliser le texte brut
+          try {
+            errorMessage = await response.text();
+          } catch (e2) {
+            // Si on ne peut pas lire le texte non plus, garder le message d'erreur par défaut
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      console.log("Upload response:", data);
+      console.log("Upload response data:", data);
+
+      if (!data.success) {
+        throw new Error(data.message || "Échec de l'upload pour une raison inconnue");
+      }
 
       return {
         success: true,
