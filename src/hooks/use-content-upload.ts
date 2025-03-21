@@ -56,9 +56,12 @@ export function useContentUpload() {
     }
     
     // Vérifier si l'URL du serveur est accessible
+    const apiUrl = `${serverUrl}/api/status`;
+    console.log(`Vérification de la disponibilité du serveur à: ${apiUrl}`);
+    
     try {
       // Ping rapide pour vérifier si le serveur est accessible
-      const pingResponse = await fetch(`${serverUrl}/api/status`, {
+      const pingResponse = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -70,6 +73,8 @@ export function useContentUpload() {
       if (!pingResponse.ok) {
         throw new Error(`Le serveur a répondu avec le statut: ${pingResponse.status}`);
       }
+      
+      console.log('Connexion au serveur établie avec succès');
     } catch (error) {
       console.error('Erreur lors de la vérification du serveur:', error);
       
@@ -80,6 +85,7 @@ export function useContentUpload() {
       
       toast.error(errorMessage);
       toast.error(`Vérifiez que l'URL du serveur (${serverUrl}) est correcte et que le serveur est démarré.`);
+      toast.error(`Assurez-vous d'avoir lancé le serveur avec "node src/server.js"`);
       return false;
     }
     
@@ -89,16 +95,26 @@ export function useContentUpload() {
       const formData = new FormData();
       formData.append('file', selectedFile);
       
-      console.log(`Tentative d'upload vers ${serverUrl}/api/upload`);
+      const uploadUrl = `${serverUrl}/api/upload`;
+      console.log(`Tentative d'upload vers ${uploadUrl}`);
       
-      const uploadResponse = await fetch(`${serverUrl}/api/upload`, {
+      const uploadResponse = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
       
       if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
-        throw new Error(errorData.message || `Erreur lors de l'upload du fichier (${uploadResponse.status})`);
+        let errorMessage = `Erreur HTTP ${uploadResponse.status}`;
+        
+        try {
+          const errorData = await uploadResponse.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          // Si on ne peut pas parser la réponse JSON, on utilise le message d'erreur par défaut
+          console.error('Impossible de parser la réponse JSON:', jsonError);
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const uploadResult = await uploadResponse.json();
