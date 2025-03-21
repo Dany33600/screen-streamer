@@ -1,3 +1,4 @@
+
 import { Content } from '@/types';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,6 +12,14 @@ interface ServerInstance {
   content?: Content;
   html?: string;
   serverUrl: string;
+  // Ajout des options d'affichage selon le type de contenu
+  displayOptions?: {
+    autoplay?: boolean;      // Pour les vidéos
+    loop?: boolean;          // Pour les vidéos et présentations
+    controls?: boolean;      // Pour les vidéos
+    interval?: number;       // Pour les diaporamas (en ms)
+    muted?: boolean;         // Pour les vidéos
+  };
 }
 
 class ScreenServerRealService {
@@ -61,11 +70,12 @@ class ScreenServerRealService {
   }
   
   // Méthode pour stocker les données d'un serveur sur le serveur
-  private async saveServerData(serverId: string, content: Content, html: string): Promise<boolean> {
+  private async saveServerData(serverId: string, content: Content, html: string, displayOptions?: any): Promise<boolean> {
     try {
       const apiUrl = `${this.apiBaseUrl}/content`;
       
       console.log(`Sauvegarde des données du serveur pour l'ID: ${serverId} sur ${apiUrl}`);
+      console.log(`Options d'affichage:`, displayOptions);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -76,7 +86,8 @@ class ScreenServerRealService {
           contentId: serverId,
           content: {
             content,
-            html
+            html,
+            displayOptions
           }
         }),
       });
@@ -96,7 +107,7 @@ class ScreenServerRealService {
   }
   
   // Méthode pour récupérer les données d'un serveur depuis le serveur
-  async getServerDataById(serverId: string): Promise<{ content: Content; html: string } | null> {
+  async getServerDataById(serverId: string): Promise<{ content: Content; html: string; displayOptions?: any } | null> {
     try {
       const apiUrl = `${this.apiBaseUrl}/content/${serverId}`;
       
@@ -156,6 +167,37 @@ class ScreenServerRealService {
   }
   
   /**
+   * Détermine les options d'affichage en fonction du type de contenu
+   */
+  private getDisplayOptions(content: Content): any {
+    const options: any = {};
+    
+    switch (content.type) {
+      case 'video':
+        options.autoplay = true;
+        options.loop = true;
+        options.controls = true;
+        options.muted = true; // Nécessaire pour l'autoplay sur certains navigateurs
+        break;
+      case 'image':
+        options.interval = 5000; // Intervalle par défaut pour les images (5 secondes)
+        break;
+      case 'powerpoint':
+        options.autoSlide = 5000; // 5 secondes par slide
+        options.loop = true;
+        break;
+      case 'pdf':
+        options.autoScroll = false; // Pas de défilement automatique pour les PDFs
+        break;
+      default:
+        // Options par défaut pour les autres types
+        break;
+    }
+    
+    return options;
+  }
+  
+  /**
    * Démarre un serveur web réel pour un écran spécifique
    */
   async startServer(screenId: string, port: number, content?: Content): Promise<boolean> {
@@ -164,6 +206,13 @@ class ScreenServerRealService {
       
       // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
       this.updateApiBaseUrl();
+      
+      // Vérifier si le contenu est assigné
+      if (!content) {
+        console.error("Aucun contenu n'est assigné à cet écran");
+        toast.error("Aucun contenu n'est assigné à cet écran");
+        return false;
+      }
       
       // Si un serveur existe déjà, on le réutilise
       if (this.servers.has(screenId)) {
@@ -176,12 +225,6 @@ class ScreenServerRealService {
           console.log(`Arrêt de l'ancien serveur pour l'écran ${screenId}`);
           this.stopServer(screenId);
         }
-      }
-      
-      if (!content) {
-        console.error("Aucun contenu n'est assigné à cet écran");
-        toast.error("Aucun contenu n'est assigné à cet écran");
-        return false;
       }
       
       console.log(`Contenu à afficher:`, content);
@@ -199,14 +242,18 @@ class ScreenServerRealService {
       
       console.log(`URL du serveur: ${serverUrl}`);
       
-      // Générer le HTML pour l'affichage
+      // Déterminer les options d'affichage en fonction du type de contenu
+      const displayOptions = this.getDisplayOptions(content);
+      console.log(`Options d'affichage pour ${content.type}:`, displayOptions);
+      
+      // Générer le HTML pour l'affichage avec les options
       console.log(`Génération du HTML pour le contenu de type ${content.type}`);
-      const html = htmlGenerator.generateHtml(content);
+      const html = htmlGenerator.generateHtml(content, displayOptions);
       console.log(`HTML généré (premiers 100 caractères): ${html.substring(0, 100)}...`);
       
       // Sauvegarder les données du serveur sur le serveur
       console.log(`Sauvegarde des données du serveur avec l'ID: ${serverId}`);
-      const saveSuccess = await this.saveServerData(serverId, content, html);
+      const saveSuccess = await this.saveServerData(serverId, content, html, displayOptions);
       if (!saveSuccess) {
         console.warn(`Impossible de sauvegarder les données du serveur, mais on continue quand même`);
       }
@@ -220,6 +267,7 @@ class ScreenServerRealService {
         content,
         html,
         serverUrl,
+        displayOptions
       });
       
       // Démarrer un vrai serveur HTTP sur le port spécifié
@@ -256,7 +304,8 @@ class ScreenServerRealService {
         },
         body: JSON.stringify({
           port,
-          html
+          html,
+          contentType: content.type // Ajouter le type de contenu pour des traitements spécifiques côté serveur
         }),
       });
       
@@ -351,15 +400,20 @@ class ScreenServerRealService {
     if (this.servers.has(screenId)) {
       const server = this.servers.get(screenId)!;
       
+      // Déterminer les options d'affichage en fonction du type de contenu
+      const displayOptions = this.getDisplayOptions(content);
+      console.log(`Options d'affichage pour la mise à jour (${content.type}):`, displayOptions);
+      
       // Mettre à jour le contenu du serveur
       server.content = content;
+      server.displayOptions = displayOptions;
       
-      // Générer le nouveau HTML
-      const html = htmlGenerator.generateHtml(content);
+      // Générer le nouveau HTML avec les options d'affichage
+      const html = htmlGenerator.generateHtml(content, displayOptions);
       server.html = html;
       
       // Mettre à jour les données du serveur sur le serveur
-      await this.saveServerData(server.id, content, html);
+      await this.saveServerData(server.id, content, html, displayOptions);
       
       try {
         // Envoyer une requête à notre backend pour mettre à jour le contenu
@@ -374,7 +428,8 @@ class ScreenServerRealService {
           },
           body: JSON.stringify({
             port,
-            html
+            html,
+            contentType: content.type // Ajouter le type de contenu
           }),
         });
         
@@ -447,4 +502,3 @@ class ScreenServerRealService {
 
 // Export a singleton instance of the service
 export const screenServerService = new ScreenServerRealService();
-

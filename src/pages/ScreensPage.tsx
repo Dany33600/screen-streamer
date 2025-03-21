@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -92,16 +93,57 @@ const ScreensPage = () => {
     });
   };
   
-  const handleAssignContent = () => {
+  const handleAssignContent = async () => {
     if (!currentScreen) return;
     
+    const previousContentId = currentScreen.contentId;
     const contentId = selectedContentId === 'none' ? undefined : selectedContentId;
     
+    // Mettre à jour l'écran avec le nouveau contenu
     assignContentToScreen(currentScreen.id, contentId);
     
-    if (screenServerService.isServerRunning(currentScreen.id)) {
-      const content = contentId ? contents.find(c => c.id === contentId) : undefined;
-      screenServerService.updateServer(currentScreen.id, currentScreen.port, content);
+    // Vérifier si le serveur est en cours d'exécution
+    const isServerRunning = screenServerService.isServerRunning(currentScreen.id);
+    
+    // Si le contenu a changé et que le serveur est en cours d'exécution, le redémarrer
+    if (isServerRunning && previousContentId !== contentId) {
+      if (contentId) {
+        // Récupérer le nouveau contenu
+        const content = contents.find(c => c.id === contentId);
+        
+        if (content) {
+          // Redémarrer le serveur avec le nouveau contenu
+          console.log(`Redémarrage du serveur pour l'écran ${currentScreen.name} avec le nouveau contenu ${content.name}`);
+          const success = await screenServerService.updateServer(currentScreen.id, currentScreen.port, content);
+          
+          if (success) {
+            toast({
+              title: 'Serveur mis à jour',
+              description: `Le serveur pour l'écran "${currentScreen.name}" a été mis à jour avec le nouveau contenu.`,
+            });
+          } else {
+            toast({
+              title: 'Erreur de mise à jour',
+              description: `Impossible de mettre à jour le serveur pour l'écran "${currentScreen.name}".`,
+              variant: "destructive",
+            });
+          }
+        } else if (isServerRunning) {
+          // Si aucun contenu n'est assigné mais que le serveur est en cours d'exécution, l'arrêter
+          screenServerService.stopServer(currentScreen.id);
+          toast({
+            title: 'Serveur arrêté',
+            description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`,
+          });
+        }
+      } else if (isServerRunning) {
+        // Si le nouveau contentId est undefined et que le serveur est en cours d'exécution, l'arrêter
+        screenServerService.stopServer(currentScreen.id);
+        toast({
+          title: 'Serveur arrêté',
+          description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`,
+        });
+      }
     }
     
     setCurrentScreen(null);

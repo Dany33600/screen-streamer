@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { useAppStore } from '@/store';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { screenServerService } from '@/services/screenServerReal';
 
 interface AssignContentDialogProps {
   open: boolean;
@@ -42,11 +43,35 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
 }) => {
   const assignContentToScreen = useAppStore(state => state.assignContentToScreen);
   const apiUrl = useAppStore(state => state.apiUrl);
+  const getScreenById = (id: string) => screens.find(screen => screen.id === id);
 
-  const handleAssignContent = () => {
+  const handleAssignContent = async () => {
     if (!content || !selectedScreenId) return;
     
+    const screen = getScreenById(selectedScreenId);
+    if (!screen) return;
+    
+    // Sauvegarder l'ancien contentId pour vérifier si le contenu a changé
+    const previousContentId = screen.contentId;
+    
+    // Assigner le nouveau contenu
     assignContentToScreen(selectedScreenId, content.id);
+    
+    // Vérifier si le serveur est en cours d'exécution
+    const isServerRunning = screenServerService.isServerRunning(selectedScreenId);
+    
+    // Si le contenu a changé et que le serveur est en cours d'exécution, le redémarrer
+    if (isServerRunning && previousContentId !== content.id) {
+      console.log(`Redémarrage du serveur pour l'écran ${screen.name} avec le nouveau contenu ${content.name}`);
+      const success = await screenServerService.updateServer(selectedScreenId, screen.port, content);
+      
+      if (success) {
+        toast.success(`Le serveur pour l'écran "${screen.name}" a été mis à jour avec le nouveau contenu.`);
+      } else {
+        toast.error(`Impossible de mettre à jour le serveur pour l'écran "${screen.name}".`);
+      }
+    }
+    
     onOpenChange(false);
     toast.success('Contenu assigné à l\'écran avec succès');
   };

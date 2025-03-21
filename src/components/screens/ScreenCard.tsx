@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Screen, Content } from '@/types';
 import { useAppStore } from '@/store';
@@ -47,9 +48,18 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
     (content) => content.id === screen.contentId
   );
   
-  const { isOnline, startServer, stopServer, updateServer } = useScreenStatus(screen);
+  const { isOnline, startServer, stopServer, updateServer, content } = useScreenStatus(screen);
 
   const handleOpenScreen = () => {
+    if (!content) {
+      toast({
+        title: "Contenu requis",
+        description: `Veuillez assigner un contenu à l'écran "${screen.name}" avant de l'ouvrir.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!isOnline) {
       const success = startServer();
       if (success) {
@@ -98,6 +108,15 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         });
       }
     } else {
+      if (!content) {
+        toast({
+          title: "Contenu requis",
+          description: `Veuillez assigner un contenu à l'écran "${screen.name}" avant de le démarrer.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const success = startServer();
       if (success) {
         toast({
@@ -175,7 +194,10 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
                 <Film size={16} className="mr-2" />
                 Assigner du contenu
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleOpenScreen}>
+              <DropdownMenuItem 
+                onClick={handleOpenScreen}
+                disabled={!assignedContent}
+              >
                 <ExternalLink size={16} className="mr-2" />
                 Ouvrir dans le navigateur
               </DropdownMenuItem>
@@ -230,6 +252,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
             isOnline ? "bg-green-600 hover:bg-green-700" : ""
           )}
           onClick={handleTogglePower}
+          disabled={!isOnline && !assignedContent}
         >
           <Power size={14} className="mr-1" />
           {isOnline ? 'Arrêter' : 'Démarrer'}

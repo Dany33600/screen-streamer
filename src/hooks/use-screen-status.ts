@@ -200,6 +200,8 @@ export function useScreenStatus(screen: Screen) {
     startServer,
     stopServer,
     updateServer,
-    checkServerStatus
+    checkServerStatus,
+    // Exposer le contenu assigné
+    content
   };
 }

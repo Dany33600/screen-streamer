@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -55,7 +56,7 @@ const upload = multer({
 });
 
 // Fonctions de gestion des serveurs
-function startServer(port, html) {
+function startServer(port, html, contentType = 'html') {
   if (runningServers.has(port)) {
     stopServer(port);
   }
@@ -83,7 +84,20 @@ function startServer(port, html) {
       console.error('Erreur lors de la configuration du répertoire statique pour reveal.js:', error);
     }
     
+    // Ajouter le répertoire d'uploads comme statique
+    app.use('/uploads', express.static(UPLOADS_DIR));
+    
     app.get('/', (req, res) => {
+      // En fonction du type de contenu, nous pouvons ajouter des en-têtes spécifiques
+      if (contentType === 'video') {
+        res.setHeader('Content-Type', 'text/html');
+      } else if (contentType === 'powerpoint') {
+        res.setHeader('Content-Type', 'text/html');
+      } else {
+        res.setHeader('Content-Type', 'text/html');
+      }
+      
+      console.log(`Affichage du contenu de type: ${contentType}`);
       res.send(html);
     });
     
@@ -94,10 +108,10 @@ function startServer(port, html) {
     const server = createServer(app);
     
     server.listen(port, '0.0.0.0', () => {
-      console.log(`Serveur démarré sur le port ${port}`);
+      console.log(`Serveur démarré sur le port ${port} pour le contenu de type ${contentType}`);
     });
     
-    runningServers.set(port, server);
+    runningServers.set(port, { server, contentType });
     
     return true;
   } catch (error) {
@@ -113,7 +127,7 @@ function stopServer(port) {
   }
   
   try {
-    const server = runningServers.get(port);
+    const { server } = runningServers.get(port);
     
     server.close(() => {
       console.log(`Serveur arrêté sur le port ${port}`);
@@ -128,8 +142,8 @@ function stopServer(port) {
   }
 }
 
-function updateServer(port, html) {
-  return startServer(port, html);
+function updateServer(port, html, contentType = 'html') {
+  return startServer(port, html, contentType);
 }
 
 // Fonction améliorée pour enregistrer les données de contenu
@@ -449,18 +463,24 @@ function createApiServer(apiPort = 5000) {
   
   app.post('/api/start-server', (req, res) => {
     try {
-      const { port, html } = req.body;
+      const { port, html, contentType } = req.body;
       
       if (!port || !html) {
         return res.status(400).json({ success: false, message: 'Port et HTML requis' });
       }
       
-      const success = startServer(port, html);
+      const success = startServer(port, html, contentType || 'html');
       
       if (success) {
-        res.json({ success: true, message: `Serveur démarré sur le port ${port}` });
+        res.json({ 
+          success: true, 
+          message: `Serveur démarré sur le port ${port} pour le contenu de type ${contentType || 'html'}` 
+        });
       } else {
-        res.status(500).json({ success: false, message: `Échec du démarrage du serveur sur le port ${port}` });
+        res.status(500).json({ 
+          success: false, 
+          message: `Échec du démarrage du serveur sur le port ${port}` 
+        });
       }
     } catch (error) {
       console.error("Erreur dans /api/start-server:", error);
@@ -491,16 +511,19 @@ function createApiServer(apiPort = 5000) {
   
   app.post('/api/update-server', (req, res) => {
     try {
-      const { port, html } = req.body;
+      const { port, html, contentType } = req.body;
       
       if (!port || !html) {
         return res.status(400).json({ success: false, message: 'Port et HTML requis' });
       }
       
-      const success = updateServer(port, html);
+      const success = updateServer(port, html, contentType || 'html');
       
       if (success) {
-        res.json({ success: true, message: `Serveur mis à jour sur le port ${port}` });
+        res.json({ 
+          success: true, 
+          message: `Serveur mis à jour sur le port ${port} pour le contenu de type ${contentType || 'html'}` 
+        });
       } else {
         res.status(500).json({ success: false, message: `Échec de la mise à jour du serveur sur le port ${port}` });
       }
@@ -511,9 +534,14 @@ function createApiServer(apiPort = 5000) {
   });
 
   app.get('/api/status', (req, res) => {
+    const serverStatus = Array.from(runningServers.entries()).map(([port, data]) => ({
+      port,
+      contentType: data.contentType || 'html'
+    }));
+    
     res.json({ 
       status: 'ok', 
-      servers: Array.from(runningServers.keys())
+      servers: serverStatus
     });
   });
 
