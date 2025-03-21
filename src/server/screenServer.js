@@ -66,9 +66,6 @@ function startServer(port, html) {
       allowedHeaders: ['Content-Type', 'Authorization']
     }));
     
-    // Servir les fichiers statiques du dossier uploads pour chaque écran individuel
-    app.use('/uploads', express.static(UPLOADS_DIR));
-    
     // Route principale qui sert le HTML
     app.get('/', (req, res) => {
       res.send(html);
@@ -424,43 +421,6 @@ function createApiServer(apiPort = 5000) {
     }
   });
   
-  // Nouvelle route pour uploader des fichiers
-  app.post('/api/upload', upload.single('file'), (req, res) => {
-    try {
-      const contentId = req.body.contentId || Date.now().toString();
-      
-      if (!req.file) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Aucun fichier n\'a été uploadé' 
-        });
-      }
-      
-      const result = uploadFile(contentId, req.file);
-      
-      if (result.success) {
-        res.json({ 
-          success: true, 
-          message: 'Fichier uploadé avec succès',
-          fileUrl: result.url,
-          filePath: result.filePath,
-          contentId
-        });
-      } else {
-        res.status(500).json({ 
-          success: false, 
-          message: result.message || 'Erreur lors de l\'upload du fichier' 
-        });
-      }
-    } catch (error) {
-      console.error("Erreur dans /api/upload:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: error.message 
-      });
-    }
-  });
-  
   // Middleware pour gérer les erreurs 404
   app.use((req, res) => {
     res.status(404).json({
@@ -473,7 +433,6 @@ function createApiServer(apiPort = 5000) {
         'POST /api/stop-server',
         'POST /api/update-server',
         'POST /api/content',
-        'POST /api/upload',
         'GET /api/content',
         'GET /api/content/:contentId',
         'DELETE /api/content/:contentId'
@@ -498,7 +457,7 @@ function createApiServer(apiPort = 5000) {
     console.log(`Adresses IP accessibles:`);
     
     // Afficher toutes les adresses IP du système
-    const nets = os.networkInterfaces();
+    const nets = os.networkInterfaces(); // Use the imported os module instead of require
     
     for (const name of Object.keys(nets)) {
       for (const net of nets[name]) {
