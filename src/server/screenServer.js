@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -8,16 +7,13 @@ import { fileURLToPath } from 'url';
 import os from 'os'; 
 import multer from 'multer';
 
-// Obtenir le chemin du répertoire actuel en utilisant ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Chemin vers le répertoire de stockage
 const STORAGE_DIR = path.join(__dirname, '..', '..', 'storage');
 const CONTENT_DIR = path.join(STORAGE_DIR, 'content');
 const UPLOADS_DIR = path.join(STORAGE_DIR, 'uploads');
 
-// Créer les répertoires de stockage s'ils n'existent pas
 if (!fs.existsSync(STORAGE_DIR)) {
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
   console.log(`Répertoire de stockage créé: ${STORAGE_DIR}`);
@@ -33,13 +29,10 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   console.log(`Répertoire d'uploads créé: ${UPLOADS_DIR}`);
 }
 
-// Map pour stocker les serveurs en cours d'exécution
 const runningServers = new Map();
 
-// Configuration de multer pour le stockage des fichiers
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // S'assurer que le répertoire d'uploads existe
     if (!fs.existsSync(UPLOADS_DIR)) {
       fs.mkdirSync(UPLOADS_DIR, { recursive: true });
     }
@@ -47,7 +40,6 @@ const storage = multer.diskStorage({
     cb(null, UPLOADS_DIR);
   },
   filename: function (req, file, cb) {
-    // Utiliser le format: contentId-filename
     const uniqueFilename = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     console.log(`Nom de fichier généré: ${uniqueFilename}`);
     cb(null, uniqueFilename);
@@ -61,45 +53,34 @@ const upload = multer({
   }
 });
 
-/**
- * Démarre un nouveau serveur HTTP sur le port spécifié
- */
 function startServer(port, html) {
-  // Si un serveur existe déjà sur ce port, on l'arrête d'abord
   if (runningServers.has(port)) {
     stopServer(port);
   }
   
   try {
-    // Créer une nouvelle application Express
     const app = express();
     
-    // Activer CORS pour permettre les requêtes cross-origin
     app.use(cors({
       origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization']
     }));
     
-    // Route principale qui sert le HTML
     app.get('/', (req, res) => {
       res.send(html);
     });
     
-    // Route de ping pour vérifier si le serveur est en vie
     app.get('/ping', (req, res) => {
       res.status(200).send('pong');
     });
     
-    // Créer un serveur HTTP
     const server = createServer(app);
     
-    // Démarrer le serveur sur le port spécifié
     server.listen(port, '0.0.0.0', () => {
       console.log(`Serveur démarré sur le port ${port}`);
     });
     
-    // Stocker le serveur dans la map
     runningServers.set(port, server);
     
     return true;
@@ -109,9 +90,6 @@ function startServer(port, html) {
   }
 }
 
-/**
- * Arrête un serveur HTTP en cours d'exécution
- */
 function stopServer(port) {
   if (!runningServers.has(port)) {
     console.log(`Aucun serveur en cours d'exécution sur le port ${port}`);
@@ -121,12 +99,10 @@ function stopServer(port) {
   try {
     const server = runningServers.get(port);
     
-    // Fermer le serveur
     server.close(() => {
       console.log(`Serveur arrêté sur le port ${port}`);
     });
     
-    // Supprimer le serveur de la map
     runningServers.delete(port);
     
     return true;
@@ -136,18 +112,10 @@ function stopServer(port) {
   }
 }
 
-/**
- * Met à jour le contenu d'un serveur en cours d'exécution
- */
 function updateServer(port, html) {
-  // Arrêter puis redémarrer le serveur avec le nouveau contenu
-  // C'est une approche simple mais efficace pour mettre à jour le contenu
   return startServer(port, html);
 }
 
-/**
- * Sauvegarde les données du contenu sur le serveur
- */
 function saveContentData(contentId, contentData) {
   try {
     const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
@@ -159,9 +127,6 @@ function saveContentData(contentId, contentData) {
   }
 }
 
-/**
- * Récupère les données du contenu depuis le serveur
- */
 function getContentData(contentId) {
   try {
     const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
@@ -176,9 +141,6 @@ function getContentData(contentId) {
   }
 }
 
-/**
- * Liste tous les contenus stockés sur le serveur
- */
 function listAllContent() {
   try {
     const files = fs.readdirSync(CONTENT_DIR);
@@ -201,9 +163,6 @@ function listAllContent() {
   }
 }
 
-/**
- * Supprime un contenu stocké sur le serveur
- */
 function deleteContent(contentId) {
   try {
     const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
@@ -218,25 +177,37 @@ function deleteContent(contentId) {
   }
 }
 
-/**
- * Upload un fichier sur le serveur
- */
 function uploadFile(contentId, file, originalName) {
   try {
-    // Si un fichier a été fourni directement (depuis multer)
     if (file) {
+      const nets = os.networkInterfaces();
+      let ipAddress = 'localhost';
+      
+      for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+          if (net.family === 'IPv4' && !net.internal) {
+            ipAddress = net.address;
+            break;
+          }
+        }
+        if (ipAddress !== 'localhost') break;
+      }
+      
+      const serverPort = process.env.API_PORT || 5000;
+      const fullFileUrl = `http://${ipAddress}:${serverPort}/uploads/${file.filename}`;
+      
+      console.log(`Generated full file URL: ${fullFileUrl}`);
+      
       return {
         success: true,
         filePath: file.path,
-        url: `/uploads/${file.filename}`
+        url: fullFileUrl
       };
     }
     
-    // Si un buffer ou un chemin de fichier a été fourni
     const filename = `${contentId}-${originalName || 'file'}`;
     const filePath = path.join(UPLOADS_DIR, filename);
     
-    // Si c'est un Buffer, l'écrire sur le disque
     if (Buffer.isBuffer(file)) {
       fs.writeFileSync(filePath, file);
       return {
@@ -259,27 +230,21 @@ function uploadFile(contentId, file, originalName) {
   }
 }
 
-// Créer un serveur API pour gérer les serveurs d'écran
 function createApiServer(apiPort = 5000) {
   const app = express();
   
-  // Parser JSON
   app.use(express.json({ limit: '50mb' }));
   
-  // Activer CORS avec une configuration plus permissive
   app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
   }));
 
-  // Middleware pour gérer les erreurs CORS préflight
   app.options('*', cors());
   
-  // Servir les fichiers statiques du dossier uploads
   app.use('/uploads', express.static(UPLOADS_DIR));
   
-  // Route racine pour montrer que le serveur fonctionne
   app.get('/', (req, res) => {
     res.json({
       status: 'ok',
@@ -288,7 +253,6 @@ function createApiServer(apiPort = 5000) {
     });
   });
   
-  // Route API root pour afficher les endpoints disponibles
   app.get('/api', (req, res) => {
     res.json({
       status: 'ok',
@@ -308,11 +272,9 @@ function createApiServer(apiPort = 5000) {
     });
   });
   
-  // Route pour l'upload de fichiers
   app.post('/api/upload', (req, res) => {
     console.log('Requête d\'upload reçue');
     
-    // Vérifier que les répertoires existent avant l'upload
     if (!fs.existsSync(UPLOADS_DIR)) {
       fs.mkdirSync(UPLOADS_DIR, { recursive: true });
       console.log(`Répertoire d'uploads recréé: ${UPLOADS_DIR}`);
@@ -340,8 +302,23 @@ function createApiServer(apiPort = 5000) {
         
         console.log('Fichier uploadé:', req.file);
         
-        // Construire l'URL relative pour accéder au fichier
-        const fileUrl = `/uploads/${req.file.filename}`;
+        const nets = os.networkInterfaces();
+        let ipAddress = 'localhost';
+        
+        for (const name of Object.keys(nets)) {
+          for (const net of nets[name]) {
+            if (net.family === 'IPv4' && !net.internal) {
+              ipAddress = net.address;
+              break;
+            }
+          }
+          if (ipAddress !== 'localhost') break;
+        }
+        
+        const serverPort = process.env.API_PORT || 5000;
+        const fullFileUrl = `http://${ipAddress}:${serverPort}/uploads/${req.file.filename}`;
+        
+        console.log(`Generated full file URL: ${fullFileUrl}`);
         
         res.json({
           success: true,
@@ -350,7 +327,7 @@ function createApiServer(apiPort = 5000) {
           originalName: req.file.originalname,
           mimetype: req.file.mimetype,
           size: req.file.size,
-          url: fileUrl,
+          url: fullFileUrl,
           filePath: req.file.path
         });
       } catch (error) {
@@ -364,7 +341,6 @@ function createApiServer(apiPort = 5000) {
     });
   });
   
-  // Route pour démarrer un serveur
   app.post('/api/start-server', (req, res) => {
     try {
       const { port, html } = req.body;
@@ -386,7 +362,6 @@ function createApiServer(apiPort = 5000) {
     }
   });
   
-  // Route pour arrêter un serveur
   app.post('/api/stop-server', (req, res) => {
     try {
       const { port } = req.body;
@@ -408,7 +383,6 @@ function createApiServer(apiPort = 5000) {
     }
   });
   
-  // Route pour mettre à jour un serveur
   app.post('/api/update-server', (req, res) => {
     try {
       const { port, html } = req.body;
@@ -430,7 +404,6 @@ function createApiServer(apiPort = 5000) {
     }
   });
 
-  // Route de diagnostic pour vérifier si le serveur API est en vie
   app.get('/api/status', (req, res) => {
     res.json({ 
       status: 'ok', 
@@ -438,7 +411,6 @@ function createApiServer(apiPort = 5000) {
     });
   });
 
-  // Routes pour la gestion des contenus
   app.post('/api/content', (req, res) => {
     try {
       const { contentId, content } = req.body;
@@ -512,7 +484,6 @@ function createApiServer(apiPort = 5000) {
     }
   });
   
-  // Middleware pour gérer les erreurs 404
   app.use((req, res) => {
     res.status(404).json({
       success: false,
@@ -533,7 +504,6 @@ function createApiServer(apiPort = 5000) {
     });
   });
 
-  // Middleware pour gérer les erreurs internes
   app.use((err, req, res, next) => {
     console.error('Erreur interne du serveur:', err);
     res.status(500).json({
@@ -543,18 +513,15 @@ function createApiServer(apiPort = 5000) {
     });
   });
   
-  // Démarrer le serveur API
   const server = app.listen(apiPort, '0.0.0.0', () => {
     console.log(`Serveur API démarré sur le port ${apiPort} (accessible sur toutes les interfaces réseau)`);
     console.log(`URL du serveur API: http://localhost:${apiPort}`);
     console.log(`Adresses IP accessibles:`);
     
-    // Afficher toutes les adresses IP du système
     const nets = os.networkInterfaces();
     
     for (const name of Object.keys(nets)) {
       for (const net of nets[name]) {
-        // Ignorer les adresses non IPv4 et localhost
         if (net.family === 'IPv4' && !net.internal) {
           console.log(`  http://${net.address}:${apiPort}`);
         }
@@ -565,7 +532,6 @@ function createApiServer(apiPort = 5000) {
   return server;
 }
 
-// Exporter les fonctions
 export {
   startServer,
   stopServer,

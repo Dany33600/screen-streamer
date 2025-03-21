@@ -83,9 +83,22 @@ export const useContentUpload = () => {
         throw new Error(data.message || "Échec de l'upload pour une raison inconnue");
       }
 
+      // Préparer l'URL complète au lieu d'une URL relative
+      // Extraire le baseApiUrl (sans /api) pour accéder aux fichiers statiques
+      const apiBaseWithoutPath = baseUrl.split('/api')[0];
+      
+      // Construire l'URL complète avec l'adresse IP et le port
+      // Si l'URL commence par un slash, supprimer le slash pour éviter les doubles slashes
+      const fileUrl = data.url || data.filePath;
+      const fullFileUrl = fileUrl.startsWith('/') 
+        ? `${apiBaseWithoutPath}${fileUrl}`
+        : `${apiBaseWithoutPath}/${fileUrl}`;
+      
+      console.log("Generated full file URL:", fullFileUrl);
+
       return {
         success: true,
-        url: data.url || data.filePath,
+        url: fullFileUrl,
       };
     } catch (error) {
       console.error('Erreur d\'upload:', error);

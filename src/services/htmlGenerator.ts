@@ -1,10 +1,18 @@
 
 import { Content } from '@/types';
+import { useAppStore } from '@/store';
 
 /**
  * Service pour générer du HTML pour l'affichage de contenu
  */
 class HtmlGeneratorService {
+  /**
+   * Vérifie si une URL est complète (commence par http:// ou https://)
+   */
+  private isFullUrl(url: string): boolean {
+    return url.startsWith('http://') || url.startsWith('https://');
+  }
+
   /**
    * Génère le HTML pour afficher le contenu sur l'écran
    */
@@ -53,6 +61,9 @@ class HtmlGeneratorService {
       `;
     }
     
+    // S'assurer que l'URL est une URL complète
+    const contentUrl = content.url;
+    
     // Déterminer le type de contenu
     switch (content.type) {
       case 'image':
@@ -79,10 +90,16 @@ class HtmlGeneratorService {
                 max-height: 100vh;
                 object-fit: contain;
               }
+              .error-message {
+                color: white;
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+              }
             </style>
           </head>
           <body>
-            <img src="${content.url}" alt="${content.name}" />
+            <img src="${contentUrl}" alt="${content.name}" onerror="this.style.display='none';document.body.innerHTML+='<div class=\\'error-message\\'><h2>Erreur de chargement de l\\'image</h2><p>URL: ${contentUrl}</p></div>';" />
           </body>
           </html>
         `;
@@ -111,10 +128,16 @@ class HtmlGeneratorService {
                 max-height: 100vh;
                 object-fit: contain;
               }
+              .error-message {
+                color: white;
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+              }
             </style>
           </head>
           <body>
-            <video src="${content.url}" autoplay loop controls></video>
+            <video src="${contentUrl}" autoplay loop controls onerror="this.style.display='none';document.body.innerHTML+='<div class=\\'error-message\\'><h2>Erreur de chargement de la vidéo</h2><p>URL: ${contentUrl}</p></div>';"></video>
           </body>
           </html>
         `;

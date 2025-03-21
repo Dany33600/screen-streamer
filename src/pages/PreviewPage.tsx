@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -16,6 +17,28 @@ const PreviewPage = () => {
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const contents = useAppStore((state) => state.contents);
   const screens = useAppStore((state) => state.screens);
+  const apiUrl = useAppStore((state) => state.apiUrl);
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  
+  // Fonction pour s'assurer que les URL sont complètes (avec protocole et domaine)
+  const ensureFullUrl = (url: string): string => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url; // L'URL est déjà complète
+    }
+    
+    // Créer une URL complète à partir de l'URL relative
+    // Utiliser l'adresse IP du serveur API si disponible
+    if (apiUrl) {
+      const baseApiUrl = apiUrl.replace('localhost', baseIpAddress);
+      const apiBaseWithoutPath = baseApiUrl.split('/api')[0];
+      
+      return url.startsWith('/') 
+        ? `${apiBaseWithoutPath}${url}`
+        : `${apiBaseWithoutPath}/${url}`;
+    }
+    
+    return url;
+  };
   
   useEffect(() => {
     // Extraire les paramètres de l'URL
@@ -29,6 +52,10 @@ const PreviewPage = () => {
         // Récupérer les données du serveur à partir du localStorage
         const serverData = await screenServerService.getServerDataById(serverId);
         if (serverData) {
+          // Assurer que l'URL est complète avant de définir le contenu
+          if (serverData.content) {
+            serverData.content.url = ensureFullUrl(serverData.content.url);
+          }
           setContent(serverData.content);
           setHtmlContent(serverData.html);
         } else if (currentScreenId && contentId) {
@@ -58,10 +85,15 @@ const PreviewPage = () => {
       // Si aucun screenId n'est fourni, essayer de récupérer le contenu directement
       const foundContent = contents.find(c => c.id === contentId);
       if (foundContent) {
-        setContent(foundContent);
+        // Assurer que l'URL est complète
+        const contentWithFullUrl = { 
+          ...foundContent, 
+          url: ensureFullUrl(foundContent.url) 
+        };
+        setContent(contentWithFullUrl);
       }
     }
-  }, [location.search, contents, screens]);
+  }, [location.search, contents, screens, apiUrl, baseIpAddress]);
   
   const handleFallbackContent = async (currentScreenId: string, contentId: string | null) => {
     try {
@@ -70,11 +102,18 @@ const PreviewPage = () => {
         // Récupérer le contenu du serveur
         const serverContent = await screenServerService.getServerContent(currentScreenId);
         if (serverContent) {
+          // Assurer que l'URL est complète
+          serverContent.url = ensureFullUrl(serverContent.url);
           setContent(serverContent);
         } else if (contentId) {
           const foundContent = contents.find(c => c.id === contentId);
           if (foundContent) {
-            setContent(foundContent);
+            // Assurer que l'URL est complète
+            const contentWithFullUrl = { 
+              ...foundContent, 
+              url: ensureFullUrl(foundContent.url) 
+            };
+            setContent(contentWithFullUrl);
           }
         }
       } else {
@@ -82,11 +121,16 @@ const PreviewPage = () => {
         if (contentId) {
           const foundContent = contents.find(c => c.id === contentId);
           if (foundContent) {
-            setContent(foundContent);
+            // Assurer que l'URL est complète
+            const contentWithFullUrl = { 
+              ...foundContent, 
+              url: ensureFullUrl(foundContent.url) 
+            };
+            setContent(contentWithFullUrl);
             // Démarrer le serveur avec ce contenu
             const screen = screens.find(s => s.id === currentScreenId);
             if (screen) {
-              await screenServerService.startServer(currentScreenId, screen.port, foundContent);
+              await screenServerService.startServer(currentScreenId, screen.port, contentWithFullUrl);
             }
           }
         }
@@ -110,6 +154,13 @@ const PreviewPage = () => {
       window.open(content.url, '_blank');
     }
   };
+  
+  // Ajouter un débogage pour afficher l'URL actuelle du contenu
+  useEffect(() => {
+    if (content) {
+      console.log("Preview content URL:", content.url);
+    }
+  }, [content]);
   
   if (!content) {
     return (
@@ -142,6 +193,9 @@ const PreviewPage = () => {
             {screenId && screens.find(s => s.id === screenId)?.name}
             {serverId && <span className="ml-2 text-green-500">(Serveur actif)</span>}
           </p>
+          <p className="text-xs text-muted-foreground truncate max-w-[30ch]">
+            URL: {content.url}
+          </p>
         </div>
         
         <Button variant="outline" size="sm" onClick={handleOpenInNewTab}>
@@ -163,22 +217,48 @@ const PreviewPage = () => {
         ) : (
           <>
             {content.type === 'image' && (
-              <img 
-                src={content.url} 
-                alt={content.name} 
-                className="max-w-full max-h-[calc(100vh-8rem)] object-contain"
-              />
+              <div className="flex flex-col items-center">
+                <img 
+                  src={content.url} 
+                  alt={content.name} 
+                  className="max-w-full max-h-[calc(100vh-8rem)] object-contain"
+                  onError={(e) => {
+                    console.error("Error loading image:", content.url);
+                    toast({
+                      title: "Erreur de chargement",
+                      description: `Impossible de charger l'image: ${content.url}`,
+                      variant: "destructive",
+                    });
+                  }}
+                />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Si l'image ne s'affiche pas, vérifiez que l'URL est accessible: {content.url}
+                </p>
+              </div>
             )}
             
             {content.type === 'video' && (
-              <video 
-                src={content.url} 
-                controls 
-                autoPlay 
-                className="max-w-full max-h-[calc(100vh-8rem)]"
-              >
-                Votre navigateur ne prend pas en charge la lecture vidéo.
-              </video>
+              <div className="flex flex-col items-center">
+                <video 
+                  src={content.url} 
+                  controls 
+                  autoPlay 
+                  className="max-w-full max-h-[calc(100vh-8rem)]"
+                  onError={(e) => {
+                    console.error("Error loading video:", content.url);
+                    toast({
+                      title: "Erreur de chargement",
+                      description: `Impossible de charger la vidéo: ${content.url}`,
+                      variant: "destructive",
+                    });
+                  }}
+                >
+                  Votre navigateur ne prend pas en charge la lecture vidéo.
+                </video>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Si la vidéo ne s'affiche pas, vérifiez que l'URL est accessible: {content.url}
+                </p>
+              </div>
             )}
             
             {(content.type === 'pdf' || content.type === 'powerpoint') && (
