@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -69,6 +68,20 @@ function startServer(port, html) {
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization']
     }));
+    
+    // Servir les fichiers statiques depuis node_modules reveal.js
+    try {
+      const revealJsPath = path.resolve(__dirname, '..', '..', 'node_modules', 'reveal.js');
+      console.log(`Tentative de servir reveal.js depuis: ${revealJsPath}`);
+      if (fs.existsSync(revealJsPath)) {
+        app.use('/node_modules/reveal.js', express.static(revealJsPath));
+        console.log('Répertoire reveal.js servi avec succès');
+      } else {
+        console.warn('Répertoire reveal.js non trouvé');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la configuration du répertoire statique pour reveal.js:', error);
+    }
     
     app.get('/', (req, res) => {
       res.send(html);
@@ -300,6 +313,20 @@ function createApiServer(apiPort = 5000) {
   
   app.use('/uploads', express.static(UPLOADS_DIR));
   
+  // Servir les fichiers statiques depuis node_modules reveal.js
+  try {
+    const revealJsPath = path.resolve(__dirname, '..', '..', 'node_modules', 'reveal.js');
+    console.log(`API: Tentative de servir reveal.js depuis: ${revealJsPath}`);
+    if (fs.existsSync(revealJsPath)) {
+      app.use('/node_modules/reveal.js', express.static(revealJsPath));
+      console.log('API: Répertoire reveal.js servi avec succès');
+    } else {
+      console.warn('API: Répertoire reveal.js non trouvé');
+    }
+  } catch (error) {
+    console.error('API: Erreur lors de la configuration du répertoire statique pour reveal.js:', error);
+  }
+  
   app.get('/', (req, res) => {
     res.json({
       status: 'ok',
@@ -340,7 +367,7 @@ function createApiServer(apiPort = 5000) {
         console.error('Erreur Multer lors de l\'upload:', err);
         return res.status(500).json({ 
           success: false, 
-          message: `Erreur lors de l'upload: ${err.message}` 
+          message: `Erreur lors de l\'upload: ${err.message}` 
         });
       }
       

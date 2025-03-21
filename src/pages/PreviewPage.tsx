@@ -276,9 +276,10 @@ const PreviewPage = () => {
                       className="w-full h-full border-none"
                       sandbox="allow-same-origin allow-scripts allow-popups"
                       onError={() => {
+                        console.error("Erreur lors du chargement de l'iframe pour la présentation PowerPoint");
                         toast({
                           title: "Erreur",
-                          description: "Impossible de charger la présentation avec reveal.js",
+                          description: "Impossible de charger la présentation",
                           variant: "destructive",
                         });
                       }}
@@ -296,7 +297,7 @@ const PreviewPage = () => {
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  La prévisualisation utilise reveal.js pour afficher le contenu. Si vous rencontrez des problèmes, téléchargez le fichier.
+                  La présentation s'affiche automatiquement avec une rotation des slides toutes les 5 secondes.
                 </p>
               </div>
             )}
@@ -324,4 +325,3 @@ const PreviewPage = () => {
 };
 
 export default PreviewPage;
-
