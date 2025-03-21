@@ -88,7 +88,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
     setIsDeleteDialogOpen(false);
     console.log("Suppression du contenu avec ID exact:", content.id);
     
-    // Assurer que l'ID exact du contenu est transmis tel quel
+    // Utiliser précisément l'ID du contenu tel qu'il est dans la propriété id
+    // Par exemple "1742598169675-powerpoint_pptx" au lieu d'un UUID
     onDelete(content.id);
   };
 
