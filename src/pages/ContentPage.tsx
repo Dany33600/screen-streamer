@@ -96,9 +96,14 @@ const ContentPage = () => {
   });
 
   const handleAddContent = async () => {
-    const success = await upload.uploadContent();
-    if (success) {
-      setIsAddDialogOpen(false);
+    try {
+      const success = await upload.uploadContent();
+      if (success) {
+        setIsAddDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du contenu:", error);
+      toast.error(`Erreur non gérée: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   };
 

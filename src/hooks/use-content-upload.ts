@@ -55,11 +55,41 @@ export function useContentUpload() {
       return false;
     }
     
+    // Vérifier si l'URL du serveur est accessible
+    try {
+      // Ping rapide pour vérifier si le serveur est accessible
+      const pingResponse = await fetch(`${serverUrl}/api/status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Important: ajouter un timeout pour ne pas bloquer trop longtemps
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!pingResponse.ok) {
+        throw new Error(`Le serveur a répondu avec le statut: ${pingResponse.status}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification du serveur:', error);
+      
+      let errorMessage = 'Impossible de se connecter au serveur API';
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
+      toast.error(`Vérifiez que l'URL du serveur (${serverUrl}) est correcte et que le serveur est démarré.`);
+      return false;
+    }
+    
     setIsUploading(true);
     
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      
+      console.log(`Tentative d'upload vers ${serverUrl}/api/upload`);
       
       const uploadResponse = await fetch(`${serverUrl}/api/upload`, {
         method: 'POST',
@@ -68,7 +98,7 @@ export function useContentUpload() {
       
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json();
-        throw new Error(errorData.message || 'Erreur lors de l\'upload du fichier');
+        throw new Error(errorData.message || `Erreur lors de l'upload du fichier (${uploadResponse.status})`);
       }
       
       const uploadResult = await uploadResponse.json();
@@ -86,8 +116,9 @@ export function useContentUpload() {
         size: fileInfo.size
       });
       
+      // Ajouter le contenu au store
       addContent(
-        selectedFile,
+        contentName,
         contentType, 
         fileInfo.url,
         metadataString
