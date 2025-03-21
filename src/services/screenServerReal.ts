@@ -59,6 +59,8 @@ class ScreenServerRealService {
     try {
       const apiUrl = `${this.apiBaseUrl}/content`;
       
+      console.log(`Sauvegarde des données du serveur pour l'ID: ${serverId} sur ${apiUrl}`);
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -75,9 +77,11 @@ class ScreenServerRealService {
       
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`Erreur HTTP ${response.status} lors de la sauvegarde des données: ${errorText}`);
         throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
       }
       
+      console.log(`Données du serveur sauvegardées avec succès pour l'ID: ${serverId}`);
       return true;
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données du serveur:', error);
@@ -90,22 +94,28 @@ class ScreenServerRealService {
     try {
       const apiUrl = `${this.apiBaseUrl}/content/${serverId}`;
       
+      console.log(`Récupération des données du serveur pour l'ID: ${serverId} depuis ${apiUrl}`);
+      
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
         if (response.status === 404) {
+          console.log(`Aucune donnée trouvée pour le serveur avec l'ID: ${serverId}`);
           return null;
         }
         const errorText = await response.text();
+        console.error(`Erreur HTTP ${response.status} lors de la récupération des données: ${errorText}`);
         throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
       }
       
       const data = await response.json();
+      console.log(`Données récupérées pour le serveur ${serverId}:`, data);
       
       if (data.success && data.content) {
         return data.content;
       }
       
+      console.log(`Données invalides pour le serveur ${serverId}`);
       return null;
     } catch (error) {
       console.error('Erreur lors de la récupération des données du serveur:', error);
@@ -118,16 +128,20 @@ class ScreenServerRealService {
     try {
       const server = this.servers.get(screenId);
       if (server && server.content) {
+        console.log(`Contenu trouvé en mémoire pour l'écran ${screenId}`);
         return server.content;
       }
       
       // Si le serveur n'est pas trouvé en mémoire, essayez de le récupérer depuis l'API
+      console.log(`Contenu non trouvé en mémoire pour l'écran ${screenId}, tentative de récupération depuis l'API`);
       const serverId = screenId; // Utiliser l'ID de l'écran comme ID du serveur
       const serverData = await this.getServerDataById(serverId);
       if (serverData) {
+        console.log(`Contenu récupéré depuis l'API pour l'écran ${screenId}`);
         return serverData.content;
       }
       
+      console.log(`Aucun contenu trouvé pour l'écran ${screenId}`);
       return null;
     } catch (error) {
       console.error(`Erreur lors de la récupération du contenu du serveur pour l'écran ${screenId}:`, error);
@@ -140,6 +154,8 @@ class ScreenServerRealService {
    */
   async startServer(screenId: string, port: number, content?: Content): Promise<boolean> {
     try {
+      console.log(`Tentative de démarrage du serveur pour l'écran ${screenId} sur le port ${port}`);
+      
       // Si un serveur existe déjà, on le réutilise
       if (this.servers.has(screenId)) {
         const existingServer = this.servers.get(screenId)!;
@@ -148,16 +164,18 @@ class ScreenServerRealService {
           return true;
         } else {
           // Supprime l'ancien serveur avant d'en créer un nouveau
+          console.log(`Arrêt de l'ancien serveur pour l'écran ${screenId}`);
           this.stopServer(screenId);
         }
       }
       
       if (!content) {
+        console.error("Aucun contenu n'est assigné à cet écran");
         toast.error("Aucun contenu n'est assigné à cet écran");
         return false;
       }
       
-      console.log(`Démarrage du serveur pour l'écran ${screenId} sur le port ${port}`);
+      console.log(`Contenu à afficher:`, content);
       
       // Générer un identifiant unique pour ce serveur
       const serverId = screenId; // Utiliser l'ID de l'écran directement comme ID du serveur
@@ -167,13 +185,22 @@ class ScreenServerRealService {
       const hostname = baseIpAddress || window.location.hostname; // Obtenir l'IP du serveur actuel
       const serverUrl = `http://${hostname}:${port}`;
       
+      console.log(`URL du serveur: ${serverUrl}`);
+      
       // Générer le HTML pour l'affichage
+      console.log(`Génération du HTML pour le contenu de type ${content.type}`);
       const html = htmlGenerator.generateHtml(content);
+      console.log(`HTML généré (premiers 100 caractères): ${html.substring(0, 100)}...`);
       
       // Sauvegarder les données du serveur sur le serveur
-      await this.saveServerData(serverId, content, html);
+      console.log(`Sauvegarde des données du serveur avec l'ID: ${serverId}`);
+      const saveSuccess = await this.saveServerData(serverId, content, html);
+      if (!saveSuccess) {
+        console.warn(`Impossible de sauvegarder les données du serveur, mais on continue quand même`);
+      }
       
       // Enregistrer le serveur dans notre liste
+      console.log(`Enregistrement du serveur dans la liste interne`);
       this.servers.set(screenId, { 
         id: serverId,
         isRunning: true, 
@@ -184,8 +211,10 @@ class ScreenServerRealService {
       });
       
       // Démarrer un vrai serveur HTTP sur le port spécifié
+      console.log(`Démarrage du serveur HTTP sur le port ${port}`);
       await this.startHttpServer(port, content, html);
       
+      console.log(`Serveur démarré avec succès pour l'écran ${screenId} sur le port ${port}`);
       return true;
     } catch (error) {
       console.error(`Erreur lors du démarrage du serveur pour l'écran ${screenId}:`, error);
@@ -201,6 +230,7 @@ class ScreenServerRealService {
     const apiUrl = `${this.apiBaseUrl}/start-server`;
     
     console.log(`Envoi de la requête à ${apiUrl} pour démarrer le serveur sur le port ${port}`);
+    console.log(`Taille du HTML: ${html.length} caractères`);
     
     try {
       // Envoyer la requête pour démarrer le serveur
@@ -217,6 +247,7 @@ class ScreenServerRealService {
       
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`Erreur HTTP ${response.status} lors du démarrage du serveur: ${errorText}`);
         throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
       }
       

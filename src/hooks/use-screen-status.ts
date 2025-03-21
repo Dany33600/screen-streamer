@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 
 export function useScreenStatus(screen: Screen) {
   const [isOnline, setIsOnline] = useState(screen.status === 'online');
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const contents = useAppStore((state) => state.contents);
   const updateScreen = useAppStore((state) => state.updateScreen);
   
@@ -16,9 +17,15 @@ export function useScreenStatus(screen: Screen) {
     
   // Fonction pour vérifier l'état du serveur
   const checkServerStatus = async () => {
+    if (isCheckingStatus) return; // Éviter les vérifications simultanées
+    
     try {
+      setIsCheckingStatus(true);
+      console.log(`Vérification de l'état du serveur pour l'écran ${screen.name} (${screen.id})`);
+      
       // Vérifier si le serveur est en cours d'exécution
       const isRunning = screenServerService.isServerRunning(screen.id);
+      console.log(`État interne du serveur pour l'écran ${screen.name}: ${isRunning ? 'en ligne' : 'hors ligne'}`);
       
       // Si notre état local diffère de l'état réel du serveur, le mettre à jour
       if (isRunning !== isOnline) {
@@ -29,22 +36,31 @@ export function useScreenStatus(screen: Screen) {
       
       // Si le serveur est censé être en cours d'exécution, vérifier qu'il répond bien
       if (isRunning) {
+        console.log(`Vérification que le serveur répond bien pour l'écran ${screen.name} sur le port ${screen.port}`);
         const isResponding = await screenServerService.checkServerStatus(screen.port);
+        console.log(`Le serveur pour l'écran ${screen.name} répond-il ? ${isResponding ? 'Oui' : 'Non'}`);
+        
         if (!isResponding) {
           console.log(`Le serveur pour l'écran ${screen.name} ne répond pas, tentative de redémarrage...`);
           // Si le serveur ne répond pas mais est censé être en ligne, essayer de le redémarrer
           if (content) {
-            screenServerService.startServer(screen.id, screen.port, content);
+            console.log(`Redémarrage du serveur pour l'écran ${screen.name} avec le contenu ${content.name}`);
+            const success = await screenServerService.startServer(screen.id, screen.port, content);
+            console.log(`Redémarrage du serveur pour l'écran ${screen.name}: ${success ? 'Réussi' : 'Échoué'}`);
+          } else {
+            console.log(`Impossible de redémarrer le serveur pour l'écran ${screen.name}: aucun contenu assigné`);
           }
         }
       }
     } catch (error) {
       console.error("Erreur lors de la vérification de l'état du serveur:", error);
+    } finally {
+      setIsCheckingStatus(false);
     }
   };
   
   // Fonction pour démarrer le serveur
-  const startServer = () => {
+  const startServer = async () => {
     if (!content) {
       toast({
         title: "Attention",
@@ -55,7 +71,7 @@ export function useScreenStatus(screen: Screen) {
     }
     
     console.log(`Démarrage du serveur pour l'écran ${screen.name} sur le port ${screen.port}...`);
-    const success = screenServerService.startServer(screen.id, screen.port, content);
+    const success = await screenServerService.startServer(screen.id, screen.port, content);
     
     if (success) {
       setIsOnline(true);
@@ -65,6 +81,12 @@ export function useScreenStatus(screen: Screen) {
         title: "Serveur démarré",
         description: `L'écran "${screen.name}" est maintenant en ligne sur http://${screen.ipAddress}:${screen.port}`,
         variant: "default",
+      });
+    } else {
+      toast({
+        title: "Erreur de démarrage",
+        description: `Impossible de démarrer le serveur pour l'écran "${screen.name}". Vérifiez la console pour plus de détails.`,
+        variant: "destructive",
       });
     }
     
@@ -85,13 +107,19 @@ export function useScreenStatus(screen: Screen) {
         description: `L'écran "${screen.name}" est maintenant hors ligne`,
         variant: "default",
       });
+    } else {
+      toast({
+        title: "Erreur d'arrêt",
+        description: `Impossible d'arrêter le serveur pour l'écran "${screen.name}". Vérifiez la console pour plus de détails.`,
+        variant: "destructive",
+      });
     }
     
     return success;
   };
   
   // Fonction pour mettre à jour le serveur avec un nouveau contenu
-  const updateServer = () => {
+  const updateServer = async () => {
     if (!content) {
       toast({
         title: "Attention",
@@ -102,7 +130,7 @@ export function useScreenStatus(screen: Screen) {
     }
     
     console.log(`Mise à jour du serveur pour l'écran ${screen.name} avec le contenu ${content.name}...`);
-    const success = screenServerService.updateServer(screen.id, screen.port, content);
+    const success = await screenServerService.updateServer(screen.id, screen.port, content);
     
     if (success) {
       setIsOnline(true);
@@ -113,6 +141,12 @@ export function useScreenStatus(screen: Screen) {
         description: `L'écran "${screen.name}" a été mis à jour avec le nouveau contenu`,
         variant: "default",
       });
+    } else {
+      toast({
+        title: "Erreur de mise à jour",
+        description: `Impossible de mettre à jour le serveur pour l'écran "${screen.name}". Vérifiez la console pour plus de détails.`,
+        variant: "destructive",
+      });
     }
     
     return success;
@@ -120,6 +154,7 @@ export function useScreenStatus(screen: Screen) {
   
   // Vérifier l'état du serveur au chargement du composant
   useEffect(() => {
+    console.log(`Vérification initiale de l'état du serveur pour l'écran ${screen.name}`);
     checkServerStatus();
     
     // Vérifier périodiquement l'état du serveur (toutes les 10 secondes)

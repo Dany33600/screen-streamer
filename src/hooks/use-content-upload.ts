@@ -40,7 +40,9 @@ export const useContentUpload = () => {
       
       // Générer un ID de contenu basé sur l'horodatage et le nom du fichier (pour être plus unique)
       const timestamp = Date.now();
-      const contentId = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      // Supprimer les caractères spéciaux et les espaces du nom de fichier pour éviter les problèmes
+      const safeFileName = file.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const contentId = `${timestamp}-${safeFileName}`;
       console.log(`Génération d'un content ID: ${contentId}`);
       
       // Create form data to send the file
@@ -107,19 +109,52 @@ export const useContentUpload = () => {
       // Vérifier si le contenu a été correctement créé en appelant l'API pour récupérer les détails
       console.log(`Vérification de la création du contenu avec ID: ${contentId}`);
       try {
+        // Attendre un moment pour que le serveur ait le temps de traiter le fichier et créer l'entrée
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         const contentCheckUrl = `${baseUrl}/api/content/${contentId}`;
         console.log(`Requête de vérification du contenu: ${contentCheckUrl}`);
         
         const contentCheckResponse = await fetch(contentCheckUrl);
         if (contentCheckResponse.ok) {
-          console.log("Le contenu a été correctement enregistré sur le serveur");
+          const contentData = await contentCheckResponse.json();
+          console.log("Le contenu a été correctement enregistré sur le serveur:", contentData);
         } else {
-          console.warn("Le contenu n'a pas pu être vérifié, mais l'upload a réussi");
+          console.warn(`Le contenu n'a pas pu être vérifié (${contentCheckResponse.status}), mais l'upload a réussi`);
+          
+          // Si le contenu n'est pas trouvé, essayons d'enregistrer manuellement les métadonnées
+          const contentRegisterUrl = `${baseUrl}/api/content`;
+          console.log(`Tentative d'enregistrement manuel du contenu: ${contentRegisterUrl}`);
+          
+          const contentRegisterResponse = await fetch(contentRegisterUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contentId,
+              content: {
+                id: contentId,
+                name: file.name,
+                type: contentType,
+                url: fullFileUrl,
+                createdAt: Date.now()
+              }
+            }),
+          });
+          
+          if (contentRegisterResponse.ok) {
+            console.log("Le contenu a été manuellement enregistré sur le serveur.");
+          } else {
+            console.warn("Échec de l'enregistrement manuel du contenu.");
+          }
         }
       } catch (checkError) {
         console.warn("Erreur lors de la vérification du contenu:", checkError);
       }
 
+      toast.success(`Fichier "${file.name}" uploadé avec succès`);
+      
       return {
         success: true,
         url: fullFileUrl,
