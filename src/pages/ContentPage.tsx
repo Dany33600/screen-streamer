@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -65,7 +64,7 @@ const ContentPage = () => {
       // Supprimer le contenu localement avant l'appel API pour améliorer la réactivité de l'UI
       removeContent(id);
       
-      // Appel à l'API pour supprimer le contenu - utiliser l'ID exact
+      // Appel à l'API pour supprimer le contenu - utiliser l'ID exact tel qu'il est stocké dans l'objet content
       const response = await fetch(`${formattedApiUrl}/api/content/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
