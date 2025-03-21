@@ -269,7 +269,27 @@ function createApiServer(apiPort = 5000) {
     res.json({
       status: 'ok',
       message: 'Serveur d\'API Screen Streamer en ligne',
-      endpoints: ['/api/status', '/api/start-server', '/api/stop-server', '/api/update-server']
+      endpoints: ['/api/status', '/api/start-server', '/api/stop-server', '/api/update-server', '/api/content', '/api/upload']
+    });
+  });
+  
+  // Route API root pour afficher les endpoints disponibles
+  app.get('/api', (req, res) => {
+    res.json({
+      status: 'ok',
+      message: 'API Screen Streamer',
+      version: '1.0.0',
+      availableEndpoints: [
+        'GET /api/status - État du serveur et liste des serveurs actifs',
+        'GET /api/content - Liste de tous les contenus',
+        'POST /api/upload - Upload d\'un fichier',
+        'POST /api/content - Enregistrer un contenu',
+        'GET /api/content/:contentId - Récupérer un contenu spécifique',
+        'DELETE /api/content/:contentId - Supprimer un contenu',
+        'POST /api/start-server - Démarrer un serveur d\'écran',
+        'POST /api/stop-server - Arrêter un serveur d\'écran',
+        'POST /api/update-server - Mettre à jour un serveur d\'écran'
+      ]
     });
   });
   
