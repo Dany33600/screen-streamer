@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import { Button } from '@/components/ui/button';
@@ -35,6 +34,40 @@ const ConfigPage = () => {
   const [ipValue, setIpValue] = useState(baseIpAddress);
   const [isSaving, setIsSaving] = useState(false);
   
+  const getLocalIpAddress = async () => {
+    try {
+      const RTCPeerConnectionClass = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+      const pc = new RTCPeerConnectionClass({
+        iceServers: [],
+      });
+      
+      pc.createDataChannel('');
+      
+      await pc.createOffer().then(offer => pc.setLocalDescription(offer));
+      
+      return new Promise<string>((resolve) => {
+        pc.onicecandidate = (ice) => {
+          if (ice.candidate) {
+            const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+            const matches = ipRegex.exec(ice.candidate.candidate);
+            
+            if (matches && matches[1]) {
+              const ip = matches[1];
+              if (ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+                resolve(ip);
+                pc.onicecandidate = null;
+                pc.close();
+              }
+            }
+          }
+        };
+      });
+    } catch (error) {
+      console.error('Erreur lors de la détection de l\'adresse IP:', error);
+      return null;
+    }
+  };
+  
   const handleSaveNetworkConfig = () => {
     const newPort = parseInt(portValue, 10);
     
@@ -52,7 +85,6 @@ const ConfigPage = () => {
     
     setIsSaving(true);
     
-    // Simuler un délai pour l'effet visuel
     setTimeout(() => {
       setBasePort(newPort);
       setBaseIpAddress(ipValue);
@@ -61,16 +93,24 @@ const ConfigPage = () => {
     }, 500);
   };
   
-  const detectNetworkSettings = () => {
-    // Simulation de détection réseau
-    // Dans une application réelle, on utiliserait une API native
+  const detectNetworkSettings = async () => {
     setIsSaving(true);
     
-    setTimeout(() => {
-      setIpValue('192.168.1.100');
+    try {
+      const detectedIp = await getLocalIpAddress();
+      
+      if (detectedIp) {
+        setIpValue(detectedIp);
+        toast.success('Adresse IP locale détectée: ' + detectedIp);
+      } else {
+        toast.warning('Impossible de détecter l\'adresse IP automatiquement');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error('Erreur lors de la détection de l\'adresse IP');
+    } finally {
       setIsSaving(false);
-      toast.success('Paramètres réseau détectés');
-    }, 1000);
+    }
   };
 
   return (
