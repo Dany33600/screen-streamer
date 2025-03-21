@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import ScreenCard from '@/components/screens/ScreenCard';
@@ -20,10 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Screen, Content } from '@/types';
 import { PlusCircle, MonitorPlay, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { screenServerService } from '@/services/screenServerMock';
+import { screenServerService } from '@/services/screenServerReal';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
@@ -39,9 +38,9 @@ const ScreensPage = () => {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [currentScreen, setCurrentScreen] = useState<Screen | null>(null);
+  const [currentScreen, setCurrentScreen] = useState(null);
   const [newScreenName, setNewScreenName] = useState('');
-  const [selectedContentId, setSelectedContentId] = useState<string>('none');
+  const [selectedContentId, setSelectedContentId] = useState('none');
   
   const handleAddScreen = () => {
     if (newScreenName.trim() === '') {
@@ -79,13 +78,13 @@ const ScreensPage = () => {
     });
   };
   
-  const handleEditScreen = (screen: Screen) => {
+  const handleEditScreen = (screen) => {
     setCurrentScreen(screen);
     setNewScreenName(screen.name);
     setIsEditDialogOpen(true);
   };
   
-  const handleDeleteScreen = (id: string) => {
+  const handleDeleteScreen = (id) => {
     screenServerService.stopServer(id);
     removeScreen(id);
     toast({
@@ -113,7 +112,7 @@ const ScreensPage = () => {
     });
   };
   
-  const handleOpenAssignDialog = (screen: Screen) => {
+  const handleOpenAssignDialog = (screen) => {
     setCurrentScreen(screen);
     setSelectedContentId(screen.contentId || 'none');
     setIsAssignDialogOpen(true);

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Screen, Content } from '@/types';
 import { useAppStore } from '@/store';
@@ -26,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { useScreenStatus } from '@/hooks/use-screen-status';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { screenServerService } from '@/services/screenServerMock';
+import { screenServerService } from '@/services/screenServerReal';
 
 interface ScreenCardProps {
   screen: Screen;
@@ -210,7 +209,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         <Alert className="mt-3 py-2 text-xs">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Mode simulation: cette application simule le serveur
+            Serveur web actif: l'application exécute un serveur web
           </AlertDescription>
         </Alert>
       </CardContent>
