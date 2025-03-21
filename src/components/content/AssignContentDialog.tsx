@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -20,10 +20,11 @@ import {
 import { Content, Screen } from '@/types';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { screenServerService } from '@/services/screenServerReal';
 import DisplayOptionsDialog from '@/components/screens/DisplayOptionsDialog';
+import { useQuery } from '@tanstack/react-query';
 
 interface AssignContentDialogProps {
   open: boolean;
@@ -47,9 +48,67 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
   const getScreenById = (id: string) => screens.find(screen => screen.id === id);
   const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false);
   const [pendingScreenId, setPendingScreenId] = useState<string | null>(null);
+  const [serverContents, setServerContents] = useState<Content[]>([]);
+  const [selectedContentId, setSelectedContentId] = useState<string>('none');
+
+  // Récupérer la liste des contenus depuis le serveur
+  const { data: serverContentData, isLoading: isLoadingContents, error: contentsError } = useQuery({
+    queryKey: ['contents'],
+    queryFn: async () => {
+      if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
+      
+      const response = await fetch(`${apiUrl}/api/content`);
+      if (!response.ok) {
+        throw new Error(`Erreur lors de la récupération des contenus: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.success ? data.contentList : [];
+    },
+    enabled: !!apiUrl && open,
+  });
+
+  // Mettre à jour les contenus du serveur quand les données sont chargées
+  useEffect(() => {
+    if (serverContentData) {
+      setServerContents(serverContentData);
+      
+      // Si un contenu a été sélectionné, on vérifie qu'il existe toujours dans la liste
+      if (content && selectedContentId !== 'none') {
+        const contentExists = serverContentData.some(c => c.id === selectedContentId);
+        if (!contentExists) {
+          setSelectedContentId('none');
+        }
+      }
+    }
+  }, [serverContentData, content, selectedContentId]);
+
+  // Initialiser le contenu sélectionné lors de l'ouverture du dialogue
+  useEffect(() => {
+    if (open && content) {
+      setSelectedContentId(content.id);
+    } else if (open) {
+      setSelectedContentId('none');
+    }
+  }, [open, content]);
 
   const handleAssignContent = async () => {
-    if (!content || !selectedScreenId) return;
+    if (!selectedScreenId) return;
+    
+    // Si aucun contenu n'est sélectionné, on désassigne le contenu de l'écran
+    if (selectedContentId === 'none') {
+      assignContentToScreen(selectedScreenId, undefined);
+      onOpenChange(false);
+      toast.success("Contenu retiré de l'écran avec succès");
+      return;
+    }
+    
+    // Récupérer le contenu sélectionné
+    const selectedContent = serverContents.find(c => c.id === selectedContentId);
+    if (!selectedContent) {
+      toast.error("Le contenu sélectionné n'existe pas");
+      return;
+    }
     
     const screen = getScreenById(selectedScreenId);
     if (!screen) return;
@@ -58,33 +117,37 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
     const previousContentId = screen.contentId;
     
     // Assigner le nouveau contenu
-    assignContentToScreen(selectedScreenId, content.id);
+    assignContentToScreen(selectedScreenId, selectedContent.id);
     
     // Vérifier si le serveur est en cours d'exécution
     const isServerRunning = screenServerService.isServerRunning(selectedScreenId);
     
     // Si le contenu a changé et que le serveur est en cours d'exécution
-    if (isServerRunning && previousContentId !== content.id) {
+    if (isServerRunning && previousContentId !== selectedContent.id) {
       // Demander à l'utilisateur de configurer les options d'affichage
       setPendingScreenId(selectedScreenId);
       setIsDisplayOptionsOpen(true);
     } else {
       // Fermer le dialogue d'assignation
       onOpenChange(false);
-      toast.success('Contenu assigné à l\'écran avec succès');
+      toast.success("Contenu assigné à l'écran avec succès");
     }
   };
   
   const handleConfirmDisplayOptions = async (displayOptions: any) => {
-    if (!pendingScreenId || !content) return;
+    if (!pendingScreenId) return;
+    
+    // Récupérer le contenu sélectionné
+    const selectedContent = serverContents.find(c => c.id === selectedContentId);
+    if (!selectedContent) return;
     
     const screen = getScreenById(pendingScreenId);
     if (!screen) return;
     
-    console.log(`Mise à jour du serveur pour l'écran ${screen.name} avec le nouveau contenu ${content.name}`);
+    console.log(`Mise à jour du serveur pour l'écran ${screen.name} avec le nouveau contenu ${selectedContent.name}`);
     console.log(`Options d'affichage:`, displayOptions);
     
-    const success = await screenServerService.updateServer(pendingScreenId, screen.port, content, displayOptions);
+    const success = await screenServerService.updateServer(pendingScreenId, screen.port, selectedContent, displayOptions);
     
     if (success) {
       toast.success(`Le serveur pour l'écran "${screen.name}" a été mis à jour avec le nouveau contenu.`);
@@ -107,7 +170,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
           <DialogHeader>
             <DialogTitle>Assigner à un écran</DialogTitle>
             <DialogDescription>
-              Choisissez l'écran sur lequel diffuser ce contenu
+              Choisissez le contenu à diffuser sur l'écran
             </DialogDescription>
           </DialogHeader>
           
@@ -145,6 +208,41 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="content">Contenu</Label>
+              {isLoadingContents ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Chargement des contenus...
+                </div>
+              ) : contentsError ? (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  <AlertDescription>
+                    Erreur lors du chargement des contenus. Veuillez vérifier la connexion au serveur.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select 
+                  value={selectedContentId} 
+                  onValueChange={setSelectedContentId}
+                  disabled={noScreens || serverNotConfigured}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un contenu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun contenu</SelectItem>
+                    {serverContents.map((content) => (
+                      <SelectItem key={content.id} value={content.id}>
+                        {content.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -152,7 +250,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
             </Button>
             <Button 
               onClick={handleAssignContent} 
-              disabled={!selectedScreenId || noScreens || serverNotConfigured}
+              disabled={!selectedScreenId || noScreens || serverNotConfigured || isLoadingContents}
             >
               Assigner
             </Button>
@@ -160,11 +258,11 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
         </DialogContent>
       </Dialog>
       
-      {content && (
+      {selectedContentId !== 'none' && (
         <DisplayOptionsDialog
           open={isDisplayOptionsOpen}
           onOpenChange={setIsDisplayOptionsOpen}
-          content={content}
+          content={serverContents.find(c => c.id === selectedContentId) || null}
           onConfirm={handleConfirmDisplayOptions}
           initialOptions={pendingScreenId ? screenServerService.getServerInstance(pendingScreenId)?.displayOptions : undefined}
         />

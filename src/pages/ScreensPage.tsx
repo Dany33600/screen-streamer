@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import ScreenCard from '@/components/screens/ScreenCard';
@@ -21,18 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PlusCircle, MonitorPlay, Search } from 'lucide-react';
+import { PlusCircle, MonitorPlay, Search, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { screenServerService } from '@/services/screenServerReal';
+import { useQuery } from '@tanstack/react-query';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Content } from '@/types';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
-  const contents = useAppStore((state) => state.contents);
   const addScreen = useAppStore((state) => state.addScreen);
   const updateScreen = useAppStore((state) => state.updateScreen);
   const removeScreen = useAppStore((state) => state.removeScreen);
   const assignContentToScreen = useAppStore((state) => state.assignContentToScreen);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
+  const apiUrl = useAppStore((state) => state.apiUrl);
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -42,6 +45,31 @@ const ScreensPage = () => {
   const [currentScreen, setCurrentScreen] = useState(null);
   const [newScreenName, setNewScreenName] = useState('');
   const [selectedContentId, setSelectedContentId] = useState('none');
+  const [serverContents, setServerContents] = useState<Content[]>([]);
+  
+  // Récupérer la liste des contenus depuis le serveur
+  const { data: serverContentData, isLoading: isLoadingContents, error: contentsError } = useQuery({
+    queryKey: ['contents'],
+    queryFn: async () => {
+      if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
+      
+      const response = await fetch(`${apiUrl}/api/content`);
+      if (!response.ok) {
+        throw new Error(`Erreur lors de la récupération des contenus: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.success ? data.contentList : [];
+    },
+    enabled: !!apiUrl,
+  });
+
+  // Mettre à jour les contenus du serveur quand les données sont chargées
+  useEffect(() => {
+    if (serverContentData) {
+      setServerContents(serverContentData);
+    }
+  }, [serverContentData]);
   
   const handleAddScreen = () => {
     if (newScreenName.trim() === '') {
@@ -109,7 +137,7 @@ const ScreensPage = () => {
     if (isServerRunning && previousContentId !== contentId) {
       if (contentId) {
         // Récupérer le nouveau contenu
-        const content = contents.find(c => c.id === contentId);
+        const content = serverContents.find(c => c.id === contentId);
         
         if (content) {
           // Redémarrer le serveur avec le nouveau contenu
@@ -298,29 +326,48 @@ const ScreensPage = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="content">Contenu</Label>
-              <Select 
-                value={selectedContentId} 
-                onValueChange={setSelectedContentId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un contenu" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucun contenu</SelectItem>
-                  {contents.map((content) => (
-                    <SelectItem key={content.id} value={content.id}>
-                      {content.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isLoadingContents ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Chargement des contenus...
+                </div>
+              ) : contentsError ? (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  <AlertDescription>
+                    Erreur lors du chargement des contenus. Veuillez vérifier la connexion au serveur.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select 
+                  value={selectedContentId} 
+                  onValueChange={setSelectedContentId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un contenu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun contenu</SelectItem>
+                    {serverContents.map((content) => (
+                      <SelectItem key={content.id} value={content.id}>
+                        {content.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleAssignContent}>Assigner</Button>
+            <Button 
+              onClick={handleAssignContent}
+              disabled={isLoadingContents}
+            >
+              Assigner
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
