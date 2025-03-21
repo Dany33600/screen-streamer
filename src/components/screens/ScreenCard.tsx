@@ -9,7 +9,8 @@ import {
   Power,
   Film,
   MoreVertical,
-  ExternalLink
+  ExternalLink,
+  Info
 } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { useScreenStatus } from '@/hooks/use-screen-status';
 import { toast } from '@/hooks/use-toast';
@@ -56,10 +58,12 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
           description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
         });
         
-        // Attendre un peu que le serveur se lance avant d'ouvrir l'URL
-        setTimeout(() => {
-          window.open(url, '_blank');
-        }, 500);
+        // Au lieu d'ouvrir l'URL, montrer une alerte
+        toast({
+          title: "Mode Simulation",
+          description: "Cette application utilise un serveur simulé. Dans un environnement de production, un vrai serveur serait utilisé.",
+          variant: "default",
+        });
       } else {
         toast({
           title: "Erreur de démarrage",
@@ -68,7 +72,12 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         });
       }
     } else {
-      window.open(url, '_blank');
+      // Au lieu d'ouvrir l'URL, montrer une alerte
+      toast({
+        title: "Mode Simulation",
+        description: "Cette application utilise un serveur simulé. Dans un environnement de production, un vrai serveur serait utilisé.",
+        variant: "default",
+      });
     }
   };
   
@@ -161,7 +170,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleOpenScreen}>
                 <ExternalLink size={16} className="mr-2" />
-                Ouvrir dans le navigateur
+                Simuler l'écran
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(screen.id)}
@@ -187,6 +196,13 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
             </p>
           </div>
         )}
+        
+        <Alert className="mt-3 py-2 text-xs">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Mode simulation: cette application simule le serveur
+          </AlertDescription>
+        </Alert>
       </CardContent>
       
       <CardFooter className="px-4 py-3 bg-muted/30 border-t flex justify-between">

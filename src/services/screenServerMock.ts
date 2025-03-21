@@ -31,11 +31,6 @@ class ScreenServerMockService {
         content 
       });
       
-      toast({
-        title: "Serveur démarré",
-        description: `Le serveur pour l'écran est maintenant en ligne sur le port ${port}`,
-      });
-      
       return true;
     } catch (error) {
       console.error(`Erreur lors du démarrage du serveur pour l'écran ${screenId}:`, error);
@@ -55,11 +50,6 @@ class ScreenServerMockService {
       
       console.log(`Arrêt du serveur pour l'écran ${screenId}`);
       this.servers.delete(screenId);
-      
-      toast({
-        title: "Serveur arrêté",
-        description: "Le serveur pour l'écran a été arrêté avec succès",
-      });
       
       return true;
     } catch (error) {
