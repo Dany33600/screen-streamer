@@ -44,11 +44,11 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
     (content) => content.id === screen.contentId
   );
   
-  const { isOnline, startServer, stopServer, updateServer } = useScreenStatus(screen);
+  const { isOnline, startServer, stopServer } = useScreenStatus(screen);
 
   const handleOpenScreen = () => {
-    const url = `http://${screen.ipAddress}:${screen.port}`;
-    
+    // Dans un environnement de navigateur, on ne peut pas ouvrir un vrai serveur local
+    // On va donc rediriger vers la page de prévisualisation
     if (!isOnline) {
       const success = startServer();
       if (success) {
@@ -57,8 +57,8 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
           description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
         });
         
-        // Ouvrir l'URL dans une nouvelle fenêtre
-        window.open(url, '_blank');
+        // Rediriger vers la page de prévisualisation
+        window.open(`/preview?screenId=${screen.id}`, '_blank');
       } else {
         toast({
           title: "Erreur de démarrage",
@@ -67,8 +67,8 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         });
       }
     } else {
-      // Ouvrir l'URL dans une nouvelle fenêtre
-      window.open(url, '_blank');
+      // Rediriger vers la page de prévisualisation
+      window.open(`/preview?screenId=${screen.id}`, '_blank');
     }
   };
   
@@ -191,7 +191,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         <Alert className="mt-3 py-2 text-xs">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            URL: http://{screen.ipAddress}:{screen.port}
+            Prévisualiser: <span className="font-mono">/preview?screenId={screen.id}</span>
           </AlertDescription>
         </Alert>
       </CardContent>

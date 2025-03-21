@@ -11,6 +11,9 @@ import ConfigPage from "./pages/ConfigPage";
 import PreviewPage from "./pages/PreviewPage";
 import NotFound from "./pages/NotFound";
 
+// Import the browser-compatible server service
+import "./server/screenServerBrowser";
+
 // Create a new QueryClient instance with default options
 const queryClient = new QueryClient({
   defaultOptions: {
