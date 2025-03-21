@@ -76,7 +76,7 @@ function stopServer(port) {
     
     return true;
   } catch (error) {
-    console.error(`Erreur lors de l'arrêt du serveur sur le port ${port}:`, error);
+    console.error(`Erreur lors de l'arrêt du serveur pour le port ${port}:`, error);
     return false;
   }
 }
@@ -106,6 +106,15 @@ function createApiServer(apiPort = 5000) {
 
   // Middleware pour gérer les erreurs CORS préflight
   app.options('*', cors());
+  
+  // Route racine pour montrer que le serveur fonctionne
+  app.get('/', (req, res) => {
+    res.json({
+      status: 'ok',
+      message: 'Serveur d\'API Screen Streamer en ligne',
+      endpoints: ['/api/status', '/api/start-server', '/api/stop-server', '/api/update-server']
+    });
+  });
   
   // Route pour démarrer un serveur
   app.post('/api/start-server', (req, res) => {
@@ -181,9 +190,49 @@ function createApiServer(apiPort = 5000) {
     });
   });
   
+  // Middleware pour gérer les erreurs 404
+  app.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      message: `Route non trouvée: ${req.method} ${req.url}`,
+      availableEndpoints: [
+        'GET /',
+        'GET /api/status',
+        'POST /api/start-server',
+        'POST /api/stop-server',
+        'POST /api/update-server'
+      ]
+    });
+  });
+
+  // Middleware pour gérer les erreurs internes
+  app.use((err, req, res, next) => {
+    console.error('Erreur interne du serveur:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur',
+      error: process.env.NODE_ENV === 'production' ? undefined : err.message
+    });
+  });
+  
   // Démarrer le serveur API
   const server = app.listen(apiPort, '0.0.0.0', () => {
-    console.log(`Serveur API démarré sur le port ${apiPort} (0.0.0.0)`);
+    console.log(`Serveur API démarré sur le port ${apiPort} (accessible sur toutes les interfaces réseau)`);
+    console.log(`URL du serveur API: http://localhost:${apiPort}`);
+    console.log(`Adresses IP accessibles:`);
+    
+    // Afficher toutes les adresses IP du système
+    const { networkInterfaces } = require('os');
+    const nets = networkInterfaces();
+    
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        // Ignorer les adresses non IPv4 et localhost
+        if (net.family === 'IPv4' && !net.internal) {
+          console.log(`  http://${net.address}:${apiPort}`);
+        }
+      }
+    }
   });
   
   return server;
