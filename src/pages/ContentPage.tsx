@@ -22,8 +22,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Content, Screen, ContentType } from '@/types';
-import { PlusCircle, FileUp, Search, Film, X } from 'lucide-react';
+import { PlusCircle, FileUp, Search, Film, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useContentUpload } from '@/hooks/use-content-upload';
 
 const ContentPage = () => {
   const contents = useAppStore((state) => state.contents);
@@ -47,6 +48,7 @@ const ContentPage = () => {
   const [contentType, setContentType] = useState<ContentType>('image');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadContent, isLoading } = useContentUpload();
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -73,7 +75,7 @@ const ContentPage = () => {
     }
   };
   
-  const handleAddContent = () => {
+  const handleAddContent = async () => {
     if (!selectedFile) {
       toast.error('Veuillez sélectionner un fichier');
       return;
@@ -84,10 +86,23 @@ const ContentPage = () => {
       return;
     }
     
-    addContent(selectedFile, contentType, selectedFileURL);
-    resetContentForm();
-    setIsAddDialogOpen(false);
-    toast.success(`Contenu "${contentName}" ajouté avec succès`);
+    try {
+      const result = await uploadContent(selectedFile, contentType);
+      
+      if (!result.success || !result.url) {
+        toast.error(`Erreur lors de l'upload: ${result.error}`);
+        return;
+      }
+      
+      // Add to store with the URL from server
+      addContent(selectedFile, contentType, result.url);
+      resetContentForm();
+      setIsAddDialogOpen(false);
+      toast.success(`Contenu "${contentName}" ajouté avec succès`);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du contenu:', error);
+      toast.error('Une erreur est survenue lors de l\'ajout du contenu');
+    }
   };
   
   const handleUpdateContent = () => {
@@ -348,7 +363,19 @@ const ContentPage = () => {
             }}>
               Annuler
             </Button>
-            <Button onClick={handleAddContent} disabled={!selectedFile}>Importer</Button>
+            <Button 
+              onClick={handleAddContent} 
+              disabled={!selectedFile || isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Importation en cours...
+                </>
+              ) : (
+                'Importer'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
