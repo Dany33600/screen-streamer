@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Screen, Content } from '@/types';
 import { useAppStore } from '@/store';
 import { 
@@ -10,7 +10,8 @@ import {
   Film,
   MoreVertical,
   ExternalLink,
-  Info
+  Info,
+  Settings
 } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ import { useScreenStatus } from '@/hooks/use-screen-status';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { screenServerService } from '@/services/screenServerReal';
+import DisplayOptionsDialog from './DisplayOptionsDialog';
 
 interface ScreenCardProps {
   screen: Screen;
@@ -43,12 +45,19 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
 }) => {
   const contents = useAppStore((state) => state.contents);
   const navigate = useNavigate();
+  const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false);
   
   const assignedContent = contents.find(
     (content) => content.id === screen.contentId
   );
   
   const { isOnline, startServer, stopServer, updateServer, content } = useScreenStatus(screen);
+
+  // Récupérer les options d'affichage actuelles depuis le service
+  const getCurrentDisplayOptions = () => {
+    const serverInstance = screenServerService.getServerInstance(screen.id);
+    return serverInstance?.displayOptions || {};
+  };
 
   const handleOpenScreen = () => {
     if (!content) {
@@ -61,28 +70,8 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
     }
     
     if (!isOnline) {
-      const success = startServer();
-      if (success) {
-        toast({
-          title: "Serveur démarré",
-          description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
-        });
-        
-        // Attendre un peu que le serveur "démarre"
-        setTimeout(() => {
-          // Ouvrir l'URL du serveur dans un nouvel onglet
-          const serverUrl = screenServerService.getServerUrl(screen.id);
-          if (serverUrl) {
-            window.open(serverUrl, '_blank');
-          }
-        }, 1000);
-      } else {
-        toast({
-          title: "Erreur de démarrage",
-          description: `Impossible de démarrer le serveur pour l'écran ${screen.name}.`,
-          variant: "destructive",
-        });
-      }
+      // Ouvrir le dialogue des options d'affichage avant de démarrer
+      setIsDisplayOptionsOpen(true);
     } else {
       // Si le serveur est déjà en ligne, ouvrir directement l'URL
       const serverUrl = screenServerService.getServerUrl(screen.id);
@@ -117,19 +106,43 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         return;
       }
       
-      const success = startServer();
-      if (success) {
-        toast({
-          title: "Serveur démarré",
-          description: `Le serveur pour l'écran ${screen.name} est maintenant accessible sur http://${screen.ipAddress}:${screen.port}`,
-        });
-      } else {
-        toast({
-          title: "Erreur de démarrage",
-          description: `Impossible de démarrer le serveur pour l'écran ${screen.name}.`,
-          variant: "destructive",
-        });
-      }
+      // Ouvrir le dialogue des options d'affichage avant de démarrer
+      setIsDisplayOptionsOpen(true);
+    }
+  };
+  
+  const handleConfirmDisplayOptions = async (displayOptions: any) => {
+    console.log("Options d'affichage configurées:", displayOptions);
+    
+    // Adapter les options selon le type de contenu
+    const adaptedOptions: any = { ...displayOptions };
+    
+    // Pour PowerPoint, renommer powerPointLoop en loop pour la cohérence
+    if (content?.type === 'powerpoint' && 'powerPointLoop' in adaptedOptions) {
+      adaptedOptions.loop = adaptedOptions.powerPointLoop;
+      delete adaptedOptions.powerPointLoop;
+    }
+    
+    const success = await startServer(adaptedOptions);
+    if (success) {
+      toast({
+        title: "Serveur démarré",
+        description: `Le serveur pour l'écran ${screen.name} est maintenant accessible sur http://${screen.ipAddress}:${screen.port}`,
+      });
+      
+      // Attendre un peu que le serveur "démarre" avant d'ouvrir l'URL
+      setTimeout(() => {
+        const serverUrl = screenServerService.getServerUrl(screen.id);
+        if (serverUrl) {
+          window.open(serverUrl, '_blank');
+        }
+      }, 1000);
+    } else {
+      toast({
+        title: "Erreur de démarrage",
+        description: `Impossible de démarrer le serveur pour l'écran ${screen.name}.`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -201,6 +214,12 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
                 <ExternalLink size={16} className="mr-2" />
                 Ouvrir dans le navigateur
               </DropdownMenuItem>
+              {isOnline && content && (
+                <DropdownMenuItem onClick={() => setIsDisplayOptionsOpen(true)}>
+                  <Settings size={16} className="mr-2" />
+                  Options d'affichage
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem 
                 onClick={() => onDelete(screen.id)}
                 className="text-destructive"
@@ -258,6 +277,14 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
           {isOnline ? 'Arrêter' : 'Démarrer'}
         </Button>
       </CardFooter>
+      
+      <DisplayOptionsDialog 
+        open={isDisplayOptionsOpen} 
+        onOpenChange={setIsDisplayOptionsOpen}
+        content={content}
+        onConfirm={handleConfirmDisplayOptions}
+        initialOptions={getCurrentDisplayOptions()}
+      />
     </Card>
   );
 };

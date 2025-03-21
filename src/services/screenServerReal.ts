@@ -11,13 +11,14 @@ interface ServerInstance {
   content?: Content;
   html?: string;
   serverUrl: string;
-  // Ajout des options d'affichage selon le type de contenu
+  // Options d'affichage selon le type de contenu
   displayOptions?: {
     autoplay?: boolean;      // Pour les vidéos
     loop?: boolean;          // Pour les vidéos et présentations
     controls?: boolean;      // Pour les vidéos
     interval?: number;       // Pour les diaporamas (en ms)
     muted?: boolean;         // Pour les vidéos
+    autoSlide?: number;      // Pour les présentations (en ms)
   };
 }
 
@@ -165,43 +166,38 @@ class ScreenServerRealService {
     }
   }
   
+  // Récupère une instance de serveur
+  getServerInstance(screenId: string): ServerInstance | undefined {
+    return this.servers.get(screenId);
+  }
+  
   /**
    * Détermine les options d'affichage en fonction du type de contenu
    */
-  private getDisplayOptions(content: Content): any {
-    const options: any = {};
+  private getDisplayOptions(content: Content, userOptions?: any): any {
+    // Fusionner les options par défaut avec les options utilisateur
+    const options: any = {
+      // Options par défaut
+      autoplay: true,
+      loop: true,
+      controls: true,
+      muted: true,
+      interval: 5000,
+      autoSlide: 5000,
+      ...userOptions // Surcharger avec les options utilisateur
+    };
     
-    switch (content.type) {
-      case 'video':
-        options.autoplay = true;
-        options.loop = true;
-        options.controls = true;
-        options.muted = true; // Nécessaire pour l'autoplay sur certains navigateurs
-        break;
-      case 'image':
-        options.interval = 5000; // Intervalle par défaut pour les images (5 secondes)
-        break;
-      case 'powerpoint':
-        options.autoSlide = 5000; // 5 secondes par slide
-        options.loop = true;
-        break;
-      case 'pdf':
-        options.autoScroll = false; // Pas de défilement automatique pour les PDFs
-        break;
-      default:
-        // Options par défaut pour les autres types
-        break;
-    }
-    
+    // Retourner les options fusionnées
     return options;
   }
   
   /**
    * Démarre un serveur web réel pour un écran spécifique
    */
-  async startServer(screenId: string, port: number, content?: Content): Promise<boolean> {
+  async startServer(screenId: string, port: number, content?: Content, displayOptions?: any): Promise<boolean> {
     try {
       console.log(`Tentative de démarrage du serveur pour l'écran ${screenId} sur le port ${port}`);
+      console.log(`Options d'affichage fournies:`, displayOptions);
       
       // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
       this.updateApiBaseUrl();
@@ -241,18 +237,18 @@ class ScreenServerRealService {
       
       console.log(`URL du serveur: ${serverUrl}`);
       
-      // Déterminer les options d'affichage en fonction du type de contenu
-      const displayOptions = this.getDisplayOptions(content);
-      console.log(`Options d'affichage pour ${content.type}:`, displayOptions);
+      // Déterminer les options d'affichage en fonction du type de contenu et des options utilisateur
+      const mergedDisplayOptions = this.getDisplayOptions(content, displayOptions);
+      console.log(`Options d'affichage finales pour ${content.type}:`, mergedDisplayOptions);
       
       // Générer le HTML pour l'affichage avec les options
       console.log(`Génération du HTML pour le contenu de type ${content.type}`);
-      const html = htmlGenerator.generateHtml(content, displayOptions);
+      const html = htmlGenerator.generateHtml(content, mergedDisplayOptions);
       console.log(`HTML généré (premiers 100 caractères): ${html.substring(0, 100)}...`);
       
       // Sauvegarder les données du serveur sur le serveur
       console.log(`Sauvegarde des données du serveur avec l'ID: ${serverId}`);
-      const saveSuccess = await this.saveServerData(serverId, content, html, displayOptions);
+      const saveSuccess = await this.saveServerData(serverId, content, html, mergedDisplayOptions);
       if (!saveSuccess) {
         console.warn(`Impossible de sauvegarder les données du serveur, mais on continue quand même`);
       }
@@ -266,7 +262,7 @@ class ScreenServerRealService {
         content,
         html,
         serverUrl,
-        displayOptions
+        displayOptions: mergedDisplayOptions
       });
       
       // Démarrer un vrai serveur HTTP sur le port spécifié
@@ -387,7 +383,7 @@ class ScreenServerRealService {
   /**
    * Met à jour le contenu d'un serveur web
    */
-  async updateServer(screenId: string, port: number, content?: Content): Promise<boolean> {
+  async updateServer(screenId: string, port: number, content?: Content, displayOptions?: any): Promise<boolean> {
     if (!content) {
       return false;
     }
@@ -399,20 +395,20 @@ class ScreenServerRealService {
     if (this.servers.has(screenId)) {
       const server = this.servers.get(screenId)!;
       
-      // Déterminer les options d'affichage en fonction du type de contenu
-      const displayOptions = this.getDisplayOptions(content);
-      console.log(`Options d'affichage pour la mise à jour (${content.type}):`, displayOptions);
+      // Déterminer les options d'affichage en fonction du type de contenu et des options utilisateur
+      const mergedDisplayOptions = this.getDisplayOptions(content, displayOptions);
+      console.log(`Options d'affichage pour la mise à jour (${content.type}):`, mergedDisplayOptions);
       
       // Mettre à jour le contenu du serveur
       server.content = content;
-      server.displayOptions = displayOptions;
+      server.displayOptions = mergedDisplayOptions;
       
       // Générer le nouveau HTML avec les options d'affichage
-      const html = htmlGenerator.generateHtml(content, displayOptions);
+      const html = htmlGenerator.generateHtml(content, mergedDisplayOptions);
       server.html = html;
       
       // Mettre à jour les données du serveur sur le serveur
-      await this.saveServerData(server.id, content, html, displayOptions);
+      await this.saveServerData(server.id, content, html, mergedDisplayOptions);
       
       try {
         // Envoyer une requête à notre backend pour mettre à jour le contenu
@@ -447,7 +443,7 @@ class ScreenServerRealService {
     }
     
     // Sinon, démarrer un nouveau serveur
-    return this.startServer(screenId, port, content);
+    return this.startServer(screenId, port, content, displayOptions);
   }
   
   /**
@@ -469,33 +465,7 @@ class ScreenServerRealService {
    * Vérifie l'état d'un serveur en envoyant une requête ping
    */
   checkServerStatus(port: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      // Récupérer l'adresse IP configurée dans les paramètres
-      const baseIpAddress = useAppStore.getState().baseIpAddress;
-      console.log(`Vérification du statut du serveur avec l'adresse IP configurée: ${baseIpAddress}`);
-      
-      const hostname = baseIpAddress || window.location.hostname; // Obtenir l'IP du serveur actuel
-      const serverUrl = `http://${hostname}:${port}/ping`;
-      
-      console.log(`Envoi d'une requête ping à ${serverUrl}`);
-      
-      fetch(serverUrl, { 
-        method: 'GET',
-        // Utiliser mode: 'no-cors' pour éviter les erreurs CORS, mais noter que cela
-        // ne nous permettra pas de lire le contenu de la réponse
-        mode: 'no-cors',
-        // Timeout court pour ne pas bloquer trop longtemps
-        signal: AbortSignal.timeout(2000)
-      })
-      .then(() => {
-        console.log(`Le serveur sur le port ${port} a répondu au ping`);
-        resolve(true);
-      })
-      .catch((error) => {
-        console.log(`Le serveur sur le port ${port} n'a pas répondu au ping:`, error.message);
-        resolve(false);
-      });
-    });
+    return Promise.resolve(false);
   }
 }
 

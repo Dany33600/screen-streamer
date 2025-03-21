@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Screen, Content } from '@/types';
 import { screenServerService } from '@/services/screenServerReal';
@@ -69,7 +68,7 @@ export function useScreenStatus(screen: Screen) {
   };
   
   // Fonction pour démarrer le serveur
-  const startServer = async () => {
+  const startServer = async (displayOptions?: any) => {
     if (!content) {
       toast({
         title: "Attention",
@@ -86,11 +85,12 @@ export function useScreenStatus(screen: Screen) {
     }
     
     console.log(`Démarrage du serveur pour l'écran ${screen.name} sur le port ${screen.port}...`);
+    console.log(`Options d'affichage:`, displayOptions);
     
     // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
     screenServerService.updateApiBaseUrl();
     
-    const success = await screenServerService.startServer(screen.id, screen.port, content);
+    const success = await screenServerService.startServer(screen.id, screen.port, content, displayOptions);
     
     if (success) {
       setIsOnline(true);
@@ -138,7 +138,7 @@ export function useScreenStatus(screen: Screen) {
   };
   
   // Fonction pour mettre à jour le serveur avec un nouveau contenu
-  const updateServer = async () => {
+  const updateServer = async (displayOptions?: any) => {
     if (!content) {
       toast({
         title: "Attention",
@@ -158,7 +158,9 @@ export function useScreenStatus(screen: Screen) {
     }
     
     console.log(`Mise à jour du serveur pour l'écran ${screen.name} avec le contenu ${content.name}...`);
-    const success = await screenServerService.updateServer(screen.id, screen.port, content);
+    console.log(`Options d'affichage:`, displayOptions);
+    
+    const success = await screenServerService.updateServer(screen.id, screen.port, content, displayOptions);
     
     if (success) {
       setIsOnline(true);
