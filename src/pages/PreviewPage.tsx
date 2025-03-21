@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -25,18 +24,33 @@ const PreviewPage = () => {
     const contentId = searchParams.get('content');
     const serverIdParam = searchParams.get('server');
     
+    const fetchServerData = async (serverId: string) => {
+      try {
+        // Récupérer les données du serveur à partir du localStorage
+        const serverData = await screenServerService.getServerDataById(serverId);
+        if (serverData) {
+          setContent(serverData.content);
+          setHtmlContent(serverData.html);
+        } else if (currentScreenId && contentId) {
+          // Fallback si les données ne sont pas trouvées
+          handleFallbackContent(currentScreenId, contentId);
+        }
+      } catch (error) {
+        console.error("Error fetching server data:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de récupérer les données du serveur",
+          variant: "destructive",
+        });
+        if (currentScreenId && contentId) {
+          handleFallbackContent(currentScreenId, contentId);
+        }
+      }
+    };
+    
     if (serverIdParam) {
       setServerId(serverIdParam);
-      
-      // Récupérer les données du serveur à partir du localStorage
-      const serverData = screenServerService.getServerDataById(serverIdParam);
-      if (serverData) {
-        setContent(serverData.content);
-        setHtmlContent(serverData.html);
-      } else if (currentScreenId && contentId) {
-        // Fallback si les données ne sont pas trouvées
-        handleFallbackContent(currentScreenId, contentId);
-      }
+      fetchServerData(serverIdParam);
     } else if (currentScreenId) {
       setScreenId(currentScreenId);
       handleFallbackContent(currentScreenId, contentId);
@@ -49,32 +63,41 @@ const PreviewPage = () => {
     }
   }, [location.search, contents, screens]);
   
-  const handleFallbackContent = (currentScreenId: string, contentId: string | null) => {
-    // Vérifier si le serveur est en cours d'exécution
-    if (screenServerService.isServerRunning(currentScreenId)) {
-      // Récupérer le contenu du serveur
-      const serverContent = screenServerService.getServerContent(currentScreenId);
-      if (serverContent) {
-        setContent(serverContent);
-      } else if (contentId) {
-        const foundContent = contents.find(c => c.id === contentId);
-        if (foundContent) {
-          setContent(foundContent);
+  const handleFallbackContent = async (currentScreenId: string, contentId: string | null) => {
+    try {
+      // Vérifier si le serveur est en cours d'exécution
+      if (screenServerService.isServerRunning(currentScreenId)) {
+        // Récupérer le contenu du serveur
+        const serverContent = await screenServerService.getServerContent(currentScreenId);
+        if (serverContent) {
+          setContent(serverContent);
+        } else if (contentId) {
+          const foundContent = contents.find(c => c.id === contentId);
+          if (foundContent) {
+            setContent(foundContent);
+          }
         }
-      }
-    } else {
-      // Si le serveur n'est pas en cours d'exécution, récupérer le contenu à partir de l'ID
-      if (contentId) {
-        const foundContent = contents.find(c => c.id === contentId);
-        if (foundContent) {
-          setContent(foundContent);
-          // Démarrer le serveur avec ce contenu
-          const screen = screens.find(s => s.id === currentScreenId);
-          if (screen) {
-            screenServerService.startServer(currentScreenId, screen.port, foundContent);
+      } else {
+        // Si le serveur n'est pas en cours d'exécution, récupérer le contenu à partir de l'ID
+        if (contentId) {
+          const foundContent = contents.find(c => c.id === contentId);
+          if (foundContent) {
+            setContent(foundContent);
+            // Démarrer le serveur avec ce contenu
+            const screen = screens.find(s => s.id === currentScreenId);
+            if (screen) {
+              await screenServerService.startServer(currentScreenId, screen.port, foundContent);
+            }
           }
         }
       }
+    } catch (error) {
+      console.error("Error in fallback content handling:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de récupérer le contenu de prévisualisation",
+        variant: "destructive",
+      });
     }
   };
   
