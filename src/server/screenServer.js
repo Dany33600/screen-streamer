@@ -1,11 +1,11 @@
-
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import os from 'os'; // Import os at the top with other imports
+import os from 'os'; 
+import multer from 'multer';
 
 // Obtenir le chemin du répertoire actuel en utilisant ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 // Chemin vers le répertoire de stockage
 const STORAGE_DIR = path.join(__dirname, '..', '..', 'storage');
 const CONTENT_DIR = path.join(STORAGE_DIR, 'content');
+const UPLOADS_DIR = path.join(STORAGE_DIR, 'uploads');
 
 // Créer les répertoires de stockage s'ils n'existent pas
 if (!fs.existsSync(STORAGE_DIR)) {
@@ -24,8 +25,26 @@ if (!fs.existsSync(CONTENT_DIR)) {
   fs.mkdirSync(CONTENT_DIR, { recursive: true });
 }
 
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
 // Map pour stocker les serveurs en cours d'exécution
 const runningServers = new Map();
+
+// Configuration de multer pour le stockage des fichiers
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: function (req, file, cb) {
+    // Utiliser le format: contentId-filename
+    const uniqueFilename = `${req.body.contentId || Date.now()}-${file.originalname}`;
+    cb(null, uniqueFilename);
+  }
+});
+
+const upload = multer({ storage: storage });
 
 /**
  * Démarre un nouveau serveur HTTP sur le port spécifié
@@ -184,6 +203,47 @@ function deleteContent(contentId) {
   }
 }
 
+/**
+ * Upload un fichier sur le serveur
+ */
+function uploadFile(contentId, file, originalName) {
+  try {
+    // Si un fichier a été fourni directement (depuis multer)
+    if (file) {
+      return {
+        success: true,
+        filePath: file.path,
+        url: `/uploads/${file.filename}`
+      };
+    }
+    
+    // Si un buffer ou un chemin de fichier a été fourni
+    const filename = `${contentId}-${originalName || 'file'}`;
+    const filePath = path.join(UPLOADS_DIR, filename);
+    
+    // Si c'est un Buffer, l'écrire sur le disque
+    if (Buffer.isBuffer(file)) {
+      fs.writeFileSync(filePath, file);
+      return {
+        success: true,
+        filePath: filePath,
+        url: `/uploads/${filename}`
+      };
+    }
+    
+    return {
+      success: false,
+      message: 'Format de fichier non pris en charge'
+    };
+  } catch (error) {
+    console.error(`Erreur lors de l'upload du fichier pour ${contentId}:`, error);
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+}
+
 // Créer un serveur API pour gérer les serveurs d'écran
 function createApiServer(apiPort = 5000) {
   const app = express();
@@ -200,6 +260,9 @@ function createApiServer(apiPort = 5000) {
 
   // Middleware pour gérer les erreurs CORS préflight
   app.options('*', cors());
+  
+  // Servir les fichiers statiques du dossier uploads
+  app.use('/uploads', express.static(UPLOADS_DIR));
   
   // Route racine pour montrer que le serveur fonctionne
   app.get('/', (req, res) => {
@@ -414,5 +477,6 @@ export {
   startServer,
   stopServer,
   updateServer,
-  createApiServer
+  createApiServer,
+  uploadFile
 };

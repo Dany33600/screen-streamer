@@ -11,6 +11,7 @@ interface AppState {
   basePort: number;
   baseIpAddress: string;
   isConfigMode: boolean;
+  apiUrl: string;
   
   // Screens actions
   addScreen: (name: string) => void;
@@ -32,6 +33,7 @@ interface AppState {
   setBasePort: (port: number) => void;
   setBaseIpAddress: (ipAddress: string) => void;
   toggleConfigMode: () => void;
+  setApiUrl: (url: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -43,6 +45,7 @@ export const useAppStore = create<AppState>()(
       basePort: 5550,
       baseIpAddress: '192.168.0.14',
       isConfigMode: false,
+      apiUrl: 'http://localhost:5000',
       
       // Screens actions
       addScreen: (name) => set((state) => {
@@ -134,6 +137,7 @@ export const useAppStore = create<AppState>()(
       setBasePort: (port) => set({ basePort: port }),
       setBaseIpAddress: (ipAddress) => set({ baseIpAddress: ipAddress }),
       toggleConfigMode: () => set((state) => ({ isConfigMode: !state.isConfigMode })),
+      setApiUrl: (url) => set({ apiUrl: url }),
     }),
     {
       name: 'screen-streamer-storage',
