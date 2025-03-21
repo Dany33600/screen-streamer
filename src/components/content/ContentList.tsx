@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Content } from '@/types';
-import { FileUp, Film, ServerCrash } from 'lucide-react';
+import { FileUp, Film, ServerCrash, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ContentCard from './ContentCard';
 import { useAppStore } from '@/store';
@@ -13,6 +13,8 @@ interface ContentListProps {
   onDelete: (id: string) => void;
   onAssign: (content: Content) => void;
   onAddClick: () => void;
+  isLoading?: boolean;
+  error?: string;
 }
 
 const ContentList: React.FC<ContentListProps> = ({
@@ -20,7 +22,9 @@ const ContentList: React.FC<ContentListProps> = ({
   onEdit,
   onDelete,
   onAssign,
-  onAddClick
+  onAddClick,
+  isLoading = false,
+  error
 }) => {
   const apiUrl = useAppStore(state => state.apiUrl);
   const serverConfigured = apiUrl && apiUrl.trim() !== '';
@@ -43,6 +47,42 @@ const ContentList: React.FC<ContentListProps> = ({
           </p>
           <Button variant="secondary" className="gap-2" onClick={() => window.location.href = '/config'}>
             Configurer le serveur
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Loader2 size={64} className="text-muted-foreground mb-4 animate-spin" />
+        <h3 className="text-xl font-medium mb-1">Chargement des contenus...</h3>
+        <p className="text-muted-foreground mb-4 max-w-md">
+          Récupération des contenus depuis le serveur...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive" className="mb-4">
+          <ServerCrash className="h-4 w-4 mr-2" />
+          <AlertDescription>
+            Erreur lors de la récupération des contenus: {error}
+          </AlertDescription>
+        </Alert>
+        
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <ServerCrash size={64} className="text-muted-foreground mb-4" />
+          <h3 className="text-xl font-medium mb-1">Impossible de charger les contenus</h3>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            Vérifiez que le serveur API est en ligne et correctement configuré.
+          </p>
+          <Button variant="secondary" className="gap-2" onClick={() => window.location.href = '/config'}>
+            Vérifier la configuration
           </Button>
         </div>
       </div>

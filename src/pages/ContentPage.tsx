@@ -9,13 +9,14 @@ import AddContentDialog from '@/components/content/AddContentDialog';
 import EditContentDialog from '@/components/content/EditContentDialog';
 import AssignContentDialog from '@/components/content/AssignContentDialog';
 import { toast } from 'sonner';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const ContentPage = () => {
-  const contents = useAppStore((state) => state.contents);
   const screens = useAppStore((state) => state.screens);
   const removeContent = useAppStore((state) => state.removeContent);
   const apiUrl = useAppStore((state) => state.apiUrl);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const queryClient = useQueryClient();
   
   // UI state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -31,6 +32,34 @@ const ContentPage = () => {
   const [selectedFileURL, setSelectedFileURL] = useState<string>('');
   const [selectedScreenId, setSelectedScreenId] = useState<string>('');
   
+  // Préparer l'URL de l'API
+  const getFormattedApiUrl = () => {
+    let baseUrl = apiUrl;
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
+    return baseUrl.replace('localhost', baseIpAddress);
+  };
+
+  // Récupérer les contenus depuis l'API
+  const { data: contentsData, isLoading, error } = useQuery({
+    queryKey: ['contents'],
+    queryFn: async () => {
+      const formattedApiUrl = getFormattedApiUrl();
+      console.log(`Récupération des contenus depuis: ${formattedApiUrl}/api/content`);
+      
+      const response = await fetch(`${formattedApiUrl}/api/content`);
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Données de contenu reçues:', data);
+      return data.contentList || [];
+    },
+    refetchOnWindowFocus: false,
+  });
+  
   // Handler functions
   const handleEditContent = (content: Content) => {
     setCurrentContent(content);
@@ -42,27 +71,17 @@ const ContentPage = () => {
   
   const handleDeleteContent = async (id: string) => {
     try {
-      const content = contents.find(c => c.id === id);
+      const content = contentsData?.find(c => c.id === id);
       if (!content) {
         throw new Error("Contenu non trouvé");
       }
       
       console.log(`Suppression du contenu avec ID exact: "${id}"`);
       
-      // Préparer l'URL de l'API
-      let baseUrl = apiUrl;
-      if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-      }
-      
-      // Remplacer localhost par l'adresse IP si nécessaire
-      const formattedApiUrl = baseUrl.replace('localhost', baseIpAddress);
-      
-      // Log pour déboguer l'URL et l'ID
-      console.log(`ID du contenu à supprimer: "${id}"`);
+      const formattedApiUrl = getFormattedApiUrl();
       console.log(`URL complète pour la suppression: ${formattedApiUrl}/api/content/${encodeURIComponent(id)}`);
       
-      // Supprimer le contenu localement après confirmation de l'API pour éviter des erreurs de synchronisation
+      // Appel à l'API pour supprimer le contenu
       const response = await fetch(`${formattedApiUrl}/api/content/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
@@ -76,8 +95,11 @@ const ContentPage = () => {
         throw new Error(errorData.message || `Erreur HTTP ${response.status}`);
       }
       
-      // Si la suppression sur le serveur a réussi, supprimer localement
+      // Si la suppression sur le serveur a réussi, supprimer également du store local
       removeContent(id);
+      
+      // Rafraîchir la liste des contenus
+      queryClient.invalidateQueries({ queryKey: ['contents'] });
       
       toast.success(`Le contenu "${content.name}" a été supprimé`);
       
@@ -95,7 +117,7 @@ const ContentPage = () => {
   };
   
   // Filter contents
-  const filteredContents = contents
+  const filteredContents = (contentsData || [])
     .filter(content => {
       const matchesSearch = searchTerm === '' || 
         content.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -124,18 +146,32 @@ const ContentPage = () => {
           onDelete={handleDeleteContent}
           onAssign={handleOpenAssignDialog}
           onAddClick={() => setIsAddDialogOpen(true)}
+          isLoading={isLoading}
+          error={error instanceof Error ? error.message : error ? String(error) : undefined}
         />
       </div>
 
       {/* Dialogs */}
       <AddContentDialog 
         open={isAddDialogOpen} 
-        onOpenChange={setIsAddDialogOpen} 
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open);
+          if (!open) {
+            // Rafraîchir la liste des contenus après ajout
+            queryClient.invalidateQueries({ queryKey: ['contents'] });
+          }
+        }} 
       />
 
       <EditContentDialog 
         open={isEditDialogOpen} 
-        onOpenChange={setIsEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            // Rafraîchir la liste des contenus après modification
+            queryClient.invalidateQueries({ queryKey: ['contents'] });
+          }
+        }}
         content={currentContent}
         contentName={contentName}
         setContentName={setContentName}
