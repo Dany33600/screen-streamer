@@ -149,6 +149,8 @@ class HtmlGeneratorService {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Écran - ${content.name}</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.min.css">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.min.css">
             <style>
               body, html {
                 margin: 0;
@@ -159,16 +161,6 @@ class HtmlGeneratorService {
                 background-color: #000;
                 color: white;
                 font-family: Arial, sans-serif;
-              }
-              .header {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                padding: 10px;
-                background-color: rgba(0,0,0,0.7);
-                z-index: 100;
-                text-align: center;
               }
               .file-info {
                 position: absolute;
@@ -181,281 +173,114 @@ class HtmlGeneratorService {
                 text-align: center;
                 font-size: 14px;
               }
-              .reveal {
-                height: 100vh;
-              }
-              .reveal .slides {
-                text-align: center;
-              }
-              .reveal .slides > section {
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-              }
-              .error-message {
-                color: white;
-                font-family: Arial, sans-serif;
-                text-align: center;
-                padding: 20px;
-              }
-              iframe {
+              .reveal iframe {
                 width: 100%;
                 height: 100%;
                 border: none;
               }
-              .fallback-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                padding: 20px;
+              .reveal .slides {
                 text-align: center;
               }
               .download-btn {
+                display: inline-block;
                 background-color: #4CAF50;
-                border: none;
                 color: white;
                 padding: 10px 20px;
-                text-align: center;
                 text-decoration: none;
-                display: inline-block;
-                font-size: 16px;
-                margin: 10px 2px;
-                cursor: pointer;
                 border-radius: 4px;
+                margin-top: 20px;
+                font-size: 16px;
               }
-              
-              /* Styles Reveal.js embarqués */
-              .reveal {
-                position: relative;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-                touch-action: pinch-zoom;
-              }
-              .reveal.embedded {
-                height: 100vh;
-              }
-              .reveal .slides {
+              .presentation-title {
                 position: absolute;
-                width: 100%;
-                height: 100%;
-                top: 0;
-                right: 0;
-                bottom: 0;
+                top: 10px;
                 left: 0;
-                margin: auto;
-                pointer-events: none;
-                overflow: visible;
-                z-index: 1;
+                right: 0;
                 text-align: center;
-                perspective: 600px;
-                perspective-origin: 50% 40%;
+                font-size: 18px;
+                z-index: 1000;
+                padding: 10px;
+                background-color: rgba(0,0,0,0.5);
               }
               .reveal .slides > section {
-                perspective: 600px;
-              }
-              .reveal .slides > section,
-              .reveal .slides > section > section {
-                display: none;
-                position: absolute;
-                width: 100%;
-                padding: 20px 0;
-                z-index: 10;
-                line-height: 1.2;
-                font-weight: normal;
-                transform-style: flat;
-                transition: transform-origin 800ms cubic-bezier(0.26, 0.86, 0.44, 0.985),
-                            transform 800ms cubic-bezier(0.26, 0.86, 0.44, 0.985),
-                            visibility 800ms cubic-bezier(0.26, 0.86, 0.44, 0.985),
-                            opacity 800ms cubic-bezier(0.26, 0.86, 0.44, 0.985);
-              }
-              .reveal .slides > section.present,
-              .reveal .slides > section > section.present {
-                display: block;
-                z-index: 11;
-                opacity: 1;
-              }
-              .reveal.center .slides > section {
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-              }
-              .reveal .controls {
-                position: absolute;
-                bottom: 20px;
-                right: 20px;
-                color: #fff;
-                z-index: 1000;
-              }
-              .reveal .progress {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 4px;
-                background-color: rgba(0,0,0,0.2);
-                z-index: 1000;
-              }
-              .reveal .progress span {
-                display: block;
-                height: 100%;
-                width: 0;
-                background-color: #42affa;
-                transition: width 800ms cubic-bezier(0.26, 0.86, 0.44, 0.985);
-              }
-              /* Thème noir pour reveal.js */
-              .reveal {
-                color: #fff;
-                background-color: #111;
-              }
-              .reveal h1,
-              .reveal h2,
-              .reveal h3,
-              .reveal h4,
-              .reveal h5,
-              .reveal h6 {
-                color: #fff;
-                font-weight: 600;
-                line-height: 1.2;
-                letter-spacing: normal;
-                text-shadow: none;
-                word-wrap: break-word;
-              }
-              .reveal h1 { font-size: 3.77em; }
-              .reveal h2 { font-size: 2.11em; }
-              .reveal h3 { font-size: 1.55em; }
-              .reveal h4 { font-size: 1em; }
-              
-              .reveal a {
-                color: #42affa;
-                text-decoration: none;
-              }
-              .reveal a:hover {
-                color: #8dcffc;
-                text-shadow: none;
-                border: none;
-              }
-              .reveal strong,
-              .reveal b {
-                font-weight: bold;
-              }
-              .reveal em,
-              .reveal i {
-                font-style: italic;
+                height: 90vh; /* Ensure slides take up most of the viewport height */
               }
             </style>
+            <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
           </head>
           <body>
+            <div class="presentation-title">${content.name}</div>
+            
             <div class="reveal">
               <div class="slides">
                 <section>
-                  <h2>${content.name}</h2>
-                  <p>Présentation en cours de chargement...</p>
-                  <div>
-                    <a href="${contentUrl}" class="download-btn" download target="_blank">
-                      Télécharger la présentation
-                    </a>
+                  <h2>Présentation</h2>
+                  <p>Votre présentation est en cours de chargement...</p>
+                  <div class="ppt-container">
+                    <iframe 
+                      src="${contentUrl}" 
+                      allowfullscreen
+                      onload="this.style.display='block'"
+                      onerror="handlePPTError()"
+                    ></iframe>
                   </div>
+                  <a href="${contentUrl}" class="download-btn" download>
+                    Télécharger la présentation
+                  </a>
                 </section>
-              </div>
-              
-              <div class="progress">
-                <span></span>
               </div>
             </div>
             
             <script>
-              // Version simplifiée de Reveal.js pour l'affichage basique des slides
+              // Configuration et initialisation de reveal.js
+              let deck = new Reveal({
+                controls: true,
+                progress: true,
+                center: true,
+                hash: false,
+                // Configuration de l'auto-slide
+                autoSlide: 5000,       // 5 secondes par slide
+                autoSlideStoppable: false, // L'utilisateur ne peut pas arrêter l'auto-slide
+                loop: true,           // Boucle à la fin de la présentation
+                transition: 'slide',  // Type de transition
+                showNotes: false,
+                // Désactiver les interactions de l'utilisateur si nécessaire
+                // keyboard: false,      // Désactiver les raccourcis clavier
+                // touch: false,         // Désactiver la navigation tactile
+              });
+              
+              // Initialiser reveal.js
+              deck.initialize();
+              
+              // Fonction pour gérer l'erreur de chargement du PowerPoint
+              function handlePPTError() {
+                console.error("Erreur lors du chargement du fichier PowerPoint:", "${contentUrl}");
+                document.querySelector('.ppt-container').innerHTML = \`
+                  <div style="padding: 20px; background-color: rgba(0,0,0,0.6); border-radius: 8px; margin: 20px 0;">
+                    <h3>Impossible d'afficher la présentation dans l'iframe</h3>
+                    <p>Le format PowerPoint n'est pas directement visualisable dans le navigateur.</p>
+                    <p>Veuillez télécharger la présentation pour la visualiser.</p>
+                  </div>
+                \`;
+              }
+              
+              // Force start the auto-slide after initialization
               document.addEventListener('DOMContentLoaded', function() {
-                // Configuration de base de Reveal.js
-                const config = {
-                  autoSlide: 5000,
-                  loop: true,
-                  transition: 'slide',
-                  controls: true,
-                  progress: true,
-                  center: true,
-                  hash: false,
-                  slideNumber: false
-                };
-                
-                // Variables de navigation
-                let currentSlide = 0;
-                let totalSlides = 1;
-                
-                // Créer des slides basiques à partir du fichier PowerPoint
-                function loadPresentation() {
-                  const slidesContainer = document.querySelector('.slides');
-                  const currentSection = slidesContainer.querySelector('section');
-                  
-                  // Ajouter un iframe qui tente de charger le fichier PowerPoint
-                  const iframe = document.createElement('iframe');
-                  iframe.src = "${contentUrl}";
-                  iframe.width = "100%";
-                  iframe.height = "100%";
-                  iframe.style.border = "none";
-                  iframe.style.margin = "0";
-                  iframe.style.padding = "0";
-                  iframe.style.boxSizing = "border-box";
-                  
-                  // Nettoyer la section actuelle et ajouter l'iframe
-                  currentSection.innerHTML = '';
-                  currentSection.appendChild(iframe);
-                  
-                  // Marquer ce slide comme présent (visible)
-                  currentSection.classList.add('present');
-                  
-                  // Démarrer le diaporama automatique
-                  startAutoSlide();
-                }
-
-                // Tenter de charger la présentation
-                loadPresentation();
-                
-                // Fonction d'autoplay
-                function startAutoSlide() {
-                  if (config.autoSlide && config.autoSlide > 0) {
-                    setTimeout(function() {
-                      // Pour l'instant, nous n'avons qu'un seul slide, donc on simule juste le rechargement
-                      if (config.loop) {
-                        const progressBar = document.querySelector('.progress span');
-                        // Animation de la barre de progression
-                        progressBar.style.width = '0%';
-                        setTimeout(() => {
-                          progressBar.style.transition = 'width ' + config.autoSlide + 'ms linear';
-                          progressBar.style.width = '100%';
-                        }, 100);
-                        
-                        startAutoSlide();
-                      }
-                    }, config.autoSlide);
-                    
-                    // Initialiser la barre de progression
-                    const progressBar = document.querySelector('.progress span');
-                    progressBar.style.transition = 'width ' + config.autoSlide + 'ms linear';
-                    progressBar.style.width = '100%';
-                  }
-                }
-                
-                // Ajouter un gestionnaire d'erreur pour l'iframe
-                document.querySelector('iframe').onerror = function() {
-                  document.querySelector('.slides').innerHTML = \`
-                    <section class="present">
-                      <div class="fallback-container">
-                        <h2>Impossible de charger la présentation</h2>
-                        <p>Le format peut ne pas être compatible avec l'affichage direct.</p>
-                        <p>URL: ${contentUrl}</p>
-                        <a href="${contentUrl}" download class="download-btn">Télécharger la présentation</a>
-                      </div>
-                    </section>
-                  \`;
-                };
-                
-                // Log le statut d'initialisation
-                console.log('Présentation initialisée avec autoSlide =', config.autoSlide, 'ms');
+                // Ensure auto-slide is started
+                deck.configure({ autoSlide: 5000 });
+                // Start auto-slide
+                deck.toggleAutoSlide(true);
+                console.log("Auto-slide enabled with interval:", deck.getConfig().autoSlide);
+              });
+              
+              // Additional event listeners to ensure auto-slide is working
+              deck.on('ready', function() {
+                console.log("Reveal.js is ready");
+                deck.toggleAutoSlide(true);
+              });
+              
+              deck.on('slidechanged', function() {
+                console.log("Slide changed, auto-slide status:", deck.isAutoSliding());
               });
             </script>
           </body>
@@ -568,4 +393,3 @@ class HtmlGeneratorService {
 
 // Exporter une instance unique du service
 export const htmlGenerator = new HtmlGeneratorService();
-
