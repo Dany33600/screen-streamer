@@ -74,7 +74,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
         )}
         
         {noScreens && (
-          <Alert variant="warning" className="mb-4">
+          <Alert variant="destructive" className="mb-4">
             <AlertTriangle className="h-4 w-4 mr-2" />
             <AlertDescription>
               Aucun écran n'est disponible. Veuillez d'abord ajouter un écran.
