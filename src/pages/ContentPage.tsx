@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -56,13 +55,15 @@ const ContentPage = () => {
       // Remplacer localhost par l'adresse IP si nécessaire
       const formattedApiUrl = baseUrl.replace('localhost', baseIpAddress);
       
-      console.log(`Suppression du contenu ${id} sur le serveur: ${formattedApiUrl}/api/content/${id}`);
+      // Log pour déboguer l'URL et l'ID
+      console.log(`ID du contenu à supprimer: "${id}"`);
+      console.log(`URL complète pour la suppression: ${formattedApiUrl}/api/content/${encodeURIComponent(id)}`);
       
       // Supprimer le contenu localement avant l'appel API pour améliorer la réactivité de l'UI
       removeContent(id);
       
-      // Appel à l'API pour supprimer le contenu
-      const response = await fetch(`${formattedApiUrl}/api/content/${id}`, {
+      // Appel à l'API pour supprimer le contenu - utiliser l'ID tel quel
+      const response = await fetch(`${formattedApiUrl}/api/content/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -81,9 +82,6 @@ const ContentPage = () => {
       console.error("Erreur lors de la suppression:", error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       toast.error(`Échec de la suppression: ${errorMessage}`);
-      
-      // Nous ne supprimons pas le contenu localement en cas d'erreur,
-      // car nous l'avons déjà fait au début de la fonction pour améliorer la réactivité
     }
   };
   

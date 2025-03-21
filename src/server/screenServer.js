@@ -243,7 +243,7 @@ function listAllContent() {
 
 function deleteContent(contentId) {
   try {
-    console.log(`Suppression du contenu ${contentId} demandée`);
+    console.log(`Suppression du contenu demandée. ID exact reçu: "${contentId}"`);
     
     // Vérifier si contentId est vide ou undefined
     if (!contentId) {
@@ -251,106 +251,126 @@ function deleteContent(contentId) {
       return false;
     }
     
-    // 1. Récupérer les informations du contenu pour connaître le chemin du fichier
-    const contentData = getContentData(contentId);
-    if (!contentData) {
-      console.warn(`Contenu ${contentId} non trouvé pour suppression`);
-      
-      // On vérifie si le fichier JSON existe directement avec l'ID
-      const directJsonPath = path.join(CONTENT_DIR, `${contentId}.json`);
-      if (fs.existsSync(directJsonPath)) {
-        console.log(`Fichier JSON trouvé directement: ${directJsonPath}`);
-        try {
-          fs.unlinkSync(directJsonPath);
-          console.log(`Fichier JSON supprimé: ${directJsonPath}`);
-        } catch (err) {
-          console.error(`Erreur lors de la suppression du fichier JSON ${directJsonPath}:`, err);
+    // On vérifie d'abord si le fichier JSON existe directement avec l'ID exact
+    const exactJsonPath = path.join(CONTENT_DIR, `${contentId}.json`);
+    console.log(`Vérification du fichier JSON avec chemin exact: ${exactJsonPath}`);
+    
+    if (fs.existsSync(exactJsonPath)) {
+      console.log(`Fichier JSON trouvé: ${exactJsonPath}`);
+      try {
+        // Récupérer les données avant de supprimer le fichier JSON
+        const contentData = JSON.parse(fs.readFileSync(exactJsonPath, 'utf8'));
+        console.log(`Données du contenu récupérées:`, contentData);
+        
+        // Supprimer le fichier JSON
+        fs.unlinkSync(exactJsonPath);
+        console.log(`Fichier JSON supprimé: ${exactJsonPath}`);
+        
+        // Supprimer le fichier physique s'il existe
+        if (contentData.url) {
+          try {
+            // Extraire le nom du fichier depuis l'URL
+            const fileName = contentData.url.split('/').pop();
+            if (fileName) {
+              const filePath = path.join(UPLOADS_DIR, fileName);
+              console.log(`Tentative de suppression du fichier physique: ${filePath}`);
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log(`Fichier physique supprimé: ${filePath}`);
+              } else {
+                console.warn(`Fichier physique non trouvé: ${filePath}`);
+                
+                // Essayer avec l'ID exact comme nom de fichier
+                const exactFilePath = path.join(UPLOADS_DIR, contentId);
+                if (fs.existsSync(exactFilePath)) {
+                  fs.unlinkSync(exactFilePath);
+                  console.log(`Fichier physique supprimé (ID exact): ${exactFilePath}`);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn(`Erreur lors de la suppression du fichier physique:`, e);
+          }
         }
-      } else {
-        // Recherche de fichiers contenant cet ID
-        const files = fs.readdirSync(CONTENT_DIR);
-        const matchingFiles = files.filter(file => file.includes(contentId));
         
-        console.log(`Fichiers correspondant au motif ${contentId}:`, matchingFiles);
-        
-        for (const file of matchingFiles) {
+        return true;
+      } catch (err) {
+        console.error(`Erreur lors de la suppression du fichier JSON ${exactJsonPath}:`, err);
+      }
+    } else {
+      console.log(`Fichier JSON non trouvé avec chemin exact: ${exactJsonPath}`);
+      
+      // Si le fichier exact n'existe pas, rechercher des fichiers contenant l'ID
+      console.log(`Recherche de fichiers JSON correspondant à l'ID: ${contentId}`);
+      const files = fs.readdirSync(CONTENT_DIR);
+      let jsonFound = false;
+      
+      for (const file of files) {
+        if (file.includes(contentId)) {
           try {
             const filePath = path.join(CONTENT_DIR, file);
+            console.log(`Fichier JSON correspondant trouvé: ${filePath}`);
+            
+            // Récupérer les données avant de supprimer
+            let contentData = null;
+            try {
+              contentData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+              console.log(`Données du contenu récupérées:`, contentData);
+            } catch (e) {
+              console.warn(`Erreur lors de la lecture du contenu:`, e);
+            }
+            
+            // Supprimer le fichier JSON
             fs.unlinkSync(filePath);
-            console.log(`Fichier supprimé: ${filePath}`);
+            console.log(`Fichier JSON supprimé: ${filePath}`);
+            jsonFound = true;
+            
+            // Supprimer le fichier physique si possible
+            if (contentData && contentData.url) {
+              try {
+                const fileName = contentData.url.split('/').pop();
+                if (fileName) {
+                  const filePath = path.join(UPLOADS_DIR, fileName);
+                  console.log(`Tentative de suppression du fichier physique: ${filePath}`);
+                  if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                    console.log(`Fichier physique supprimé: ${filePath}`);
+                  } else {
+                    console.warn(`Fichier physique non trouvé: ${filePath}`);
+                  }
+                }
+              } catch (e) {
+                console.warn(`Erreur lors de la suppression du fichier physique:`, e);
+              }
+            }
           } catch (err) {
             console.error(`Erreur lors de la suppression du fichier ${file}:`, err);
           }
         }
       }
       
-      return true;
-    }
-    
-    // 2. Supprimer le fichier JSON de métadonnées - essai avec l'ID exact
-    const sanitizedContentId = contentId.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const contentPath = path.join(CONTENT_DIR, `${sanitizedContentId}.json`);
-    
-    // Essayer plusieurs variantes pour le fichier de métadonnées
-    const jsonPaths = [
-      path.join(CONTENT_DIR, `${contentId}.json`),
-      path.join(CONTENT_DIR, `${sanitizedContentId}.json`)
-    ];
-    
-    let jsonFileDeleted = false;
-    
-    for (const jsonPath of jsonPaths) {
-      if (fs.existsSync(jsonPath)) {
+      if (!jsonFound) {
+        console.warn(`Aucun fichier JSON correspondant à l'ID ${contentId} n'a été trouvé`);
+        
+        // Tenter une dernière approche: chercher directement dans le dossier uploads
         try {
-          fs.unlinkSync(jsonPath);
-          console.log(`Fichier de métadonnées supprimé: ${jsonPath}`);
-          jsonFileDeleted = true;
-          break;
-        } catch (err) {
-          console.error(`Erreur lors de la suppression du fichier JSON ${jsonPath}:`, err);
-        }
-      }
-    }
-    
-    if (!jsonFileDeleted) {
-      console.warn(`Aucun fichier de métadonnées trouvé pour l'ID ${contentId}`);
-    }
-    
-    // 3. Supprimer le fichier physique
-    let fileDeleted = false;
-    
-    // 3.1. Vérifier d'abord le chemin direct si disponible
-    if (contentData.filePath && fs.existsSync(contentData.filePath)) {
-      try {
-        fs.unlinkSync(contentData.filePath);
-        console.log(`Fichier physique supprimé: ${contentData.filePath}`);
-        fileDeleted = true;
-      } catch (err) {
-        console.error(`Erreur lors de la suppression du fichier ${contentData.filePath}:`, err);
-      }
-    }
-    
-    // 3.2. Si le fichier n'a pas été supprimé et que nous avons une URL, essayer d'extraire le nom du fichier
-    if (!fileDeleted && contentData.url) {
-      try {
-        const fileName = contentData.url.split('/').pop();
-        if (fileName) {
-          const filePath = path.join(UPLOADS_DIR, fileName);
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            console.log(`Fichier physique supprimé (depuis URL): ${filePath}`);
-            fileDeleted = true;
-          } else {
-            console.warn(`Fichier physique non trouvé: ${filePath}`);
+          console.log(`Recherche directe dans le dossier uploads pour des fichiers correspondant à l'ID: ${contentId}`);
+          const uploadFiles = fs.readdirSync(UPLOADS_DIR);
+          for (const file of uploadFiles) {
+            if (file.includes(contentId)) {
+              const filePath = path.join(UPLOADS_DIR, file);
+              console.log(`Fichier correspondant trouvé dans uploads: ${filePath}`);
+              fs.unlinkSync(filePath);
+              console.log(`Fichier supprimé: ${filePath}`);
+              return true;
+            }
           }
+        } catch (e) {
+          console.warn(`Erreur lors de la recherche dans le dossier uploads:`, e);
         }
-      } catch (e) {
-        console.warn(`Impossible d'extraire et supprimer le fichier depuis l'URL: ${contentData.url}`);
       }
-    }
-    
-    if (!fileDeleted) {
-      console.warn(`Aucun fichier physique supprimé pour l'ID ${contentId}`);
+      
+      return jsonFound;
     }
     
     return true;
@@ -710,7 +730,7 @@ function createApiServer(apiPort = 5000) {
         return res.status(400).json({ success: false, message: 'ID de contenu requis' });
       }
       
-      console.log(`Traitement de la suppression pour ${contentId}`);
+      console.log(`Traitement de la suppression pour l'ID exact: "${contentId}"`);
       
       // Tentative de suppression avec l'ID exact fourni
       const success = deleteContent(contentId);
@@ -718,18 +738,10 @@ function createApiServer(apiPort = 5000) {
       if (success) {
         res.json({ success: true, message: `Contenu ${contentId} supprimé avec succès` });
       } else {
-        // Si la suppression a échoué, essayer avec des variantes de l'ID
-        const sanitizedId = contentId.replace(/[^a-zA-Z0-9-_]/g, '_');
-        if (sanitizedId !== contentId) {
-          console.log(`Tentative de suppression avec l'ID sanitisé: ${sanitizedId}`);
-          const fallbackSuccess = deleteContent(sanitizedId);
-          
-          if (fallbackSuccess) {
-            return res.json({ success: true, message: `Contenu ${contentId} supprimé avec succès (ID sanitisé)` });
-          }
-        }
-        
-        res.status(404).json({ success: false, message: `Contenu ${contentId} non trouvé ou erreur lors de la suppression` });
+        res.status(404).json({ 
+          success: false, 
+          message: `Contenu ${contentId} non trouvé ou erreur lors de la suppression`
+        });
       }
     } catch (error) {
       console.error("Erreur dans /api/content/:contentId (DELETE):", error);

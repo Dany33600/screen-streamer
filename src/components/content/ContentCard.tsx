@@ -86,7 +86,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
   const handleDelete = () => {
     setIsDeleteDialogOpen(false);
-    console.log("Suppression du contenu avec ID:", content.id);
+    console.log("Suppression du contenu avec ID exact:", content.id);
+    // Passer l'ID sans aucune modification
     onDelete(content.id);
   };
 
