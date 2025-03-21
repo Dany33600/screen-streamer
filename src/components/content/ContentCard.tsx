@@ -5,8 +5,8 @@ import {
   File, 
   Image, 
   FileVideo, 
-  FilePresentation,
-  FilePdf,
+  Presentation,
+  FileText,
   Code,
   MoreVertical,
   Trash2,
@@ -45,9 +45,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
       case 'video':
         return <FileVideo size={24} />;
       case 'powerpoint':
-        return <FilePresentation size={24} />;
+        return <Presentation size={24} />;
       case 'pdf':
-        return <FilePdf size={24} />;
+        return <FileText size={24} />;
       case 'html':
         return <Code size={24} />;
       default:
