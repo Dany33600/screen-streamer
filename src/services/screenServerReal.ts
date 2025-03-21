@@ -20,6 +20,15 @@ interface ServerData {
 
 class ScreenServerRealService {
   private servers: Map<string, ServerInstance> = new Map();
+  private apiBaseUrl: string;
+  
+  constructor() {
+    // Déterminer l'URL du serveur API dynamiquement
+    const hostname = window.location.hostname; // Utiliser l'hôte actuel (IP ou domaine)
+    this.apiBaseUrl = `http://${hostname}:5000/api`;
+    
+    console.log(`Service ScreenServerReal initialisé avec l'URL API: ${this.apiBaseUrl}`);
+  }
   
   // Méthode pour stocker les données d'un serveur en localStorage
   private saveServerData(serverId: string, content: Content, html: string): void {
@@ -41,6 +50,28 @@ class ScreenServerRealService {
       return null;
     } catch (error) {
       console.error('Erreur lors de la récupération des données du serveur:', error);
+      return null;
+    }
+  }
+
+  // Récupère le contenu HTML pour un écran spécifique
+  getServerContent(screenId: string): Content | null {
+    try {
+      const server = this.servers.get(screenId);
+      if (server && server.content) {
+        return server.content;
+      }
+      
+      // Si le serveur n'est pas trouvé en mémoire, essayez de le récupérer depuis le localStorage
+      const serverId = screenId; // Utiliser l'ID de l'écran comme ID du serveur
+      const serverData = this.getServerDataById(serverId);
+      if (serverData) {
+        return serverData.content;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération du contenu du serveur pour l'écran ${screenId}:`, error);
       return null;
     }
   }
@@ -77,8 +108,8 @@ class ScreenServerRealService {
       const serverId = uuidv4();
       
       // Créer une URL pour accéder au serveur depuis l'extérieur
-      // Cette URL pointe vers le port spécifique de cet écran
-      const serverUrl = `http://${window.location.hostname}:${port}`;
+      const hostname = window.location.hostname; // Obtenir l'IP du serveur actuel
+      const serverUrl = `http://${hostname}:${port}`;
       
       // Générer le HTML pour l'affichage
       const html = htmlGenerator.generateHtml(content);
@@ -110,14 +141,13 @@ class ScreenServerRealService {
    * Démarre un serveur HTTP réel sur le port spécifié
    */
   private startHttpServer(port: number, content: Content, html: string): void {
-    // Dans un environnement navigateur, nous ne pouvons pas créer de serveur HTTP directement
-    // Nous allons donc envoyer une requête à notre backend pour démarrer un serveur
+    // Utiliser l'URL de l'API configurée dans le constructeur
+    const apiUrl = `${this.apiBaseUrl}/start-server`;
     
-    // URL de notre API backend qui gère les serveurs
-    const backendUrl = "http://localhost:5000/api/start-server";
+    console.log(`Envoi de la requête à ${apiUrl} pour démarrer le serveur sur le port ${port}`);
     
     // Envoyer la requête pour démarrer le serveur
-    fetch(backendUrl, {
+    fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -129,7 +159,9 @@ class ScreenServerRealService {
     })
     .then(response => {
       if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        return response.text().then(text => {
+          throw new Error(`Erreur HTTP ${response.status}: ${text}`);
+        });
       }
       return response.json();
     })
@@ -140,7 +172,7 @@ class ScreenServerRealService {
       console.error(`Erreur lors du démarrage du serveur HTTP sur le port ${port}:`, error);
       toast({
         title: "Erreur serveur",
-        description: `Impossible de démarrer le serveur sur le port ${port}. Assurez-vous que le port est disponible.`,
+        description: `Impossible de démarrer le serveur sur le port ${port}. Vérifiez que le serveur API est en cours d'exécution (node src/server.js).`,
         variant: "destructive",
       });
     });
@@ -177,9 +209,9 @@ class ScreenServerRealService {
    */
   private stopHttpServer(port: number): void {
     // Envoyer une requête à notre backend pour arrêter le serveur
-    const backendUrl = "http://localhost:5000/api/stop-server";
+    const apiUrl = `${this.apiBaseUrl}/stop-server`;
     
-    fetch(backendUrl, {
+    fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -188,7 +220,9 @@ class ScreenServerRealService {
     })
     .then(response => {
       if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        return response.text().then(text => {
+          throw new Error(`Erreur HTTP ${response.status}: ${text}`);
+        });
       }
       return response.json();
     })
@@ -223,9 +257,9 @@ class ScreenServerRealService {
       this.saveServerData(server.id, content, html);
       
       // Envoyer une requête à notre backend pour mettre à jour le contenu
-      const backendUrl = "http://localhost:5000/api/update-server";
+      const apiUrl = `${this.apiBaseUrl}/update-server`;
       
-      fetch(backendUrl, {
+      fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -237,7 +271,9 @@ class ScreenServerRealService {
       })
       .then(response => {
         if (!response.ok) {
-          throw new Error(`Erreur HTTP: ${response.status}`);
+          return response.text().then(text => {
+            throw new Error(`Erreur HTTP ${response.status}: ${text}`);
+          });
         }
         return response.json();
       })
@@ -276,24 +312,24 @@ class ScreenServerRealService {
    */
   checkServerStatus(port: number): Promise<boolean> {
     return new Promise((resolve) => {
-      const serverUrl = `http://${window.location.hostname}:${port}/ping`;
+      const hostname = window.location.hostname; // Obtenir l'IP du serveur actuel
+      const serverUrl = `http://${hostname}:${port}/ping`;
       
-      fetch(serverUrl, { method: 'GET', mode: 'no-cors' })
-        .then(() => {
-          resolve(true);
-        })
-        .catch(() => {
-          resolve(false);
-        });
+      fetch(serverUrl, { 
+        method: 'GET',
+        // Utiliser mode: 'no-cors' pour éviter les erreurs CORS, mais noter que cela
+        // ne nous permettra pas de lire le contenu de la réponse
+        mode: 'no-cors',
+        // Timeout court pour ne pas bloquer trop longtemps
+        signal: AbortSignal.timeout(2000)
+      })
+      .then(() => {
+        resolve(true);
+      })
+      .catch(() => {
+        resolve(false);
+      });
     });
-  }
-  
-  /**
-   * Obtient le contenu d'un serveur
-   */
-  getServerContent(screenId: string): Content | null {
-    const server = this.servers.get(screenId);
-    return server && server.content ? server.content : null;
   }
 }
 

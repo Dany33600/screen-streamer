@@ -20,7 +20,11 @@ function startServer(port, html) {
     const app = express();
     
     // Activer CORS pour permettre les requêtes cross-origin
-    app.use(cors());
+    app.use(cors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization']
+    }));
     
     // Route principale qui sert le HTML
     app.get('/', (req, res) => {
@@ -36,7 +40,7 @@ function startServer(port, html) {
     const server = createServer(app);
     
     // Démarrer le serveur sur le port spécifié
-    server.listen(port, () => {
+    server.listen(port, '0.0.0.0', () => {
       console.log(`Serveur démarré sur le port ${port}`);
     });
     
@@ -91,65 +95,95 @@ function createApiServer(apiPort = 5000) {
   const app = express();
   
   // Parser JSON
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
   
-  // Activer CORS
-  app.use(cors());
+  // Activer CORS avec une configuration plus permissive
+  app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
+  // Middleware pour gérer les erreurs CORS préflight
+  app.options('*', cors());
   
   // Route pour démarrer un serveur
   app.post('/api/start-server', (req, res) => {
-    const { port, html } = req.body;
-    
-    if (!port || !html) {
-      return res.status(400).json({ success: false, message: 'Port et HTML requis' });
-    }
-    
-    const success = startServer(port, html);
-    
-    if (success) {
-      res.json({ success: true, message: `Serveur démarré sur le port ${port}` });
-    } else {
-      res.status(500).json({ success: false, message: `Échec du démarrage du serveur sur le port ${port}` });
+    try {
+      const { port, html } = req.body;
+      
+      if (!port || !html) {
+        return res.status(400).json({ success: false, message: 'Port et HTML requis' });
+      }
+      
+      const success = startServer(port, html);
+      
+      if (success) {
+        res.json({ success: true, message: `Serveur démarré sur le port ${port}` });
+      } else {
+        res.status(500).json({ success: false, message: `Échec du démarrage du serveur sur le port ${port}` });
+      }
+    } catch (error) {
+      console.error("Erreur dans /api/start-server:", error);
+      res.status(500).json({ success: false, message: error.message });
     }
   });
   
   // Route pour arrêter un serveur
   app.post('/api/stop-server', (req, res) => {
-    const { port } = req.body;
-    
-    if (!port) {
-      return res.status(400).json({ success: false, message: 'Port requis' });
-    }
-    
-    const success = stopServer(port);
-    
-    if (success) {
-      res.json({ success: true, message: `Serveur arrêté sur le port ${port}` });
-    } else {
-      res.status(500).json({ success: false, message: `Échec de l'arrêt du serveur sur le port ${port}` });
+    try {
+      const { port } = req.body;
+      
+      if (!port) {
+        return res.status(400).json({ success: false, message: 'Port requis' });
+      }
+      
+      const success = stopServer(port);
+      
+      if (success) {
+        res.json({ success: true, message: `Serveur arrêté sur le port ${port}` });
+      } else {
+        res.status(500).json({ success: false, message: `Échec de l'arrêt du serveur sur le port ${port}` });
+      }
+    } catch (error) {
+      console.error("Erreur dans /api/stop-server:", error);
+      res.status(500).json({ success: false, message: error.message });
     }
   });
   
   // Route pour mettre à jour un serveur
   app.post('/api/update-server', (req, res) => {
-    const { port, html } = req.body;
-    
-    if (!port || !html) {
-      return res.status(400).json({ success: false, message: 'Port et HTML requis' });
+    try {
+      const { port, html } = req.body;
+      
+      if (!port || !html) {
+        return res.status(400).json({ success: false, message: 'Port et HTML requis' });
+      }
+      
+      const success = updateServer(port, html);
+      
+      if (success) {
+        res.json({ success: true, message: `Serveur mis à jour sur le port ${port}` });
+      } else {
+        res.status(500).json({ success: false, message: `Échec de la mise à jour du serveur sur le port ${port}` });
+      }
+    } catch (error) {
+      console.error("Erreur dans /api/update-server:", error);
+      res.status(500).json({ success: false, message: error.message });
     }
-    
-    const success = updateServer(port, html);
-    
-    if (success) {
-      res.json({ success: true, message: `Serveur mis à jour sur le port ${port}` });
-    } else {
-      res.status(500).json({ success: false, message: `Échec de la mise à jour du serveur sur le port ${port}` });
-    }
+  });
+
+  // Route de diagnostic pour vérifier si le serveur API est en vie
+  app.get('/api/status', (req, res) => {
+    res.json({ 
+      status: 'ok', 
+      servers: Array.from(runningServers.keys())
+    });
   });
   
   // Démarrer le serveur API
-  const server = app.listen(apiPort, () => {
-    console.log(`Serveur API démarré sur le port ${apiPort}`);
+  const server = app.listen(apiPort, '0.0.0.0', () => {
+    console.log(`Serveur API démarré sur le port ${apiPort} (0.0.0.0)`);
   });
   
   return server;
