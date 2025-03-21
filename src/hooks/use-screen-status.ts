@@ -30,7 +30,7 @@ export function useScreenStatus(screen: Screen) {
       toast({
         title: "Attention",
         description: "Aucun contenu assigné à cet écran. Veuillez assigner du contenu avant de démarrer le serveur.",
-        variant: "warning",
+        variant: "destructive", // Changed from "warning" to "destructive"
       });
       return false;
     }
@@ -43,7 +43,7 @@ export function useScreenStatus(screen: Screen) {
       toast({
         title: "Serveur démarré",
         description: `L'écran "${screen.name}" est maintenant en ligne`,
-        variant: "success",
+        variant: "default", // Changed from "success" to "default"
       });
     }
     return success;
@@ -71,7 +71,7 @@ export function useScreenStatus(screen: Screen) {
       toast({
         title: "Attention",
         description: "Aucun contenu assigné à cet écran. Veuillez assigner du contenu avant de mettre à jour le serveur.",
-        variant: "warning",
+        variant: "destructive", // Changed from "warning" to "destructive"
       });
       return false;
     }
@@ -84,7 +84,7 @@ export function useScreenStatus(screen: Screen) {
       toast({
         title: "Serveur mis à jour",
         description: `L'écran "${screen.name}" a été mis à jour avec le nouveau contenu`,
-        variant: "success",
+        variant: "default", // Changed from "success" to "default"
       });
     }
     return success;
