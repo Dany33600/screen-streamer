@@ -13,8 +13,16 @@ export default defineConfig(({ mode }) => ({
       // Allow external connections for HMR (for screens)
       host: 'localhost',
       port: 8080,
+      // Désactiver les pings lorsque la connexion au serveur échoue répétitivement
+      clientPort: 8080,
+      overlay: false,  // Désactive également l'overlay d'erreur qui peut être gênant
     },
     cors: true, // Enable CORS for all requests
+    watch: {
+      // Réduire la fréquence des vérifications de changements de fichiers
+      usePolling: false, 
+      interval: 1000,
+    },
   },
   plugins: [
     react(),
