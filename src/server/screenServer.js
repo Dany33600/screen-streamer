@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import os from 'os'; // Import os at the top with other imports
 
 // Obtenir le chemin du répertoire actuel en utilisant ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -393,8 +394,7 @@ function createApiServer(apiPort = 5000) {
     console.log(`Adresses IP accessibles:`);
     
     // Afficher toutes les adresses IP du système
-    const { networkInterfaces } = require('os');
-    const nets = networkInterfaces();
+    const nets = os.networkInterfaces(); // Use the imported os module instead of require
     
     for (const name of Object.keys(nets)) {
       for (const net of nets[name]) {
