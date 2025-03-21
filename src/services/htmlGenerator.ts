@@ -142,6 +142,110 @@ class HtmlGeneratorService {
           </html>
         `;
         
+      case 'powerpoint':
+        // Intégrer PowerPoint dans un iframe avec l'API Office Online ou Google Docs
+        return `
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Écran - ${content.name}</title>
+            <style>
+              body, html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                width: 100%;
+                overflow: hidden;
+                background-color: #000;
+              }
+              iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+              }
+              .error-message {
+                color: white;
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+              }
+            </style>
+          </head>
+          <body>
+            <iframe 
+              src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(contentUrl)}" 
+              width="100%" 
+              height="100%" 
+              frameborder="0"
+              onload="this.style.visibility='visible'"
+              onerror="this.style.display='none';document.body.innerHTML+='<div class=\\'error-message\\'><h2>Erreur de chargement de la présentation</h2><p>URL: ${contentUrl}</p></div>';"
+            >
+            </iframe>
+          </body>
+          </html>
+        `;
+        
+      case 'pdf':
+        return `
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Écran - ${content.name}</title>
+            <style>
+              body, html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                width: 100%;
+                overflow: hidden;
+                background-color: #000;
+              }
+              iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+              }
+            </style>
+          </head>
+          <body>
+            <iframe src="${contentUrl}" width="100%" height="100%" frameborder="0"></iframe>
+          </body>
+          </html>
+        `;
+        
+      case 'html':
+        return `
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Écran - ${content.name}</title>
+            <style>
+              body, html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                width: 100%;
+                overflow: hidden;
+              }
+              iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+              }
+            </style>
+          </head>
+          <body>
+            <iframe src="${contentUrl}" width="100%" height="100%" frameborder="0"></iframe>
+          </body>
+          </html>
+        `;
+        
       default:
         return `
           <!DOCTYPE html>

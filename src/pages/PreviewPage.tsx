@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -20,14 +19,11 @@ const PreviewPage = () => {
   const apiUrl = useAppStore((state) => state.apiUrl);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   
-  // Fonction pour s'assurer que les URL sont complètes (avec protocole et domaine)
   const ensureFullUrl = (url: string): string => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url; // L'URL est déjà complète
+      return url;
     }
     
-    // Créer une URL complète à partir de l'URL relative
-    // Utiliser l'adresse IP du serveur API si disponible
     if (apiUrl) {
       const baseApiUrl = apiUrl.replace('localhost', baseIpAddress);
       const apiBaseWithoutPath = baseApiUrl.split('/api')[0];
@@ -41,7 +37,6 @@ const PreviewPage = () => {
   };
   
   useEffect(() => {
-    // Extraire les paramètres de l'URL
     const searchParams = new URLSearchParams(location.search);
     const currentScreenId = searchParams.get('screenId');
     const contentId = searchParams.get('content');
@@ -49,17 +44,14 @@ const PreviewPage = () => {
     
     const fetchServerData = async (serverId: string) => {
       try {
-        // Récupérer les données du serveur à partir du localStorage
         const serverData = await screenServerService.getServerDataById(serverId);
         if (serverData) {
-          // Assurer que l'URL est complète avant de définir le contenu
           if (serverData.content) {
             serverData.content.url = ensureFullUrl(serverData.content.url);
           }
           setContent(serverData.content);
           setHtmlContent(serverData.html);
         } else if (currentScreenId && contentId) {
-          // Fallback si les données ne sont pas trouvées
           handleFallbackContent(currentScreenId, contentId);
         }
       } catch (error) {
@@ -82,10 +74,8 @@ const PreviewPage = () => {
       setScreenId(currentScreenId);
       handleFallbackContent(currentScreenId, contentId);
     } else if (contentId) {
-      // Si aucun screenId n'est fourni, essayer de récupérer le contenu directement
       const foundContent = contents.find(c => c.id === contentId);
       if (foundContent) {
-        // Assurer que l'URL est complète
         const contentWithFullUrl = { 
           ...foundContent, 
           url: ensureFullUrl(foundContent.url) 
@@ -97,18 +87,14 @@ const PreviewPage = () => {
   
   const handleFallbackContent = async (currentScreenId: string, contentId: string | null) => {
     try {
-      // Vérifier si le serveur est en cours d'exécution
       if (screenServerService.isServerRunning(currentScreenId)) {
-        // Récupérer le contenu du serveur
         const serverContent = await screenServerService.getServerContent(currentScreenId);
         if (serverContent) {
-          // Assurer que l'URL est complète
           serverContent.url = ensureFullUrl(serverContent.url);
           setContent(serverContent);
         } else if (contentId) {
           const foundContent = contents.find(c => c.id === contentId);
           if (foundContent) {
-            // Assurer que l'URL est complète
             const contentWithFullUrl = { 
               ...foundContent, 
               url: ensureFullUrl(foundContent.url) 
@@ -117,17 +103,14 @@ const PreviewPage = () => {
           }
         }
       } else {
-        // Si le serveur n'est pas en cours d'exécution, récupérer le contenu à partir de l'ID
         if (contentId) {
           const foundContent = contents.find(c => c.id === contentId);
           if (foundContent) {
-            // Assurer que l'URL est complète
             const contentWithFullUrl = { 
               ...foundContent, 
               url: ensureFullUrl(foundContent.url) 
             };
             setContent(contentWithFullUrl);
-            // Démarrer le serveur avec ce contenu
             const screen = screens.find(s => s.id === currentScreenId);
             if (screen) {
               await screenServerService.startServer(currentScreenId, screen.port, contentWithFullUrl);
@@ -155,7 +138,6 @@ const PreviewPage = () => {
     }
   };
   
-  // Ajouter un débogage pour afficher l'URL actuelle du contenu
   useEffect(() => {
     if (content) {
       console.log("Preview content URL:", content.url);
@@ -261,7 +243,31 @@ const PreviewPage = () => {
               </div>
             )}
             
-            {(content.type === 'pdf' || content.type === 'powerpoint') && (
+            {content.type === 'powerpoint' && (
+              <div className="flex flex-col items-center w-full">
+                <iframe 
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(content.url)}`}
+                  title={content.name}
+                  className="w-full h-[calc(100vh-8rem)] border rounded-md"
+                  onLoad={(e) => {
+                    console.log("PowerPoint iframe loaded successfully");
+                  }}
+                  onError={(e) => {
+                    console.error("Error loading PowerPoint:", content.url);
+                    toast({
+                      title: "Erreur de chargement",
+                      description: `Impossible de charger la présentation: ${content.url}`,
+                      variant: "destructive",
+                    });
+                  }}
+                />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Si la présentation ne s'affiche pas, vérifiez que l'URL est accessible publiquement: {content.url}
+                </p>
+              </div>
+            )}
+            
+            {content.type === 'pdf' && (
               <iframe 
                 src={content.url} 
                 title={content.name}
