@@ -13,6 +13,7 @@ interface UploadResult {
 export const useContentUpload = () => {
   const [isLoading, setIsLoading] = useState(false);
   const apiUrl = useAppStore(state => state.apiUrl);
+  const baseIpAddress = useAppStore(state => state.baseIpAddress);
 
   const uploadContent = async (
     file: File,
@@ -25,9 +26,15 @@ export const useContentUpload = () => {
         throw new Error("L'URL de l'API n'est pas configurée");
       }
       
-      // Ensure the API URL doesn't have trailing slashes
-      const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+      // Use the IP address from the app configuration rather than localhost
+      const formattedApiUrl = apiUrl.replace('localhost', baseIpAddress);
       
+      // Ensure the API URL doesn't have trailing slashes
+      const baseUrl = formattedApiUrl.endsWith('/') 
+        ? formattedApiUrl.slice(0, -1) 
+        : formattedApiUrl;
+      
+      console.log(`Using IP address from config: ${baseIpAddress}`);
       console.log(`Uploading to API URL: ${baseUrl}/api/upload`);
       
       // Create form data to send the file

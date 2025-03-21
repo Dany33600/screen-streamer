@@ -43,6 +43,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
   const { uploadContent, isLoading } = useContentUpload();
   const addContent = useAppStore(state => state.addContent);
   const apiUrl = useAppStore(state => state.apiUrl);
+  const baseIpAddress = useAppStore(state => state.baseIpAddress);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -105,13 +106,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
       }
       
       // Add to store with the URL from server
-      addContent({
-        id: Date.now().toString(),
-        name: contentName,
-        type: contentType,
-        url: result.url,
-        createdAt: new Date().toISOString()
-      });
+      addContent(selectedFile, contentType, result.url);
       
       resetContentForm();
       onOpenChange(false);
@@ -122,6 +117,12 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
       setUploadError(errorMessage);
       toast.error('Une erreur est survenue lors de l\'ajout du contenu');
     }
+  };
+
+  // Format the display URL to show the actual IP being used
+  const getDisplayApiUrl = () => {
+    if (!apiUrl) return "Non configurée";
+    return apiUrl.replace('localhost', baseIpAddress);
   };
 
   return (
@@ -216,7 +217,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
           </div>
           
           <div className="text-sm text-muted-foreground mt-2">
-            API URL: {apiUrl || "Non configurée"}
+            API URL: {getDisplayApiUrl()}
           </div>
         </div>
         <DialogFooter>

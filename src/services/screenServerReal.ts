@@ -1,7 +1,9 @@
+
 import { Content } from '@/types';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { htmlGenerator } from './htmlGenerator';
+import { useAppStore } from '@/store';
 
 interface ServerInstance {
   id: string;
@@ -25,14 +27,26 @@ class ScreenServerRealService {
   
   // Method to update the API base URL (can be called when the API URL changes)
   public updateApiBaseUrl(customApiUrl?: string): void {
+    // Get the current state from the store
+    const state = useAppStore.getState();
+    const configuredApiUrl = state.apiUrl;
+    const baseIpAddress = state.baseIpAddress;
+    
     if (customApiUrl) {
       // Remove trailing slash if present
       this.apiBaseUrl = customApiUrl.endsWith('/') 
         ? customApiUrl.slice(0, -1) + '/api'
         : customApiUrl + '/api';
+    } else if (configuredApiUrl) {
+      // Use the API URL from the store, replacing localhost with the actual IP address
+      const formattedApiUrl = configuredApiUrl.replace('localhost', baseIpAddress);
+      
+      this.apiBaseUrl = formattedApiUrl.endsWith('/') 
+        ? formattedApiUrl.slice(0, -1) + '/api'
+        : formattedApiUrl + '/api';
     } else {
-      // Determine the API URL dynamically based on the current window location
-      const hostname = window.location.hostname; // Use the current host (IP or domain)
+      // Fallback: determine the API URL based on the current window location
+      const hostname = baseIpAddress || window.location.hostname;
       const port = 5000; // Default API port
       this.apiBaseUrl = `http://${hostname}:${port}/api`;
     }
@@ -139,11 +153,7 @@ class ScreenServerRealService {
       }
       
       if (!content) {
-        toast({
-          title: "Erreur",
-          description: "Aucun contenu n'est assigné à cet écran",
-          variant: "destructive",
-        });
+        toast.error("Aucun contenu n'est assigné à cet écran");
         return false;
       }
       
@@ -153,7 +163,8 @@ class ScreenServerRealService {
       const serverId = screenId; // Utiliser l'ID de l'écran directement comme ID du serveur
       
       // Créer une URL pour accéder au serveur depuis l'extérieur
-      const hostname = window.location.hostname; // Obtenir l'IP du serveur actuel
+      const baseIpAddress = useAppStore.getState().baseIpAddress;
+      const hostname = baseIpAddress || window.location.hostname; // Obtenir l'IP du serveur actuel
       const serverUrl = `http://${hostname}:${port}`;
       
       // Générer le HTML pour l'affichage
@@ -213,11 +224,7 @@ class ScreenServerRealService {
       console.log(`Serveur démarré avec succès sur le port ${port}:`, data);
     } catch (error) {
       console.error(`Erreur lors du démarrage du serveur HTTP sur le port ${port}:`, error);
-      toast({
-        title: "Erreur serveur",
-        description: `Impossible de démarrer le serveur sur le port ${port}. Vérifiez que le serveur API est en cours d'exécution (node src/server.js).`,
-        variant: "destructive",
-      });
+      toast.error(`Impossible de démarrer le serveur sur le port ${port}. Vérifiez que le serveur API est en cours d'exécution (node src/server.js).`);
       throw error; // Propager l'erreur pour pouvoir la gérer au niveau supérieur
     }
   }
@@ -353,7 +360,8 @@ class ScreenServerRealService {
    */
   checkServerStatus(port: number): Promise<boolean> {
     return new Promise((resolve) => {
-      const hostname = window.location.hostname; // Obtenir l'IP du serveur actuel
+      const baseIpAddress = useAppStore.getState().baseIpAddress;
+      const hostname = baseIpAddress || window.location.hostname; // Obtenir l'IP du serveur actuel
       const serverUrl = `http://${hostname}:${port}/ping`;
       
       fetch(serverUrl, { 
