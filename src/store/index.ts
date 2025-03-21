@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { Content, Screen, Playlist, ContentType } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -6,25 +7,34 @@ interface AppState {
   contents: Content[];
   screens: Screen[];
   playlists: Playlist[];
+  isConfigMode: boolean;
+  basePort: number;
+  baseIpAddress: string;
   addContent: (file: File | null, type: ContentType, url: string, metadata: string) => void;
   updateContent: (id: string, updates: Partial<Omit<Content, 'id' | 'url' | 'file' | 'createdAt'>>) => void;
   removeContent: (id: string) => void;
-  addScreen: (name: string, port: number, ipAddress: string) => void;
+  addScreen: (name: string, port?: number, ipAddress?: string) => void;
   updateScreen: (id: string, updates: Partial<Omit<Screen, 'id' | 'createdAt'>>) => void;
   removeScreen: (id: string) => void;
   assignContentToScreen: (screenId: string, contentId: string) => void;
   unassignContentFromScreen: (screenId: string) => void;
-  addPlaylist: (name: string) => void;
+  addPlaylist: (name: string, contentIds?: string[]) => void;
   updatePlaylist: (id: string, updates: Partial<Omit<Playlist, 'id' | 'createdAt'>>) => void;
   removePlaylist: (id: string) => void;
   addContentToPlaylist: (playlistId: string, contentId: string) => void;
   removeContentFromPlaylist: (playlistId: string, contentId: string) => void;
+  toggleConfigMode: () => void;
+  setBasePort: (port: number) => void;
+  setBaseIpAddress: (ipAddress: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   contents: [],
   screens: [],
   playlists: [],
+  isConfigMode: true,
+  basePort: 5550,
+  baseIpAddress: '127.0.0.1',
   addContent: (file, type, url, metadata) =>
     set((state) => ({
       contents: [
@@ -37,8 +47,7 @@ export const useAppStore = create<AppState>((set) => ({
           file,
           createdAt: Date.now(),
           thumbnail: type === 'image' ? url : undefined,
-          // You might want to parse the metadata here if you need to use it as an object
-          metadata, // Store the metadata as a string
+          metadata,
         },
       ],
     })),
@@ -52,15 +61,15 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({
       contents: state.contents.filter((content) => content.id !== id),
     })),
-  addScreen: (name, port, ipAddress) =>
+  addScreen: (name, port = 8080, ipAddress = '127.0.0.1') =>
     set((state) => ({
       screens: [
         ...state.screens,
         {
           id: uuidv4(),
           name,
-          port,
-          ipAddress,
+          port: port || state.basePort + state.screens.length,
+          ipAddress: ipAddress || state.baseIpAddress,
           status: 'offline',
           createdAt: Date.now(),
         },
@@ -88,14 +97,14 @@ export const useAppStore = create<AppState>((set) => ({
         screen.id === screenId ? { ...screen, contentId: undefined } : screen
       ),
     })),
-  addPlaylist: (name) =>
+  addPlaylist: (name, contentIds = []) =>
     set((state) => ({
       playlists: [
         ...state.playlists,
         {
           id: uuidv4(),
           name,
-          contentIds: [],
+          contentIds: contentIds,
           createdAt: Date.now(),
         },
       ],
@@ -128,5 +137,17 @@ export const useAppStore = create<AppState>((set) => ({
             }
           : playlist
       ),
+    })),
+  toggleConfigMode: () =>
+    set((state) => ({
+      isConfigMode: !state.isConfigMode,
+    })),
+  setBasePort: (port) =>
+    set(() => ({
+      basePort: port,
+    })),
+  setBaseIpAddress: (ipAddress) =>
+    set(() => ({
+      baseIpAddress: ipAddress,
     })),
 }));
