@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { Content } from '@/types';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { screenServerService } from '@/services/screenServerReal';
 import { toast } from '@/hooks/use-toast';
@@ -137,6 +137,17 @@ const PreviewPage = () => {
       window.open(content.url, '_blank');
     }
   };
+
+  const handleDownload = () => {
+    if (content) {
+      const link = document.createElement('a');
+      link.href = content.url;
+      link.download = content.name || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
   
   useEffect(() => {
     if (content) {
@@ -180,10 +191,16 @@ const PreviewPage = () => {
           </p>
         </div>
         
-        <Button variant="outline" size="sm" onClick={handleOpenInNewTab}>
-          <ExternalLink className="mr-2 h-4 w-4" />
-          Ouvrir
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleDownload}>
+            <Download className="mr-2 h-4 w-4" />
+            Télécharger
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleOpenInNewTab}>
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Ouvrir
+          </Button>
+        </div>
       </div>
       
       <div className="pt-20 px-4 pb-4 flex justify-center min-h-screen">
@@ -245,24 +262,52 @@ const PreviewPage = () => {
             
             {content.type === 'powerpoint' && (
               <div className="flex flex-col items-center w-full">
-                <iframe 
-                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(content.url)}`}
-                  title={content.name}
-                  className="w-full h-[calc(100vh-8rem)] border rounded-md"
-                  onLoad={(e) => {
-                    console.log("PowerPoint iframe loaded successfully");
-                  }}
-                  onError={(e) => {
-                    console.error("Error loading PowerPoint:", content.url);
-                    toast({
-                      title: "Erreur de chargement",
-                      description: `Impossible de charger la présentation: ${content.url}`,
-                      variant: "destructive",
-                    });
-                  }}
-                />
+                <div className="w-full h-[calc(100vh-10rem)] border rounded-md overflow-hidden bg-neutral-900 text-white flex flex-col">
+                  <div className="bg-neutral-800 p-4 text-center">
+                    <h3 className="text-lg font-medium">{content.name}</h3>
+                  </div>
+                  <div className="flex-1 flex items-center justify-center p-8">
+                    <object 
+                      data={content.url} 
+                      type="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                      className="w-full h-full"
+                      onError={(e) => {
+                        console.error("Error loading PowerPoint:", content.url);
+                        toast({
+                          title: "Information",
+                          description: "Prévisualisation PowerPoint non disponible. Veuillez télécharger ou ouvrir le fichier.",
+                          variant: "default",
+                        });
+                      }}
+                    >
+                      <div className="text-center p-8">
+                        <p className="mb-4">La prévisualisation directe de PowerPoint n'est pas disponible.</p>
+                        <div className="flex gap-4 justify-center">
+                          <Button onClick={handleDownload}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Télécharger
+                          </Button>
+                          <Button onClick={handleOpenInNewTab}>
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Ouvrir
+                          </Button>
+                        </div>
+                      </div>
+                    </object>
+                  </div>
+                  <div className="bg-neutral-800 p-4 flex justify-center space-x-4">
+                    <Button onClick={handleDownload}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Télécharger
+                    </Button>
+                    <Button onClick={handleOpenInNewTab}>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Ouvrir
+                    </Button>
+                  </div>
+                </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Si la présentation ne s'affiche pas, vérifiez que l'URL est accessible publiquement: {content.url}
+                  La prévisualisation directe des fichiers PowerPoint peut ne pas être disponible. Utilisez les boutons ci-dessus pour accéder au fichier.
                 </p>
               </div>
             )}
