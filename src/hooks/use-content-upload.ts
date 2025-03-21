@@ -8,6 +8,7 @@ interface UploadResult {
   success: boolean;
   url?: string;
   error?: string;
+  contentId?: string;
 }
 
 export const useContentUpload = () => {
@@ -37,11 +38,17 @@ export const useContentUpload = () => {
       console.log(`Using IP address from config: ${baseIpAddress}`);
       console.log(`Uploading to API URL: ${baseUrl}/api/upload`);
       
+      // Générer un ID de contenu basé sur l'horodatage et le nom du fichier (pour être plus unique)
+      const timestamp = Date.now();
+      const contentId = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      console.log(`Génération d'un content ID: ${contentId}`);
+      
       // Create form data to send the file
       const formData = new FormData();
       formData.append('file', file);
       formData.append('contentType', contentType);
-      formData.append('contentId', Date.now().toString()); // Use timestamp as temporary ID
+      formData.append('contentId', contentId);
+      formData.append('originalName', file.name);
 
       // Use the full API URL from the store
       const uploadUrl = `${baseUrl}/api/upload`;
@@ -83,26 +90,46 @@ export const useContentUpload = () => {
         throw new Error(data.message || "Échec de l'upload pour une raison inconnue");
       }
 
-      // Préparer l'URL complète au lieu d'une URL relative
       // Extraire le baseApiUrl (sans /api) pour accéder aux fichiers statiques
       const apiBaseWithoutPath = baseUrl.split('/api')[0];
       
       // Construire l'URL complète avec l'adresse IP et le port
       // Si l'URL commence par un slash, supprimer le slash pour éviter les doubles slashes
       const fileUrl = data.url || data.filePath;
-      const fullFileUrl = fileUrl.startsWith('/') 
-        ? `${apiBaseWithoutPath}${fileUrl}`
-        : `${apiBaseWithoutPath}/${fileUrl}`;
+      const fullFileUrl = fileUrl.startsWith('http') 
+        ? fileUrl // Si l'URL est déjà complète (commence par http), utiliser telle quelle
+        : fileUrl.startsWith('/') 
+          ? `${apiBaseWithoutPath}${fileUrl}`
+          : `${apiBaseWithoutPath}/${fileUrl}`;
       
       console.log("Generated full file URL:", fullFileUrl);
+
+      // Vérifier si le contenu a été correctement créé en appelant l'API pour récupérer les détails
+      console.log(`Vérification de la création du contenu avec ID: ${contentId}`);
+      try {
+        const contentCheckUrl = `${baseUrl}/api/content/${contentId}`;
+        console.log(`Requête de vérification du contenu: ${contentCheckUrl}`);
+        
+        const contentCheckResponse = await fetch(contentCheckUrl);
+        if (contentCheckResponse.ok) {
+          console.log("Le contenu a été correctement enregistré sur le serveur");
+        } else {
+          console.warn("Le contenu n'a pas pu être vérifié, mais l'upload a réussi");
+        }
+      } catch (checkError) {
+        console.warn("Erreur lors de la vérification du contenu:", checkError);
+      }
 
       return {
         success: true,
         url: fullFileUrl,
+        contentId: contentId,
       };
     } catch (error) {
       console.error('Erreur d\'upload:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      
+      toast.error(`Erreur d'upload: ${errorMessage}`);
       
       return {
         success: false,

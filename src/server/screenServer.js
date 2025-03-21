@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -14,6 +15,7 @@ const STORAGE_DIR = path.join(__dirname, '..', '..', 'storage');
 const CONTENT_DIR = path.join(STORAGE_DIR, 'content');
 const UPLOADS_DIR = path.join(STORAGE_DIR, 'uploads');
 
+// Création des répertoires si nécessaire
 if (!fs.existsSync(STORAGE_DIR)) {
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
   console.log(`Répertoire de stockage créé: ${STORAGE_DIR}`);
@@ -53,6 +55,7 @@ const upload = multer({
   }
 });
 
+// Fonctions de gestion des serveurs
 function startServer(port, html) {
   if (runningServers.has(port)) {
     stopServer(port);
@@ -116,10 +119,21 @@ function updateServer(port, html) {
   return startServer(port, html);
 }
 
+// Fonction améliorée pour enregistrer les données de contenu
 function saveContentData(contentId, contentData) {
   try {
-    const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
+    // Logs pour le débogage
+    console.log(`Sauvegarde du contenu avec ID: ${contentId}`);
+    console.log(`Données de contenu:`, JSON.stringify(contentData, null, 2));
+    
+    // S'assurer que le contentId est une chaîne valide pour un nom de fichier
+    const sanitizedContentId = contentId.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const contentPath = path.join(CONTENT_DIR, `${sanitizedContentId}.json`);
+    
+    // Écrire le fichier JSON
     fs.writeFileSync(contentPath, JSON.stringify(contentData, null, 2));
+    console.log(`Contenu sauvegardé avec succès dans: ${contentPath}`);
+    
     return true;
   } catch (error) {
     console.error(`Erreur lors de la sauvegarde du contenu ${contentId}:`, error);
@@ -127,13 +141,47 @@ function saveContentData(contentId, contentData) {
   }
 }
 
+// Fonction améliorée pour récupérer les données de contenu
 function getContentData(contentId) {
   try {
-    const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
-    if (fs.existsSync(contentPath)) {
-      const data = fs.readFileSync(contentPath, 'utf8');
+    console.log(`Recherche du contenu avec ID: ${contentId}`);
+    
+    // Vérifier si l'ID est déjà formaté comme un nom de fichier complet (avec .json)
+    if (contentId.endsWith('.json')) {
+      const directPath = path.join(CONTENT_DIR, contentId);
+      if (fs.existsSync(directPath)) {
+        console.log(`Fichier trouvé (chemin direct): ${directPath}`);
+        const data = fs.readFileSync(directPath, 'utf8');
+        return JSON.parse(data);
+      }
+    }
+    
+    // Essayer avec l'ID exact
+    const exactPath = path.join(CONTENT_DIR, `${contentId}.json`);
+    if (fs.existsSync(exactPath)) {
+      console.log(`Fichier trouvé (ID exact): ${exactPath}`);
+      const data = fs.readFileSync(exactPath, 'utf8');
       return JSON.parse(data);
     }
+    
+    // Si le fichier n'est pas trouvé, rechercher par correspondance partielle
+    console.log(`Fichier non trouvé. Recherche de correspondances partielles pour: ${contentId}`);
+    const files = fs.readdirSync(CONTENT_DIR);
+    
+    // Recherche de fichiers qui contiennent le contentId
+    for (const file of files) {
+      if (file.includes(contentId) || file.includes(contentId.replace(/[^a-zA-Z0-9-_]/g, '_'))) {
+        const filePath = path.join(CONTENT_DIR, file);
+        console.log(`Correspondance partielle trouvée: ${filePath}`);
+        const data = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(data);
+      }
+    }
+    
+    // Lister tous les fichiers disponibles pour le débogage
+    console.log('Aucune correspondance trouvée. Fichiers disponibles:');
+    console.log(files);
+    
     return null;
   } catch (error) {
     console.error(`Erreur lors de la récupération du contenu ${contentId}:`, error);
@@ -146,16 +194,23 @@ function listAllContent() {
     const files = fs.readdirSync(CONTENT_DIR);
     const contentList = [];
     
+    console.log(`Listage des contenus. ${files.length} fichiers trouvés.`);
+    
     for (const file of files) {
       if (file.endsWith('.json')) {
-        const contentId = file.replace('.json', '');
-        const content = getContentData(contentId);
-        if (content) {
-          contentList.push(content);
+        try {
+          const contentId = file.replace('.json', '');
+          const content = getContentData(contentId);
+          if (content) {
+            contentList.push(content);
+          }
+        } catch (err) {
+          console.error(`Erreur lors du traitement du fichier ${file}:`, err);
         }
       }
     }
     
+    console.log(`${contentList.length} contenus valides trouvés.`);
     return contentList;
   } catch (error) {
     console.error('Erreur lors de la récupération de la liste des contenus:', error);
@@ -302,6 +357,7 @@ function createApiServer(apiPort = 5000) {
         
         console.log('Fichier uploadé:', req.file);
         
+        // Récupérer les informations sur le réseau
         const nets = os.networkInterfaces();
         let ipAddress = 'localhost';
         
@@ -315,10 +371,33 @@ function createApiServer(apiPort = 5000) {
           if (ipAddress !== 'localhost') break;
         }
         
+        // Construire l'URL complète du fichier
         const serverPort = process.env.API_PORT || 5000;
         const fullFileUrl = `http://${ipAddress}:${serverPort}/uploads/${req.file.filename}`;
         
         console.log(`Generated full file URL: ${fullFileUrl}`);
+        
+        // Si le contentId est fourni dans la requête, enregistrer également les métadonnées
+        if (req.body.contentId && req.body.contentType) {
+          const contentId = req.body.contentId;
+          const contentType = req.body.contentType;
+          const contentName = req.file.originalname;
+          
+          console.log(`Enregistrement des métadonnées pour le contentId: ${contentId}`);
+          
+          // Créer un objet contenu
+          const contentData = {
+            id: contentId,
+            name: contentName,
+            type: contentType,
+            url: fullFileUrl,
+            filePath: req.file.path,
+            createdAt: Date.now()
+          };
+          
+          // Sauvegarder les métadonnées
+          saveContentData(contentId, contentData);
+        }
         
         res.json({
           success: true,
@@ -419,6 +498,7 @@ function createApiServer(apiPort = 5000) {
         return res.status(400).json({ success: false, message: 'ID de contenu et données requis' });
       }
       
+      console.log(`Sauvegarde du contenu ${contentId} via API POST`);
       const success = saveContentData(contentId, content);
       
       if (success) {
@@ -440,11 +520,13 @@ function createApiServer(apiPort = 5000) {
         return res.status(400).json({ success: false, message: 'ID de contenu requis' });
       }
       
+      console.log(`Récupération du contenu ${contentId} via API GET`);
       const content = getContentData(contentId);
       
       if (content) {
         res.json({ success: true, content });
       } else {
+        console.log(`Contenu ${contentId} non trouvé`);
         res.status(404).json({ success: false, message: `Contenu ${contentId} non trouvé` });
       }
     } catch (error) {
@@ -455,6 +537,7 @@ function createApiServer(apiPort = 5000) {
   
   app.get('/api/content', (req, res) => {
     try {
+      console.log('Récupération de tous les contenus via API GET');
       const contentList = listAllContent();
       res.json({ success: true, contentList });
     } catch (error) {
