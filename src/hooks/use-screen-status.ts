@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Screen, Content } from '@/types';
-import { screenServerService } from '@/server/screenServer';
+import { screenServerService } from '@/services/screenServerMock';
 import { useAppStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
 

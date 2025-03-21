@@ -11,7 +11,6 @@ const ErrorFallback = () => (
       <h1 className="mb-4 text-4xl font-bold">Une erreur est survenue</h1>
       <p className="mb-6 text-muted-foreground">
         Nous sommes désolés, une erreur s'est produite lors du chargement de l'application.
-        Veuillez vérifier la console pour plus de détails.
       </p>
       <button 
         onClick={() => window.location.reload()} 

@@ -11,15 +11,7 @@ import ConfigPage from "./pages/ConfigPage";
 import PreviewPage from "./pages/PreviewPage";
 import NotFound from "./pages/NotFound";
 
-// Create a new QueryClient instance with default options
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

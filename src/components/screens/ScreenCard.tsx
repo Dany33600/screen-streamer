@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Screen, Content } from '@/types';
 import { useAppStore } from '@/store';
@@ -44,11 +45,11 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
     (content) => content.id === screen.contentId
   );
   
-  const { isOnline, startServer, stopServer } = useScreenStatus(screen);
+  const { isOnline, startServer, stopServer, updateServer } = useScreenStatus(screen);
 
   const handleOpenScreen = () => {
-    // Dans un environnement de navigateur, on ne peut pas ouvrir un vrai serveur local
-    // On va donc rediriger vers la page de prévisualisation
+    const url = `http://${screen.ipAddress}:${screen.port}`;
+    
     if (!isOnline) {
       const success = startServer();
       if (success) {
@@ -57,8 +58,12 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
           description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
         });
         
-        // Rediriger vers la page de prévisualisation
-        window.open(`/preview?screenId=${screen.id}`, '_blank');
+        // Au lieu d'ouvrir l'URL, montrer une alerte
+        toast({
+          title: "Mode Simulation",
+          description: "Cette application utilise un serveur simulé. Dans un environnement de production, un vrai serveur serait utilisé.",
+          variant: "default",
+        });
       } else {
         toast({
           title: "Erreur de démarrage",
@@ -67,8 +72,12 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         });
       }
     } else {
-      // Rediriger vers la page de prévisualisation
-      window.open(`/preview?screenId=${screen.id}`, '_blank');
+      // Au lieu d'ouvrir l'URL, montrer une alerte
+      toast({
+        title: "Mode Simulation",
+        description: "Cette application utilise un serveur simulé. Dans un environnement de production, un vrai serveur serait utilisé.",
+        variant: "default",
+      });
     }
   };
   
@@ -161,7 +170,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleOpenScreen}>
                 <ExternalLink size={16} className="mr-2" />
-                Ouvrir l'écran
+                Simuler l'écran
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(screen.id)}
@@ -191,7 +200,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         <Alert className="mt-3 py-2 text-xs">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Prévisualiser: <span className="font-mono">/preview?screenId={screen.id}</span>
+            Mode simulation: cette application simule le serveur
           </AlertDescription>
         </Alert>
       </CardContent>
