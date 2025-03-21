@@ -6,6 +6,7 @@ import { ArrowLeft, ExternalLink, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { screenServerService } from '@/services/screenServerReal';
 import { toast } from '@/hooks/use-toast';
+import { htmlGenerator } from '@/services/htmlGenerator';
 
 const PreviewPage = () => {
   const location = useLocation();
@@ -266,34 +267,22 @@ const PreviewPage = () => {
                   <div className="bg-neutral-800 p-4 text-center">
                     <h3 className="text-lg font-medium">{content.name}</h3>
                   </div>
-                  <div className="flex-1 flex items-center justify-center p-8">
-                    <object 
-                      data={content.url} 
-                      type="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                      className="w-full h-full"
-                      onError={(e) => {
-                        console.error("Error loading PowerPoint:", content.url);
+                  <div className="flex-1 flex items-center justify-center p-4">
+                    <iframe
+                      src={`data:text/html;charset=utf-8,${encodeURIComponent(
+                        htmlGenerator.generateHtml(content)
+                      )}`}
+                      title={content.name}
+                      className="w-full h-full border-none"
+                      sandbox="allow-same-origin allow-scripts allow-popups"
+                      onError={() => {
                         toast({
-                          title: "Information",
-                          description: "Prévisualisation PowerPoint non disponible. Veuillez télécharger ou ouvrir le fichier.",
-                          variant: "default",
+                          title: "Erreur",
+                          description: "Impossible de charger la présentation avec reveal.js",
+                          variant: "destructive",
                         });
                       }}
-                    >
-                      <div className="text-center p-8">
-                        <p className="mb-4">La prévisualisation directe de PowerPoint n'est pas disponible.</p>
-                        <div className="flex gap-4 justify-center">
-                          <Button onClick={handleDownload}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Télécharger
-                          </Button>
-                          <Button onClick={handleOpenInNewTab}>
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            Ouvrir
-                          </Button>
-                        </div>
-                      </div>
-                    </object>
+                    />
                   </div>
                   <div className="bg-neutral-800 p-4 flex justify-center space-x-4">
                     <Button onClick={handleDownload}>
@@ -307,7 +296,7 @@ const PreviewPage = () => {
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  La prévisualisation directe des fichiers PowerPoint peut ne pas être disponible. Utilisez les boutons ci-dessus pour accéder au fichier.
+                  La prévisualisation utilise reveal.js pour afficher le contenu. Si vous rencontrez des problèmes, téléchargez le fichier.
                 </p>
               </div>
             )}
@@ -335,3 +324,4 @@ const PreviewPage = () => {
 };
 
 export default PreviewPage;
+

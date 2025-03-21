@@ -143,7 +143,7 @@ class HtmlGeneratorService {
         `;
         
       case 'powerpoint':
-        // Utiliser une approche directe d'intégration de PowerPoint
+        // Utiliser reveal.js pour afficher les présentations
         return `
           <!DOCTYPE html>
           <html lang="fr">
@@ -151,6 +151,8 @@ class HtmlGeneratorService {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Écran - ${content.name}</title>
+            <link rel="stylesheet" href="/node_modules/reveal.js/dist/reveal.css">
+            <link rel="stylesheet" href="/node_modules/reveal.js/dist/theme/black.css">
             <style>
               body, html {
                 margin: 0;
@@ -159,34 +161,32 @@ class HtmlGeneratorService {
                 width: 100%;
                 overflow: hidden;
                 background-color: #000;
-                display: flex;
-                flex-direction: column;
                 color: white;
                 font-family: Arial, sans-serif;
               }
               .header {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
                 padding: 10px;
-                background-color: #333;
+                background-color: rgba(0,0,0,0.7);
+                z-index: 100;
                 text-align: center;
               }
-              .content {
-                flex: 1;
-                display: flex;
-                justify-content: center;
-                align-items: center;
+              .file-info {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 10px;
+                background-color: rgba(0,0,0,0.7);
+                z-index: 100;
+                text-align: center;
+                font-size: 14px;
               }
-              iframe {
-                width: 100%;
-                height: 100%;
-                border: none;
-              }
-              embed {
-                width: 100%;
-                height: 100%;
-              }
-              object {
-                width: 100%;
-                height: 100%;
+              .reveal {
+                height: 100vh;
               }
               .error-message {
                 color: white;
@@ -194,21 +194,21 @@ class HtmlGeneratorService {
                 text-align: center;
                 padding: 20px;
               }
+              iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+              }
               .fallback-container {
-                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
                 padding: 20px;
-              }
-              .fallback-container img {
-                max-width: 100%;
-                max-height: 70vh;
-                object-fit: contain;
-              }
-              .controls {
-                padding: 10px;
-                background-color: #333;
                 text-align: center;
               }
-              button {
+              .download-btn {
                 background-color: #4CAF50;
                 border: none;
                 color: white;
@@ -217,7 +217,7 @@ class HtmlGeneratorService {
                 text-decoration: none;
                 display: inline-block;
                 font-size: 16px;
-                margin: 4px 2px;
+                margin: 10px 2px;
                 cursor: pointer;
                 border-radius: 4px;
               }
@@ -227,34 +227,55 @@ class HtmlGeneratorService {
             <div class="header">
               <h2>${content.name}</h2>
             </div>
-            <div class="content">
-              <!-- Essai avec object -->
-              <object 
-                data="${contentUrl}" 
-                type="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                width="100%" 
-                height="100%"
-                onerror="document.getElementById('fallback').style.display='block'; this.style.display='none';"
-              >
-                <!-- Fallback pour navigateurs qui ne supportent pas object -->
-                <div id="fallback" class="fallback-container">
-                  <p>Votre navigateur ne peut pas afficher ce fichier PowerPoint directement.</p>
-                  <p>
-                    <a href="${contentUrl}" download>Télécharger la présentation</a>
-                  </p>
-                  <div>
-                    <p>Aperçu indisponible pour le fichier:</p>
-                    <p>${contentUrl}</p>
-                  </div>
-                </div>
-              </object>
+            
+            <div class="reveal">
+              <div class="slides">
+                <section data-markdown="${contentUrl}"
+                  data-separator="^\\n---\\n"
+                  data-separator-vertical="^\\n--\\n"
+                  data-separator-notes="^Note:"
+                  data-charset="utf-8">
+                </section>
+              </div>
             </div>
-            <div class="controls">
-              <a href="${contentUrl}" download>
-                <button>Télécharger</button>
-              </a>
-              <button onclick="window.open('${contentUrl}', '_blank')">Ouvrir dans un nouvel onglet</button>
+            
+            <div class="file-info">
+              Présentation: ${content.name}
             </div>
+
+            <script src="/node_modules/reveal.js/dist/reveal.js"></script>
+            <script src="/node_modules/reveal.js/plugin/markdown/markdown.js"></script>
+            <script src="/node_modules/reveal.js/plugin/highlight/highlight.js"></script>
+            <script src="/node_modules/reveal.js/plugin/notes/notes.js"></script>
+            <script>
+              // Fonction pour vérifier si la présentation a chargé correctement
+              function checkPresentationLoaded() {
+                const slides = document.querySelector('.slides');
+                if (slides && slides.children.length === 0) {
+                  // Aucune diapositive n'a été chargée, afficher le fallback
+                  document.body.innerHTML = \`
+                    <div class="fallback-container">
+                      <h2>Impossible de charger la présentation avec reveal.js</h2>
+                      <p>Le fichier peut ne pas être dans un format compatible (Markdown).</p>
+                      <p>URL: ${contentUrl}</p>
+                      <a href="${contentUrl}" download class="download-btn">Télécharger la présentation</a>
+                    </div>
+                  \`;
+                }
+              }
+              
+              // Initialiser reveal.js
+              Reveal.initialize({
+                hash: true,
+                autoSlide: 5000,
+                loop: true,
+                transition: 'slide',
+                plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+              }).then(checkPresentationLoaded);
+              
+              // Vérifier après 5 secondes si la présentation a chargé
+              setTimeout(checkPresentationLoaded, 5000);
+            </script>
           </body>
           </html>
         `;
