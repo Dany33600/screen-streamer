@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Settings, Network, MonitorPlay, Save, RefreshCw } from 'lucide-react';
+import { Settings, Network, MonitorPlay, Save, RefreshCw, AlertTriangle } from 'lucide-react';
 
 const ConfigPage = () => {
   const basePort = useAppStore((state) => state.basePort);
@@ -37,10 +37,13 @@ const ConfigPage = () => {
   const getLocalIpAddress = async () => {
     try {
       const pc = new RTCPeerConnection({
-        iceServers: [],
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ],
       });
       
-      pc.createDataChannel('');
+      pc.createDataChannel('finder');
       
       await pc.createOffer().then(offer => pc.setLocalDescription(offer));
       
@@ -48,22 +51,24 @@ const ConfigPage = () => {
         const timeout = setTimeout(() => {
           pc.onicecandidate = null;
           pc.close();
-          reject(new Error("Timeout de détection d'IP"));
+          reject(new Error("Délai d'attente dépassé pour la détection d'IP"));
         }, 5000);
         
         pc.onicecandidate = (ice) => {
-          if (ice.candidate) {
-            const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
-            const matches = ipRegex.exec(ice.candidate.candidate);
-            
-            if (matches && matches[1]) {
-              const ip = matches[1];
-              if (ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
-                clearTimeout(timeout);
-                resolve(ip);
-                pc.onicecandidate = null;
-                pc.close();
-              }
+          if (!ice || !ice.candidate) return;
+          
+          const { candidate } = ice.candidate;
+          const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+          const matches = ipRegex.exec(candidate);
+          
+          if (matches && matches[1]) {
+            const ip = matches[1];
+            if (ip.startsWith('192.168.') || ip.startsWith('10.') || 
+                (ip.startsWith('172.') && parseInt(ip.split('.')[1], 10) >= 16 && parseInt(ip.split('.')[1], 10) <= 31)) {
+              clearTimeout(timeout);
+              pc.onicecandidate = null;
+              pc.close();
+              resolve(ip);
             }
           }
         };
@@ -72,6 +77,10 @@ const ConfigPage = () => {
       console.error('Erreur lors de la détection de l\'adresse IP:', error);
       throw error;
     }
+  };
+  
+  const getFallbackIpAddress = () => {
+    return baseIpAddress;
   };
   
   const handleSaveNetworkConfig = () => {
@@ -103,17 +112,29 @@ const ConfigPage = () => {
     setIsSaving(true);
     
     try {
-      const detectedIp = await getLocalIpAddress();
+      let detectedIp;
+      
+      try {
+        detectedIp = await getLocalIpAddress();
+      } catch (error) {
+        console.log("Erreur avec la méthode principale:", error);
+        toast.warning('La méthode principale de détection a échoué, utilisation de la méthode alternative');
+        detectedIp = getFallbackIpAddress();
+      }
       
       if (detectedIp) {
         setIpValue(detectedIp);
         toast.success('Adresse IP locale détectée: ' + detectedIp);
       } else {
-        toast.warning('Impossible de détecter l\'adresse IP automatiquement');
+        toast({
+          title: "Détection impossible",
+          description: "Impossible de détecter l'adresse IP automatiquement. Veuillez l'entrer manuellement.",
+          icon: <AlertTriangle className="text-amber-500" />
+        });
       }
     } catch (error) {
-      console.error('Erreur:', error);
-      toast.error('Erreur lors de la détection de l\'adresse IP');
+      console.error('Erreur finale:', error);
+      toast.error("Détection d'IP impossible. Veuillez vérifier votre connexion réseau.");
     } finally {
       setIsSaving(false);
     }
