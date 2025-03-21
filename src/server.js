@@ -1,6 +1,6 @@
 
 // Script de démarrage du serveur Express pour les écrans
-const { createApiServer } = require('./server/screenServer');
+import { createApiServer } from './server/screenServer.js';
 
 // Port sur lequel le serveur API sera accessible
 const API_PORT = process.env.API_PORT || 5000;

@@ -1,7 +1,7 @@
 
-const express = require('express');
-const cors = require('cors');
-const { createServer } = require('http');
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
 
 // Map pour stocker les serveurs en cours d'exécution
 const runningServers = new Map();
@@ -156,7 +156,7 @@ function createApiServer(apiPort = 5000) {
 }
 
 // Exporter les fonctions
-module.exports = {
+export {
   startServer,
   stopServer,
   updateServer,
