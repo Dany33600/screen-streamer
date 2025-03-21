@@ -23,7 +23,7 @@ import {
 import { Screen, Content } from '@/types';
 import { PlusCircle, MonitorPlay, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { screenServerServiceMock } from '@/services/screenServerMock';
+import { screenServerService } from '@/services/screenServerMock';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
@@ -86,8 +86,7 @@ const ScreensPage = () => {
   };
   
   const handleDeleteScreen = (id: string) => {
-    // Arrêter le serveur avant de supprimer l'écran
-    screenServerServiceMock.stopServer(id);
+    screenServerService.stopServer(id);
     removeScreen(id);
     toast({
       title: 'Écran supprimé avec succès',
@@ -97,15 +96,13 @@ const ScreensPage = () => {
   const handleAssignContent = () => {
     if (!currentScreen) return;
     
-    // Déterminer si nous devons assigner un contenu ou le retirer
     const contentId = selectedContentId === 'none' ? undefined : selectedContentId;
     
     assignContentToScreen(currentScreen.id, contentId);
     
-    // Mettre à jour le serveur avec le nouveau contenu si nécessaire
-    if (screenServerServiceMock.isServerRunning(currentScreen.id)) {
+    if (screenServerService.isServerRunning(currentScreen.id)) {
       const content = contentId ? contents.find(c => c.id === contentId) : undefined;
-      screenServerServiceMock.updateServer(currentScreen.id, currentScreen.port, content);
+      screenServerService.updateServer(currentScreen.id, currentScreen.port, content);
     }
     
     setCurrentScreen(null);
@@ -192,7 +189,6 @@ const ScreensPage = () => {
         )}
       </div>
 
-      {/* Dialog: Ajouter un écran */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -222,7 +218,6 @@ const ScreensPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Modifier un écran */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -251,7 +246,6 @@ const ScreensPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Assigner du contenu */}
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
