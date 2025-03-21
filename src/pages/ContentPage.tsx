@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -24,7 +23,7 @@ import {
 import { Content, Screen, ContentType } from '@/types';
 import { PlusCircle, FileUp, Search, Film, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useConfig } from '@/hooks/use-screen-status';
+import { useConfig } from '@/hooks/use-config';
 
 const ContentPage = () => {
   const contents = useAppStore((state) => state.contents);
@@ -61,7 +60,6 @@ const ContentPage = () => {
     setSelectedFileURL(url);
     setContentName(file.name);
     
-    // Auto-detect content type
     const extension = file.name.split('.').pop()?.toLowerCase() || '';
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) {
       setContentType('image');
@@ -95,11 +93,9 @@ const ContentPage = () => {
     setIsUploading(true);
     
     try {
-      // Créer un FormData pour l'upload du fichier
       const formData = new FormData();
       formData.append('file', selectedFile);
       
-      // Envoyer le fichier au serveur
       const uploadResponse = await fetch(`${serverUrl}/api/upload`, {
         method: 'POST',
         body: formData,
@@ -116,19 +112,17 @@ const ContentPage = () => {
         throw new Error(uploadResult.message || 'Erreur lors de l\'upload du fichier');
       }
       
-      // Utiliser l'URL du fichier uploadé au lieu du Blob URL
       const fileInfo = uploadResult.file;
       
-      // Ajouter le contenu avec les informations du fichier uploadé
       addContent(
         selectedFile,
         contentType, 
         fileInfo.url,
-        {
+        JSON.stringify({
           filePath: fileInfo.path,
           serverUrl: serverUrl,
           size: fileInfo.size
-        }
+        })
       );
       
       resetContentForm();
@@ -507,3 +501,4 @@ const ContentPage = () => {
 };
 
 export default ContentPage;
+
