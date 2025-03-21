@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -36,8 +37,8 @@ const ConfigPage = () => {
   
   const getLocalIpAddress = async () => {
     try {
-      const RTCPeerConnectionClass = window.RTCPeerConnection || window.webkitRTCPeerConnection;
-      const pc = new RTCPeerConnectionClass({
+      // Use the standard RTCPeerConnection interface
+      const pc = new RTCPeerConnection({
         iceServers: [],
       });
       
