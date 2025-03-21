@@ -9,11 +9,41 @@ interface ServerInstance {
   isRunning: boolean;
   port: number;
   content?: Content;
+  html?: string;
   serverUrl: string;
+}
+
+interface ServerData {
+  content: Content;
+  html: string;
 }
 
 class ScreenServerRealService {
   private servers: Map<string, ServerInstance> = new Map();
+  
+  // Méthode pour stocker les données d'un serveur en localStorage
+  private saveServerData(serverId: string, content: Content, html: string): void {
+    try {
+      const serverData: ServerData = { content, html };
+      localStorage.setItem(`server_${serverId}`, JSON.stringify(serverData));
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des données du serveur:', error);
+    }
+  }
+  
+  // Méthode pour récupérer les données d'un serveur depuis localStorage
+  getServerDataById(serverId: string): ServerData | null {
+    try {
+      const data = localStorage.getItem(`server_${serverId}`);
+      if (data) {
+        return JSON.parse(data) as ServerData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des données du serveur:', error);
+      return null;
+    }
+  }
   
   /**
    * Démarre un serveur web réel pour un écran spécifique
@@ -50,17 +80,24 @@ class ScreenServerRealService {
       // Cette URL pointe vers le port spécifique de cet écran
       const serverUrl = `http://${window.location.hostname}:${port}`;
       
+      // Générer le HTML pour l'affichage
+      const html = htmlGenerator.generateHtml(content);
+      
+      // Sauvegarder les données du serveur en localStorage
+      this.saveServerData(serverId, content, html);
+      
       // Enregistrer le serveur dans notre liste
       this.servers.set(screenId, { 
         id: serverId,
         isRunning: true, 
         port, 
         content,
+        html,
         serverUrl,
       });
       
       // Démarrer un vrai serveur HTTP sur le port spécifié
-      this.startHttpServer(port, content);
+      this.startHttpServer(port, content, html);
       
       return true;
     } catch (error) {
@@ -72,15 +109,12 @@ class ScreenServerRealService {
   /**
    * Démarre un serveur HTTP réel sur le port spécifié
    */
-  private startHttpServer(port: number, content: Content): void {
-    // Générer le HTML pour l'affichage
-    const html = htmlGenerator.generateHtml(content);
-    
+  private startHttpServer(port: number, content: Content, html: string): void {
     // Dans un environnement navigateur, nous ne pouvons pas créer de serveur HTTP directement
     // Nous allons donc envoyer une requête à notre backend pour démarrer un serveur
     
     // URL de notre API backend qui gère les serveurs
-    const backendUrl = "/api/start-server";
+    const backendUrl = "http://localhost:5000/api/start-server";
     
     // Envoyer la requête pour démarrer le serveur
     fetch(backendUrl, {
@@ -90,7 +124,6 @@ class ScreenServerRealService {
       },
       body: JSON.stringify({
         port,
-        content,
         html
       }),
     })
@@ -144,7 +177,7 @@ class ScreenServerRealService {
    */
   private stopHttpServer(port: number): void {
     // Envoyer une requête à notre backend pour arrêter le serveur
-    const backendUrl = "/api/stop-server";
+    const backendUrl = "http://localhost:5000/api/stop-server";
     
     fetch(backendUrl, {
       method: 'POST',
@@ -184,9 +217,13 @@ class ScreenServerRealService {
       
       // Générer le nouveau HTML
       const html = htmlGenerator.generateHtml(content);
+      server.html = html;
+      
+      // Mettre à jour les données du serveur en localStorage
+      this.saveServerData(server.id, content, html);
       
       // Envoyer une requête à notre backend pour mettre à jour le contenu
-      const backendUrl = "/api/update-server";
+      const backendUrl = "http://localhost:5000/api/update-server";
       
       fetch(backendUrl, {
         method: 'POST',
@@ -195,7 +232,6 @@ class ScreenServerRealService {
         },
         body: JSON.stringify({
           port,
-          content,
           html
         }),
       })
@@ -250,6 +286,14 @@ class ScreenServerRealService {
           resolve(false);
         });
     });
+  }
+  
+  /**
+   * Obtient le contenu d'un serveur
+   */
+  getServerContent(screenId: string): Content | null {
+    const server = this.servers.get(screenId);
+    return server && server.content ? server.content : null;
   }
 }
 

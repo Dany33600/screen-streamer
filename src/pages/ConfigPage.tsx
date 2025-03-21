@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Settings, Network, MonitorPlay, Save, RefreshCw, AlertTriangle, Alert } from 'lucide-react';
+import { Settings, Network, MonitorPlay, Save, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ConfigPage = () => {
   const basePort = useAppStore((state) => state.basePort);
