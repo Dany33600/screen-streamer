@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import { Screen } from '@/types';
-import { screenServerService } from '@/server/screenServer';
+import { screenServerService } from '@/server/screenServerBrowser';
 import { AddScreenDialog } from '@/components/screens/AddScreenDialog';
 import { EditScreenDialog } from '@/components/screens/EditScreenDialog';
 import { AssignContentDialog } from '@/components/screens/AssignContentDialog';

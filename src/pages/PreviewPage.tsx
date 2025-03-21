@@ -29,17 +29,23 @@ const PreviewPage = () => {
       return;
     }
 
-    // Essayer d'obtenir le contenu depuis le serveur
+    // Essayer d'obtenir le contenu depuis le service
     let screenContent = screenServerService.getServerContent(screenId);
     
-    // Si le serveur n'a pas de contenu, essayer de le trouver à partir du contentId de l'écran
+    // Si le service n'a pas de contenu, essayer de le trouver à partir du contentId de l'écran
     if (!screenContent && screen.contentId) {
       screenContent = contents.find(c => c.id === screen.contentId);
     }
 
     setContent(screenContent);
-    const generatedHtml = htmlGenerator.generateHtml(screenContent);
-    setHtmlContent(generatedHtml);
+    
+    try {
+      const generatedHtml = htmlGenerator.generateHtml(screenContent);
+      setHtmlContent(generatedHtml);
+    } catch (err) {
+      console.error('Erreur lors de la génération HTML:', err);
+      setError('Erreur lors de la génération du contenu HTML');
+    }
   }, [screenId, screens, contents]);
 
   if (error) {
