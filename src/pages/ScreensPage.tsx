@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -24,7 +23,7 @@ import {
 import { Screen, Content } from '@/types';
 import { PlusCircle, MonitorPlay, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { screenServerService } from '@/services/screenServer';
+import { screenServerServiceMock } from '@/services/screenServerMock';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
@@ -88,7 +87,7 @@ const ScreensPage = () => {
   
   const handleDeleteScreen = (id: string) => {
     // Arrêter le serveur avant de supprimer l'écran
-    screenServerService.stopServer(id);
+    screenServerServiceMock.stopServer(id);
     removeScreen(id);
     toast({
       title: 'Écran supprimé avec succès',
@@ -104,9 +103,9 @@ const ScreensPage = () => {
     assignContentToScreen(currentScreen.id, contentId);
     
     // Mettre à jour le serveur avec le nouveau contenu si nécessaire
-    if (screenServerService.isServerRunning(currentScreen.id)) {
+    if (screenServerServiceMock.isServerRunning(currentScreen.id)) {
       const content = contentId ? contents.find(c => c.id === contentId) : undefined;
-      screenServerService.updateServer(currentScreen.id, currentScreen.port, content);
+      screenServerServiceMock.updateServer(currentScreen.id, currentScreen.port, content);
     }
     
     setCurrentScreen(null);

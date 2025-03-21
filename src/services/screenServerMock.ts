@@ -1,6 +1,5 @@
 
 import { Content } from '@/types';
-import { toast } from '@/hooks/use-toast';
 
 interface ServerInstance {
   isRunning: boolean;
