@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Content } from '@/types';
 import { 
@@ -85,6 +86,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
   const handleDelete = () => {
     setIsDeleteDialogOpen(false);
+    console.log("Suppression du contenu avec ID:", content.id);
     onDelete(content.id);
   };
 

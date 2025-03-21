@@ -58,6 +58,9 @@ const ContentPage = () => {
       
       console.log(`Suppression du contenu ${id} sur le serveur: ${formattedApiUrl}/api/content/${id}`);
       
+      // Supprimer le contenu localement avant l'appel API pour améliorer la réactivité de l'UI
+      removeContent(id);
+      
       // Appel à l'API pour supprimer le contenu
       const response = await fetch(`${formattedApiUrl}/api/content/${id}`, {
         method: 'DELETE',
@@ -68,19 +71,19 @@ const ContentPage = () => {
       
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Erreur de suppression du contenu:", errorData);
         throw new Error(errorData.message || `Erreur HTTP ${response.status}`);
       }
       
-      // Supprimer le contenu localement
-      removeContent(id);
       toast.success(`Le contenu "${content.name}" a été supprimé`);
+      
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       toast.error(`Échec de la suppression: ${errorMessage}`);
       
-      // On supprime quand même localement
-      removeContent(id);
+      // Nous ne supprimons pas le contenu localement en cas d'erreur,
+      // car nous l'avons déjà fait au début de la fonction pour améliorer la réactivité
     }
   };
   
