@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useScreenStatus } from '@/hooks/use-screen-status';
+import { toast } from '@/hooks/use-toast';
 
 interface ScreenCardProps {
   screen: Screen;
@@ -40,10 +42,60 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
   const assignedContent = contents.find(
     (content) => content.id === screen.contentId
   );
+  
+  const { isOnline, startServer, stopServer, updateServer } = useScreenStatus(screen);
 
   const handleOpenScreen = () => {
     const url = `http://${screen.ipAddress}:${screen.port}`;
-    window.open(url, '_blank');
+    
+    if (!isOnline) {
+      const success = startServer();
+      if (success) {
+        toast({
+          title: "Serveur démarré",
+          description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
+        });
+        
+        // Attendre un peu que le serveur se lance avant d'ouvrir l'URL
+        setTimeout(() => {
+          window.open(url, '_blank');
+        }, 500);
+      } else {
+        toast({
+          title: "Erreur de démarrage",
+          description: `Impossible de démarrer le serveur pour l'écran ${screen.name}.`,
+          variant: "destructive",
+        });
+      }
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+  
+  const handleTogglePower = () => {
+    if (isOnline) {
+      const success = stopServer();
+      if (success) {
+        toast({
+          title: "Serveur arrêté",
+          description: `Le serveur pour l'écran ${screen.name} a été arrêté.`,
+        });
+      }
+    } else {
+      const success = startServer();
+      if (success) {
+        toast({
+          title: "Serveur démarré",
+          description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
+        });
+      } else {
+        toast({
+          title: "Erreur de démarrage",
+          description: `Impossible de démarrer le serveur pour l'écran ${screen.name}.`,
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   return (
@@ -73,13 +125,13 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         
         <div className="absolute top-2 right-2 flex items-center space-x-2">
           <Badge 
-            variant={screen.status === 'online' ? 'default' : 'outline'}
+            variant={isOnline ? 'default' : 'outline'}
             className={cn(
               "text-xs animate-fade-in",
-              screen.status === 'online' ? "bg-green-500" : "bg-muted"
+              isOnline ? "bg-green-500" : "bg-muted"
             )}
           >
-            {screen.status === 'online' ? 'En ligne' : 'Hors ligne'}
+            {isOnline ? 'En ligne' : 'Hors ligne'}
           </Badge>
         </div>
       </div>
@@ -148,15 +200,16 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
           Assigner
         </Button>
         <Button
-          variant={screen.status === 'online' ? 'default' : 'outline'}
+          variant={isOnline ? 'default' : 'outline'}
           size="sm"
           className={cn(
             "text-xs h-8",
-            screen.status === 'online' ? "bg-green-600 hover:bg-green-700" : ""
+            isOnline ? "bg-green-600 hover:bg-green-700" : ""
           )}
+          onClick={handleTogglePower}
         >
           <Power size={14} className="mr-1" />
-          {screen.status === 'online' ? 'Actif' : 'Inactif'}
+          {isOnline ? 'Arrêter' : 'Démarrer'}
         </Button>
       </CardFooter>
     </Card>

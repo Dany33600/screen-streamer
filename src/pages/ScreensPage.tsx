@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import ScreenCard from '@/components/screens/ScreenCard';
@@ -23,7 +23,8 @@ import {
 } from '@/components/ui/select';
 import { Screen, Content } from '@/types';
 import { PlusCircle, MonitorPlay, Search } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
+import { screenServerService } from '@/services/screenServer';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
@@ -41,24 +42,32 @@ const ScreensPage = () => {
   
   const [currentScreen, setCurrentScreen] = useState<Screen | null>(null);
   const [newScreenName, setNewScreenName] = useState('');
-  const [selectedContentId, setSelectedContentId] = useState<string>('');
+  const [selectedContentId, setSelectedContentId] = useState<string>('none');
   
   const handleAddScreen = () => {
     if (newScreenName.trim() === '') {
-      toast.error('Le nom de l\'écran ne peut pas être vide');
+      toast({
+        title: 'Le nom de l\'écran ne peut pas être vide',
+        variant: "destructive"
+      });
       return;
     }
     
     addScreen(newScreenName);
     setNewScreenName('');
     setIsAddDialogOpen(false);
-    toast.success(`Écran "${newScreenName}" ajouté avec succès`);
+    toast({
+      title: `Écran "${newScreenName}" ajouté avec succès`,
+    });
   };
   
   const handleUpdateScreen = () => {
     if (!currentScreen) return;
     if (newScreenName.trim() === '') {
-      toast.error('Le nom de l\'écran ne peut pas être vide');
+      toast({
+        title: 'Le nom de l\'écran ne peut pas être vide',
+        variant: "destructive"
+      });
       return;
     }
     
@@ -66,7 +75,9 @@ const ScreensPage = () => {
     setCurrentScreen(null);
     setNewScreenName('');
     setIsEditDialogOpen(false);
-    toast.success('Écran mis à jour avec succès');
+    toast({
+      title: 'Écran mis à jour avec succès',
+    });
   };
   
   const handleEditScreen = (screen: Screen) => {
@@ -76,23 +87,39 @@ const ScreensPage = () => {
   };
   
   const handleDeleteScreen = (id: string) => {
+    // Arrêter le serveur avant de supprimer l'écran
+    screenServerService.stopServer(id);
     removeScreen(id);
-    toast.success('Écran supprimé avec succès');
+    toast({
+      title: 'Écran supprimé avec succès',
+    });
   };
   
   const handleAssignContent = () => {
     if (!currentScreen) return;
     
-    assignContentToScreen(currentScreen.id, selectedContentId || undefined);
+    // Déterminer si nous devons assigner un contenu ou le retirer
+    const contentId = selectedContentId === 'none' ? undefined : selectedContentId;
+    
+    assignContentToScreen(currentScreen.id, contentId);
+    
+    // Mettre à jour le serveur avec le nouveau contenu si nécessaire
+    if (screenServerService.isServerRunning(currentScreen.id)) {
+      const content = contentId ? contents.find(c => c.id === contentId) : undefined;
+      screenServerService.updateServer(currentScreen.id, currentScreen.port, content);
+    }
+    
     setCurrentScreen(null);
-    setSelectedContentId('');
+    setSelectedContentId('none');
     setIsAssignDialogOpen(false);
-    toast.success('Contenu assigné avec succès');
+    toast({
+      title: 'Contenu assigné avec succès',
+    });
   };
   
   const handleOpenAssignDialog = (screen: Screen) => {
     setCurrentScreen(screen);
-    setSelectedContentId(screen.contentId || '');
+    setSelectedContentId(screen.contentId || 'none');
     setIsAssignDialogOpen(true);
   };
   
@@ -245,7 +272,7 @@ const ScreensPage = () => {
                   <SelectValue placeholder="Sélectionner un contenu" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun contenu</SelectItem>
+                  <SelectItem value="none">Aucun contenu</SelectItem>
                   {contents.map((content) => (
                     <SelectItem key={content.id} value={content.id}>
                       {content.name}
