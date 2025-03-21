@@ -1,298 +1,152 @@
 
-import React, { useState, useEffect } from 'react';
-import MainLayout from '@/components/layout/MainLayout';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
+import { Content } from '@/types';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Screen, Content } from '@/types';
-import { MonitorPlay, RefreshCw, ExternalLink } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { screenServerService } from '@/services/screenServerMock';
+import { toast } from '@/hooks/use-toast';
 
 const PreviewPage = () => {
-  const screens = useAppStore((state) => state.screens);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [content, setContent] = useState<Content | null>(null);
+  const [screenId, setScreenId] = useState<string | null>(null);
   const contents = useAppStore((state) => state.contents);
-  
-  const [selectedScreenId, setSelectedScreenId] = useState<string>('');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  const selectedScreen = screens.find(screen => screen.id === selectedScreenId);
-  const assignedContent = selectedScreen?.contentId 
-    ? contents.find(content => content.id === selectedScreen.contentId)
-    : undefined;
-  
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
-  };
-  
-  const handleOpenScreen = () => {
-    if (!selectedScreen) return;
-    const url = `http://${selectedScreen.ipAddress}:${selectedScreen.port}`;
-    window.open(url, '_blank');
-  };
+  const screens = useAppStore((state) => state.screens);
   
   useEffect(() => {
-    if (screens.length > 0 && !selectedScreenId) {
-      setSelectedScreenId(screens[0].id);
+    // Extraire les paramètres de l'URL
+    const searchParams = new URLSearchParams(location.search);
+    const currentScreenId = searchParams.get('screenId');
+    const contentId = searchParams.get('content');
+    
+    if (currentScreenId) {
+      setScreenId(currentScreenId);
+      
+      // Vérifier si le serveur est en cours d'exécution
+      if (screenServerService.isServerRunning(currentScreenId)) {
+        // Récupérer le contenu du serveur
+        const serverContent = screenServerService.getServerContent(currentScreenId);
+        if (serverContent) {
+          setContent(serverContent);
+        } else if (contentId) {
+          const foundContent = contents.find(c => c.id === contentId);
+          if (foundContent) {
+            setContent(foundContent);
+          }
+        }
+      } else {
+        // Si le serveur n'est pas en cours d'exécution, récupérer le contenu à partir de l'ID
+        if (contentId) {
+          const foundContent = contents.find(c => c.id === contentId);
+          if (foundContent) {
+            setContent(foundContent);
+            // Démarrer le serveur avec ce contenu
+            const screen = screens.find(s => s.id === currentScreenId);
+            if (screen) {
+              screenServerService.startServer(currentScreenId, screen.port, foundContent);
+            }
+          }
+        }
+      }
+    } else {
+      // Si aucun screenId n'est fourni, essayer de récupérer le contenu directement
+      if (contentId) {
+        const foundContent = contents.find(c => c.id === contentId);
+        if (foundContent) {
+          setContent(foundContent);
+        }
+      }
     }
-  }, [screens, selectedScreenId]);
-
+  }, [location.search, contents, screens]);
+  
+  const handleBack = () => {
+    navigate(-1);
+  };
+  
+  const handleOpenInNewTab = () => {
+    if (content) {
+      window.open(content.url, '_blank');
+    }
+  };
+  
+  if (!content) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold">Aucun contenu à afficher</h1>
+          <p className="text-muted-foreground">
+            Aucun contenu n'a été trouvé pour cette prévisualisation.
+          </p>
+          <Button onClick={handleBack} className="mt-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <MainLayout>
-      <div className="space-y-6 animate-fade-in">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Aperçu</h1>
-          <p className="text-muted-foreground mt-1">
-            Prévisualisez le contenu diffusé sur vos écrans
+    <div className="relative min-h-screen bg-background">
+      <div className="fixed top-0 left-0 right-0 z-10 bg-background/90 backdrop-blur-sm p-4 flex justify-between items-center border-b">
+        <Button variant="outline" size="sm" onClick={handleBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour
+        </Button>
+        
+        <div className="text-center">
+          <h1 className="text-lg font-medium">{content.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            {screenId && screens.find(s => s.id === screenId)?.name}
           </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <Card className="md:col-span-1">
-            <CardHeader>
-              <CardTitle>Écrans</CardTitle>
-              <CardDescription>
-                Sélectionnez un écran pour le prévisualiser
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="screen-select">Écran</Label>
-                  <Select 
-                    value={selectedScreenId} 
-                    onValueChange={setSelectedScreenId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un écran" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {screens.map((screen) => (
-                        <SelectItem key={screen.id} value={screen.id}>
-                          {screen.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {selectedScreen && (
-                  <div className="space-y-4 pt-4">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">IP Address</Label>
-                      <p className="text-sm">{selectedScreen.ipAddress}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Port</Label>
-                      <p className="text-sm">{selectedScreen.port}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Status</Label>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className={`w-2 h-2 rounded-full ${
-                            selectedScreen.status === 'online' 
-                              ? 'bg-green-500' 
-                              : 'bg-gray-300'
-                          }`} 
-                        />
-                        <p className="text-sm">
-                          {selectedScreen.status === 'online' ? 'En ligne' : 'Hors ligne'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Contenu assigné</Label>
-                      {assignedContent ? (
-                        <p className="text-sm">{assignedContent.name}</p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Aucun contenu assigné</p>
-                      )}
-                    </div>
-                    
-                    <div className="pt-4 space-y-2">
-                      <Button 
-                        className="w-full gap-2" 
-                        onClick={handleOpenScreen}
-                      >
-                        <ExternalLink size={16} />
-                        Ouvrir dans un navigateur
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full gap-2" 
-                        onClick={handleRefresh}
-                        disabled={isRefreshing}
-                      >
-                        <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-                        Rafraîchir
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="md:col-span-3">
-            <CardHeader>
-              <CardTitle>Aperçu</CardTitle>
-              <CardDescription>
-                {selectedScreen 
-                  ? `Contenu diffusé sur ${selectedScreen.name}`
-                  : "Sélectionnez un écran pour voir son contenu"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 overflow-hidden">
-              {selectedScreen ? (
-                assignedContent ? (
-                  <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
-                    {assignedContent.type === 'image' ? (
-                      <img 
-                        src={assignedContent.url} 
-                        alt={assignedContent.name} 
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-muted-foreground p-8">
-                        <MonitorPlay size={64} className="mb-4" />
-                        <h3 className="text-xl font-medium mb-2">{assignedContent.name}</h3>
-                        <p className="text-center max-w-md">
-                          {assignedContent.type === 'video' && "Vidéo en cours de lecture"}
-                          {assignedContent.type === 'powerpoint' && "Présentation PowerPoint"}
-                          {assignedContent.type === 'pdf' && "Document PDF"}
-                          {assignedContent.type === 'html' && "Page HTML"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="aspect-video bg-muted flex flex-col items-center justify-center text-muted-foreground p-8">
-                    <MonitorPlay size={64} className="mb-4" />
-                    <h3 className="text-xl font-medium mb-2">Aucun contenu</h3>
-                    <p className="text-center max-w-md">
-                      Aucun contenu n'est actuellement assigné à cet écran.
-                      Utilisez la section "Écrans" ou "Contenus" pour assigner du contenu.
-                    </p>
-                  </div>
-                )
-              ) : (
-                <div className="aspect-video bg-muted flex flex-col items-center justify-center text-muted-foreground p-8">
-                  <MonitorPlay size={64} className="mb-4" />
-                  <h3 className="text-xl font-medium mb-2">Sélectionnez un écran</h3>
-                  <p className="text-center max-w-md">
-                    Veuillez sélectionner un écran dans le panneau de gauche
-                    pour prévisualiser son contenu.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-            {selectedScreen && assignedContent && (
-              <CardFooter className="border-t p-4">
-                <div className="w-full flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                  <div>
-                    <h4 className="font-medium">{assignedContent.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Type: {assignedContent.type}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="gap-2" onClick={handleRefresh} disabled={isRefreshing}>
-                      <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-                      Rafraîchir
-                    </Button>
-                  </div>
-                </div>
-              </CardFooter>
-            )}
-          </Card>
-        </div>
         
-        {screens.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Tous les écrans</CardTitle>
-              <CardDescription>
-                Vue d'ensemble de tous les écrans configurés
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[300px]">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {screens.map((screen) => {
-                    const content = screen.contentId 
-                      ? contents.find(c => c.id === screen.contentId)
-                      : undefined;
-                    
-                    return (
-                      <Card key={screen.id} className="overflow-hidden">
-                        <div className="h-32 bg-muted flex items-center justify-center overflow-hidden">
-                          {content?.type === 'image' ? (
-                            <img 
-                              src={content.url} 
-                              alt={content.name} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <MonitorPlay size={32} className="text-muted-foreground" />
-                          )}
-                        </div>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium">{screen.name}</h4>
-                              <p className="text-xs text-muted-foreground">
-                                {screen.ipAddress}:{screen.port}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <div 
-                                  className={`w-2 h-2 rounded-full ${
-                                    screen.status === 'online' ? 'bg-green-500' : 'bg-gray-300'
-                                  }`} 
-                                />
-                                <p className="text-xs">
-                                  {screen.status === 'online' ? 'En ligne' : 'Hors ligne'}
-                                </p>
-                              </div>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8"
-                              onClick={() => setSelectedScreenId(screen.id)}
-                            >
-                              <ExternalLink size={16} />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+        <Button variant="outline" size="sm" onClick={handleOpenInNewTab}>
+          <ExternalLink className="mr-2 h-4 w-4" />
+          Ouvrir
+        </Button>
+      </div>
+      
+      <div className="pt-20 px-4 pb-4 flex justify-center min-h-screen">
+        {content.type === 'image' && (
+          <img 
+            src={content.url} 
+            alt={content.name} 
+            className="max-w-full max-h-[calc(100vh-8rem)] object-contain"
+          />
+        )}
+        
+        {content.type === 'video' && (
+          <video 
+            src={content.url} 
+            controls 
+            autoPlay 
+            className="max-w-full max-h-[calc(100vh-8rem)]"
+          >
+            Votre navigateur ne prend pas en charge la lecture vidéo.
+          </video>
+        )}
+        
+        {(content.type === 'pdf' || content.type === 'powerpoint') && (
+          <iframe 
+            src={content.url} 
+            title={content.name}
+            className="w-full h-[calc(100vh-8rem)] border rounded-md"
+          />
+        )}
+        
+        {content.type === 'html' && (
+          <iframe 
+            src={content.url} 
+            title={content.name}
+            className="w-full h-[calc(100vh-8rem)] border rounded-md"
+          />
         )}
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

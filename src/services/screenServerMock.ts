@@ -1,10 +1,12 @@
 
 import { Content } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
 interface ServerInstance {
   isRunning: boolean;
   port: number;
   content?: Content;
+  serverUrl?: string;
 }
 
 class ScreenServerMockService {
@@ -21,13 +23,26 @@ class ScreenServerMockService {
         return true;
       }
       
+      if (!content) {
+        toast({
+          title: "Erreur",
+          description: "Aucun contenu n'est assigné à cet écran",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
       console.log(`Démarrage du serveur pour l'écran ${screenId} sur le port ${port}`);
+      
+      // Créer une URL pour simuler un serveur local
+      const serverUrl = `/preview?screenId=${screenId}&content=${content.id}`;
       
       // Simuler le démarrage d'un serveur
       this.servers.set(screenId, { 
         isRunning: true, 
         port, 
-        content 
+        content,
+        serverUrl
       });
       
       return true;
@@ -78,6 +93,22 @@ class ScreenServerMockService {
   getServerPort(screenId: string): number | null {
     const serverInstance = this.servers.get(screenId);
     return serverInstance ? serverInstance.port : null;
+  }
+  
+  /**
+   * Obtient l'URL d'un serveur simulé
+   */
+  getServerUrl(screenId: string): string | null {
+    const serverInstance = this.servers.get(screenId);
+    return serverInstance && serverInstance.serverUrl ? serverInstance.serverUrl : null;
+  }
+  
+  /**
+   * Obtient le contenu d'un serveur simulé
+   */
+  getServerContent(screenId: string): Content | null {
+    const serverInstance = this.servers.get(screenId);
+    return serverInstance && serverInstance.content ? serverInstance.content : null;
   }
 }
 

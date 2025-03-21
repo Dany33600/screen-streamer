@@ -25,6 +25,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { useScreenStatus } from '@/hooks/use-screen-status';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { screenServerService } from '@/services/screenServerMock';
 
 interface ScreenCardProps {
   screen: Screen;
@@ -40,6 +42,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
   onSelect
 }) => {
   const contents = useAppStore((state) => state.contents);
+  const navigate = useNavigate();
   
   const assignedContent = contents.find(
     (content) => content.id === screen.contentId
@@ -48,8 +51,6 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
   const { isOnline, startServer, stopServer, updateServer } = useScreenStatus(screen);
 
   const handleOpenScreen = () => {
-    const url = `http://${screen.ipAddress}:${screen.port}`;
-    
     if (!isOnline) {
       const success = startServer();
       if (success) {
@@ -58,12 +59,14 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
           description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
         });
         
-        // Au lieu d'ouvrir l'URL, montrer une alerte
-        toast({
-          title: "Mode Simulation",
-          description: "Cette application utilise un serveur simulé. Dans un environnement de production, un vrai serveur serait utilisé.",
-          variant: "default",
-        });
+        // Attendre un peu que le serveur "démarre"
+        setTimeout(() => {
+          const serverUrl = screenServerService.getServerUrl(screen.id);
+          if (serverUrl) {
+            // Naviguer vers la page de prévisualisation
+            navigate(serverUrl);
+          }
+        }, 500);
       } else {
         toast({
           title: "Erreur de démarrage",
@@ -72,12 +75,11 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         });
       }
     } else {
-      // Au lieu d'ouvrir l'URL, montrer une alerte
-      toast({
-        title: "Mode Simulation",
-        description: "Cette application utilise un serveur simulé. Dans un environnement de production, un vrai serveur serait utilisé.",
-        variant: "default",
-      });
+      // Si le serveur est déjà en ligne, ouvrir directement l'URL
+      const serverUrl = screenServerService.getServerUrl(screen.id);
+      if (serverUrl) {
+        navigate(serverUrl);
+      }
     }
   };
   
@@ -97,6 +99,14 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
           title: "Serveur démarré",
           description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
         });
+        
+        // Ouvrir automatiquement l'écran après démarrage
+        setTimeout(() => {
+          const serverUrl = screenServerService.getServerUrl(screen.id);
+          if (serverUrl) {
+            navigate(serverUrl);
+          }
+        }, 500);
       } else {
         toast({
           title: "Erreur de démarrage",
