@@ -10,10 +10,11 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     hmr: {
-      // Permettre aux connexions externes pour HMR (pour les écrans)
+      // Allow external connections for HMR (for screens)
       host: 'localhost',
       port: 8080,
     },
+    cors: true, // Enable CORS for all requests
   },
   plugins: [
     react(),

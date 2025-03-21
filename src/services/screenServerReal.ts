@@ -1,6 +1,5 @@
-
 import { Content } from '@/types';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { htmlGenerator } from './htmlGenerator';
 
@@ -18,11 +17,27 @@ class ScreenServerRealService {
   private apiBaseUrl: string;
   
   constructor() {
-    // Déterminer l'URL du serveur API dynamiquement
-    const hostname = window.location.hostname; // Utiliser l'hôte actuel (IP ou domaine)
-    this.apiBaseUrl = `http://${hostname}:5000/api`;
+    // Use the API URL from the app store if available, or provide a fallback approach
+    this.updateApiBaseUrl();
     
     console.log(`Service ScreenServerReal initialisé avec l'URL API: ${this.apiBaseUrl}`);
+  }
+  
+  // Method to update the API base URL (can be called when the API URL changes)
+  public updateApiBaseUrl(customApiUrl?: string): void {
+    if (customApiUrl) {
+      // Remove trailing slash if present
+      this.apiBaseUrl = customApiUrl.endsWith('/') 
+        ? customApiUrl.slice(0, -1) + '/api'
+        : customApiUrl + '/api';
+    } else {
+      // Determine the API URL dynamically based on the current window location
+      const hostname = window.location.hostname; // Use the current host (IP or domain)
+      const port = 5000; // Default API port
+      this.apiBaseUrl = `http://${hostname}:${port}/api`;
+    }
+    
+    console.log(`API Base URL updated to: ${this.apiBaseUrl}`);
   }
   
   // Méthode pour stocker les données d'un serveur sur le serveur
@@ -359,5 +374,5 @@ class ScreenServerRealService {
   }
 }
 
-// Exporter une instance unique du service
+// Export a singleton instance of the service
 export const screenServerService = new ScreenServerRealService();
