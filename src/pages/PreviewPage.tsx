@@ -40,13 +40,20 @@ const PreviewPage = () => {
     setContent(screenContent);
     
     try {
-      const generatedHtml = htmlGenerator.generateHtml(screenContent);
-      setHtmlContent(generatedHtml);
+      if (screenContent) {
+        const generatedHtml = htmlGenerator.generateHtml(screenContent);
+        setHtmlContent(generatedHtml);
+      } else {
+        setHtmlContent('<div style="display:flex;justify-content:center;align-items:center;height:100%;color:white;">Aucun contenu assigné à cet écran</div>');
+      }
     } catch (err) {
       console.error('Erreur lors de la génération HTML:', err);
       setError('Erreur lors de la génération du contenu HTML');
     }
   }, [screenId, screens, contents]);
+
+  console.log('PreviewPage rendering with content:', content);
+  console.log('HTML content:', htmlContent);
 
   if (error) {
     return (

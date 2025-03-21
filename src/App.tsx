@@ -11,9 +11,6 @@ import ConfigPage from "./pages/ConfigPage";
 import PreviewPage from "./pages/PreviewPage";
 import NotFound from "./pages/NotFound";
 
-// N'importons PAS le serveur Express dans l'environnement navigateur
-// import "./server/screenServerBrowser";
-
 // Create a new QueryClient instance with default options
 const queryClient = new QueryClient({
   defaultOptions: {

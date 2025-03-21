@@ -7,11 +7,11 @@ import { browserContentService } from '@/services/browserContentService';
  * qui n'utilise pas Express
  */
 class ScreenServerBrowserService {
-  private runningServers = new Set<string>();
+  private runningServers = new Map<string, {port: number, content?: Content}>();
 
   startServer(screenId: string, port: number, content?: Content): boolean {
-    console.log(`[Mock] Starting server for screen ${screenId} on port ${port}`);
-    this.runningServers.add(screenId);
+    console.log(`[Browser] Starting server for screen ${screenId} on port ${port}`);
+    this.runningServers.set(screenId, {port, content});
     
     if (content) {
       browserContentService.setContent(screenId, content);
@@ -21,18 +21,18 @@ class ScreenServerBrowserService {
   }
 
   stopServer(screenId: string): void {
-    console.log(`[Mock] Stopping server for screen ${screenId}`);
+    console.log(`[Browser] Stopping server for screen ${screenId}`);
     this.runningServers.delete(screenId);
     browserContentService.setContent(screenId, undefined);
   }
 
   updateServer(screenId: string, port: number, content?: Content): boolean {
-    console.log(`[Mock] Updating server for screen ${screenId} on port ${port}`);
+    console.log(`[Browser] Updating server for screen ${screenId} on port ${port}`);
+    
+    this.runningServers.set(screenId, {port, content});
     
     if (content) {
       browserContentService.setContent(screenId, content);
-    } else {
-      browserContentService.setContent(screenId, undefined);
     }
     
     return true;
@@ -43,7 +43,8 @@ class ScreenServerBrowserService {
   }
 
   getServerContent(screenId: string): Content | undefined {
-    return browserContentService.getContent(screenId);
+    const server = this.runningServers.get(screenId);
+    return server?.content || browserContentService.getContent(screenId);
   }
 }
 

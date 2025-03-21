@@ -26,6 +26,11 @@ class BrowserContentService {
   hasContent(screenId: string): boolean {
     return this.contentMap.has(screenId);
   }
+
+  // Récupère tous les contenus
+  getAllContent(): Content[] {
+    return Array.from(this.contentMap.values());
+  }
 }
 
 export const browserContentService = new BrowserContentService();
