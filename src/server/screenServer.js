@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -38,6 +39,10 @@ const runningServers = new Map();
 // Configuration de multer pour le stockage des fichiers
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    // S'assurer que le répertoire d'uploads existe
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
     console.log(`Stockage du fichier dans: ${UPLOADS_DIR}`);
     cb(null, UPLOADS_DIR);
   },
@@ -307,6 +312,12 @@ function createApiServer(apiPort = 5000) {
   app.post('/api/upload', (req, res) => {
     console.log('Requête d\'upload reçue');
     
+    // Vérifier que les répertoires existent avant l'upload
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+      console.log(`Répertoire d'uploads recréé: ${UPLOADS_DIR}`);
+    }
+
     upload.single('file')(req, res, (err) => {
       if (err) {
         console.error('Erreur Multer lors de l\'upload:', err);
@@ -508,7 +519,9 @@ function createApiServer(apiPort = 5000) {
       message: `Route non trouvée: ${req.method} ${req.url}`,
       availableEndpoints: [
         'GET /',
+        'GET /api',
         'GET /api/status',
+        'POST /api/upload',
         'POST /api/start-server',
         'POST /api/stop-server',
         'POST /api/update-server',

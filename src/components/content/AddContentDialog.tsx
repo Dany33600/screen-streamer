@@ -83,20 +83,12 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
   
   const handleAddContent = async () => {
     if (!selectedFile) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier",
-        variant: "destructive"
-      });
+      toast.error("Veuillez sélectionner un fichier");
       return;
     }
     
     if (contentName.trim() === '') {
-      toast({
-        title: "Erreur",
-        description: "Le nom du contenu ne peut pas être vide",
-        variant: "destructive"
-      });
+      toast.error("Le nom du contenu ne peut pas être vide");
       return;
     }
     
@@ -108,11 +100,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
       
       if (!result.success || !result.url) {
         setUploadError(`Erreur lors de l'upload: ${result.error}`);
-        toast({
-          title: "Échec de l'upload",
-          description: `${result.error}`,
-          variant: "destructive"
-        });
+        toast.error(`Échec de l'upload: ${result.error}`);
         return;
       }
       
@@ -127,19 +115,12 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
       
       resetContentForm();
       onOpenChange(false);
-      toast({
-        title: "Succès",
-        description: `Contenu "${contentName}" ajouté avec succès`,
-      });
+      toast.success(`Contenu "${contentName}" ajouté avec succès`);
     } catch (error) {
       console.error('Erreur lors de l\'ajout du contenu:', error);
       const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue';
       setUploadError(errorMessage);
-      toast({
-        title: "Erreur",
-        description: 'Une erreur est survenue lors de l\'ajout du contenu',
-        variant: "destructive"
-      });
+      toast.error('Une erreur est survenue lors de l\'ajout du contenu');
     }
   };
 
