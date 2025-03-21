@@ -1,21 +1,19 @@
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import os from 'os';
-import multer from 'multer';
-import { v4 as uuidv4 } from 'uuid';
+import os from 'os'; // Import os at the top with other imports
 
 // Obtenir le chemin du répertoire actuel en utilisant ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Chemin vers les répertoires de stockage
+// Chemin vers le répertoire de stockage
 const STORAGE_DIR = path.join(__dirname, '..', '..', 'storage');
 const CONTENT_DIR = path.join(STORAGE_DIR, 'content');
-const UPLOADS_DIR = path.join(STORAGE_DIR, 'uploads');
 
 // Créer les répertoires de stockage s'ils n'existent pas
 if (!fs.existsSync(STORAGE_DIR)) {
@@ -24,10 +22,6 @@ if (!fs.existsSync(STORAGE_DIR)) {
 
 if (!fs.existsSync(CONTENT_DIR)) {
   fs.mkdirSync(CONTENT_DIR, { recursive: true });
-}
-
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
 // Map pour stocker les serveurs en cours d'exécution
@@ -178,21 +172,9 @@ function listAllContent() {
  */
 function deleteContent(contentId) {
   try {
-    // Supprimer le fichier JSON des métadonnées
     const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
     if (fs.existsSync(contentPath)) {
-      // Récupérer les données pour trouver le fichier physique
-      const contentData = getContentData(contentId);
       fs.unlinkSync(contentPath);
-      
-      // Si on a un chemin de fichier, supprimer également le fichier physique
-      if (contentData && contentData.filePath) {
-        const filePath = path.join(UPLOADS_DIR, contentData.filePath);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
-      
       return true;
     }
     return false;
@@ -201,54 +183,6 @@ function deleteContent(contentId) {
     return false;
   }
 }
-
-// Configuration du stockage pour multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: function (req, file, cb) {
-    // Générer un nom de fichier unique avec l'extension d'origine
-    const originalExt = path.extname(file.originalname);
-    const uniqueFilename = `${Date.now()}-${uuidv4()}${originalExt}`;
-    cb(null, uniqueFilename);
-  }
-});
-
-// Filtre pour vérifier les types de fichiers acceptés
-const fileFilter = (req, file, cb) => {
-  // Définir les types MIME acceptés
-  const allowedMimes = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'image/svg+xml',
-    'video/mp4',
-    'video/webm',
-    'video/ogg',
-    'video/quicktime',
-    'application/pdf',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'text/html'
-  ];
-
-  if (allowedMimes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error(`Type de fichier non supporté: ${file.mimetype}`), false);
-  }
-};
-
-// Initialiser multer avec la configuration
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50 MB max
-  }
-});
 
 // Créer un serveur API pour gérer les serveurs d'écran
 function createApiServer(apiPort = 5000) {
@@ -267,15 +201,12 @@ function createApiServer(apiPort = 5000) {
   // Middleware pour gérer les erreurs CORS préflight
   app.options('*', cors());
   
-  // Servir les fichiers statiques du répertoire uploads
-  app.use('/uploads', express.static(UPLOADS_DIR));
-  
   // Route racine pour montrer que le serveur fonctionne
   app.get('/', (req, res) => {
     res.json({
       status: 'ok',
       message: 'Serveur d\'API Screen Streamer en ligne',
-      endpoints: ['/api/status', '/api/start-server', '/api/stop-server', '/api/update-server', '/api/content', '/api/upload']
+      endpoints: ['/api/status', '/api/start-server', '/api/stop-server', '/api/update-server']
     });
   });
   
@@ -351,52 +282,6 @@ function createApiServer(apiPort = 5000) {
       status: 'ok', 
       servers: Array.from(runningServers.keys())
     });
-  });
-
-  // Route pour uploader un fichier
-  app.post('/api/upload', upload.single('file'), (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Aucun fichier n\'a été uploadé' });
-      }
-      
-      // Récupérer les informations du fichier
-      const { originalname, mimetype, filename, size } = req.file;
-      
-      // Déterminer le type de contenu
-      let contentType = 'autre';
-      if (mimetype.startsWith('image/')) {
-        contentType = 'image';
-      } else if (mimetype.startsWith('video/')) {
-        contentType = 'video';
-      } else if (mimetype.includes('powerpoint')) {
-        contentType = 'powerpoint';
-      } else if (mimetype === 'application/pdf') {
-        contentType = 'pdf';
-      } else if (mimetype === 'text/html') {
-        contentType = 'html';
-      }
-      
-      // Créer l'URL complète du fichier
-      const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
-      
-      return res.json({
-        success: true,
-        file: {
-          name: originalname,
-          type: contentType,
-          mimetype,
-          size,
-          filename,
-          path: filename,  // Chemin relatif du fichier dans le répertoire uploads
-          url: fileUrl     // URL complète pour accéder au fichier
-        }
-      });
-      
-    } catch (error) {
-      console.error("Erreur dans /api/upload:", error);
-      res.status(500).json({ success: false, message: error.message });
-    }
   });
 
   // Routes pour la gestion des contenus
@@ -484,12 +369,10 @@ function createApiServer(apiPort = 5000) {
         'POST /api/start-server',
         'POST /api/stop-server',
         'POST /api/update-server',
-        'POST /api/upload',
         'POST /api/content',
         'GET /api/content',
         'GET /api/content/:contentId',
-        'DELETE /api/content/:contentId',
-        'GET /uploads/:filename'
+        'DELETE /api/content/:contentId'
       ]
     });
   });
@@ -511,7 +394,7 @@ function createApiServer(apiPort = 5000) {
     console.log(`Adresses IP accessibles:`);
     
     // Afficher toutes les adresses IP du système
-    const nets = os.networkInterfaces();
+    const nets = os.networkInterfaces(); // Use the imported os module instead of require
     
     for (const name of Object.keys(nets)) {
       for (const net of nets[name]) {
