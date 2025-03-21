@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface ContentCardProps {
@@ -50,6 +50,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
 }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  // Helpers for content type
   const getIcon = () => {
     switch (content.type) {
       case 'image':
@@ -84,12 +85,29 @@ const ContentCard: React.FC<ContentCardProps> = ({
     }
   };
 
+  // Format the date safely
+  const getFormattedDate = () => {
+    try {
+      // Ensure createdAt is a valid date or timestamp
+      if (!content.createdAt) return 'Date inconnue';
+      
+      const date = typeof content.createdAt === 'number' 
+        ? new Date(content.createdAt) 
+        : new Date(Number(content.createdAt));
+      
+      // Verify that the date is valid
+      if (isNaN(date.getTime())) return 'Date invalide';
+      
+      return format(date, 'PPP', { locale: fr });
+    } catch (error) {
+      console.error('Erreur lors du formatage de la date:', error);
+      return 'Date invalide';
+    }
+  };
+
   const handleDelete = () => {
     setIsDeleteDialogOpen(false);
     console.log("Suppression du contenu avec ID exact:", content.id);
-    
-    // Utiliser précisément l'ID du contenu tel qu'il est dans la propriété id
-    // Par exemple "1742598169675-powerpoint_pptx" au lieu d'un UUID
     onDelete(content.id);
   };
 
@@ -120,7 +138,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
             <div className="flex-1">
               <h3 className="font-medium text-lg truncate">{content.name}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Ajouté {formatDistanceToNow(content.createdAt, { locale: fr, addSuffix: true })}
+                Ajouté le {getFormattedDate()}
               </p>
             </div>
             <DropdownMenu>
