@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import ScreenCard from '@/components/screens/ScreenCard';
@@ -23,7 +23,7 @@ import {
 import { Screen, Content } from '@/types';
 import { PlusCircle, MonitorPlay, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { screenServerService } from '@/services/screenServerMock';
+import { screenServerService } from '@/server/screenServer';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
@@ -288,3 +288,4 @@ const ScreensPage = () => {
 };
 
 export default ScreensPage;
+

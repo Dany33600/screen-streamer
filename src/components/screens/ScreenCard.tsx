@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Screen, Content } from '@/types';
 import { useAppStore } from '@/store';
@@ -58,12 +57,8 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
           description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
         });
         
-        // Au lieu d'ouvrir l'URL, montrer une alerte
-        toast({
-          title: "Mode Simulation",
-          description: "Cette application utilise un serveur simulé. Dans un environnement de production, un vrai serveur serait utilisé.",
-          variant: "default",
-        });
+        // Ouvrir l'URL dans une nouvelle fenêtre
+        window.open(url, '_blank');
       } else {
         toast({
           title: "Erreur de démarrage",
@@ -72,12 +67,8 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         });
       }
     } else {
-      // Au lieu d'ouvrir l'URL, montrer une alerte
-      toast({
-        title: "Mode Simulation",
-        description: "Cette application utilise un serveur simulé. Dans un environnement de production, un vrai serveur serait utilisé.",
-        variant: "default",
-      });
+      // Ouvrir l'URL dans une nouvelle fenêtre
+      window.open(url, '_blank');
     }
   };
   
@@ -170,7 +161,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleOpenScreen}>
                 <ExternalLink size={16} className="mr-2" />
-                Simuler l'écran
+                Ouvrir l'écran
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(screen.id)}
@@ -200,7 +191,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         <Alert className="mt-3 py-2 text-xs">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Mode simulation: cette application simule le serveur
+            URL: http://{screen.ipAddress}:{screen.port}
           </AlertDescription>
         </Alert>
       </CardContent>
