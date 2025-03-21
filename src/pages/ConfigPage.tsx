@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -37,7 +36,6 @@ const ConfigPage = () => {
   
   const getLocalIpAddress = async () => {
     try {
-      // Use the standard RTCPeerConnection interface
       const pc = new RTCPeerConnection({
         iceServers: [],
       });
@@ -46,7 +44,13 @@ const ConfigPage = () => {
       
       await pc.createOffer().then(offer => pc.setLocalDescription(offer));
       
-      return new Promise<string>((resolve) => {
+      return new Promise<string>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pc.onicecandidate = null;
+          pc.close();
+          reject(new Error("Timeout de détection d'IP"));
+        }, 5000);
+        
         pc.onicecandidate = (ice) => {
           if (ice.candidate) {
             const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
@@ -55,6 +59,7 @@ const ConfigPage = () => {
             if (matches && matches[1]) {
               const ip = matches[1];
               if (ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+                clearTimeout(timeout);
                 resolve(ip);
                 pc.onicecandidate = null;
                 pc.close();
@@ -65,7 +70,7 @@ const ConfigPage = () => {
       });
     } catch (error) {
       console.error('Erreur lors de la détection de l\'adresse IP:', error);
-      return null;
+      throw error;
     }
   };
   
