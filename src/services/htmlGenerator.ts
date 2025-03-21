@@ -1,3 +1,4 @@
+
 import { Content } from '@/types';
 import { useAppStore } from '@/store';
 
@@ -108,6 +109,7 @@ class HtmlGeneratorService {
         const loop = displayOptions?.loop !== false;
         const controls = displayOptions?.controls !== false;
         const muted = displayOptions?.muted !== false;
+        const fullscreen = displayOptions?.fullscreen === true;
         
         return `
           <!DOCTYPE html>
@@ -142,6 +144,7 @@ class HtmlGeneratorService {
           </head>
           <body>
             <video 
+              id="videoPlayer"
               src="${contentUrl}" 
               ${autoplay ? 'autoplay' : ''} 
               ${loop ? 'loop' : ''} 
@@ -149,6 +152,35 @@ class HtmlGeneratorService {
               ${muted ? 'muted' : ''}
               onerror="this.style.display='none';document.body.innerHTML+='<div class=\\'error-message\\'><h2>Erreur de chargement de la vidéo</h2><p>URL: ${contentUrl}</p></div>';">
             </video>
+            
+            ${fullscreen ? `
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                const video = document.getElementById('videoPlayer');
+                
+                // Function to request fullscreen
+                function requestFullscreen() {
+                  if (video.requestFullscreen) {
+                    video.requestFullscreen();
+                  } else if (video.webkitRequestFullscreen) { /* Safari */
+                    video.webkitRequestFullscreen();
+                  } else if (video.msRequestFullscreen) { /* IE11 */
+                    video.msRequestFullscreen();
+                  }
+                }
+                
+                // Try to go fullscreen on page load
+                requestFullscreen();
+                
+                // Also try when video starts playing
+                video.addEventListener('playing', requestFullscreen);
+                
+                // For iOS and other platforms that require user interaction
+                video.addEventListener('click', requestFullscreen);
+                document.addEventListener('click', requestFullscreen);
+              });
+            </script>
+            ` : ''}
           </body>
           </html>
         `;

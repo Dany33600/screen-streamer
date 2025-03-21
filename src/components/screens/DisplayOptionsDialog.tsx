@@ -29,6 +29,7 @@ const DisplayOptionsDialog: React.FC<DisplayOptionsDialogProps> = ({
     loop: true,
     controls: true,
     muted: true,
+    fullscreen: false,
     
     // Image options
     interval: 5000,
@@ -128,6 +129,17 @@ const DisplayOptionsDialog: React.FC<DisplayOptionsDialogProps> = ({
                   }
                 />
                 <Label htmlFor="muted">Couper le son</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="fullscreen" 
+                  checked={options.fullscreen} 
+                  onCheckedChange={(checked) => 
+                    setOptions({...options, fullscreen: checked})
+                  }
+                />
+                <Label htmlFor="fullscreen">Démarrer en plein écran</Label>
               </div>
             </TabsContent>
           )}
