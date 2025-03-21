@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -21,7 +20,7 @@ import {
 } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Settings, Network, MonitorPlay, Save, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Settings, Network, MonitorPlay, Save, RefreshCw, AlertTriangle, Alert } from 'lucide-react';
 
 const ConfigPage = () => {
   const basePort = useAppStore((state) => state.basePort);
@@ -157,6 +156,56 @@ const ConfigPage = () => {
       setIsSaving(false);
     }
   };
+
+  const renderServerInformation = () => (
+    <Card className="mt-4">
+      <CardHeader>
+        <CardTitle>Information sur le serveur web</CardTitle>
+        <CardDescription>
+          Configuration du serveur web pour les écrans
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Pour utiliser les écrans externes, vous devez démarrer le serveur backend avec la commande suivante :
+          </AlertDescription>
+        </Alert>
+        
+        <div className="bg-muted p-4 rounded-md text-sm font-mono overflow-x-auto">
+          node src/server.js
+        </div>
+        
+        <p className="text-sm text-muted-foreground">
+          Ce serveur démarrera sur le port 5000 par défaut et permettra à vos écrans d'être accessibles via leurs ports respectifs.
+          Assurez-vous que ces ports sont ouverts dans votre pare-feu.
+        </p>
+        
+        <div className="grid gap-2">
+          <Label>Adresse IP actuelle</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              value={ipValue}
+              disabled
+              className="bg-muted"
+            />
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={detectNetworkSettings}
+            >
+              <RefreshCw size={16} />
+              Détecter
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Les écrans seront accessibles à l'adresse : <span className="font-medium">{ipValue}:[PORT]</span>
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <MainLayout>
@@ -315,6 +364,8 @@ const ConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            {renderServerInformation()}
             
             <Card>
               <CardHeader>

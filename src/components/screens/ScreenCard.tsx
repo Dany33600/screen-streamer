@@ -60,12 +60,12 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         
         // Attendre un peu que le serveur "démarre"
         setTimeout(() => {
+          // Ouvrir l'URL du serveur dans un nouvel onglet
           const serverUrl = screenServerService.getServerUrl(screen.id);
           if (serverUrl) {
-            // Naviguer vers la page de prévisualisation
-            navigate(serverUrl);
+            window.open(serverUrl, '_blank');
           }
-        }, 500);
+        }, 1000);
       } else {
         toast({
           title: "Erreur de démarrage",
@@ -77,7 +77,13 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
       // Si le serveur est déjà en ligne, ouvrir directement l'URL
       const serverUrl = screenServerService.getServerUrl(screen.id);
       if (serverUrl) {
-        navigate(serverUrl);
+        window.open(serverUrl, '_blank');
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Impossible de trouver l'URL du serveur.",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -96,16 +102,8 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
       if (success) {
         toast({
           title: "Serveur démarré",
-          description: `Le serveur pour l'écran ${screen.name} a été démarré.`,
+          description: `Le serveur pour l'écran ${screen.name} est maintenant accessible sur http://${screen.ipAddress}:${screen.port}`,
         });
-        
-        // Ouvrir automatiquement l'écran après démarrage
-        setTimeout(() => {
-          const serverUrl = screenServerService.getServerUrl(screen.id);
-          if (serverUrl) {
-            navigate(serverUrl);
-          }
-        }, 500);
       } else {
         toast({
           title: "Erreur de démarrage",
@@ -179,7 +177,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleOpenScreen}>
                 <ExternalLink size={16} className="mr-2" />
-                Simuler l'écran
+                Ouvrir dans le navigateur
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(screen.id)}
@@ -209,7 +207,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         <Alert className="mt-3 py-2 text-xs">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Serveur web actif: l'application exécute un serveur web
+            Serveur web: http://{screen.ipAddress}:{screen.port}
           </AlertDescription>
         </Alert>
       </CardContent>

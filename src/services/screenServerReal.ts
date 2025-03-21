@@ -10,12 +10,10 @@ interface ServerInstance {
   port: number;
   content?: Content;
   serverUrl: string;
-  worker?: Worker;
 }
 
 class ScreenServerRealService {
   private servers: Map<string, ServerInstance> = new Map();
-  private baseUrl: string = window.location.origin;
   
   /**
    * Démarre un serveur web réel pour un écran spécifique
@@ -48,24 +46,21 @@ class ScreenServerRealService {
       // Générer un identifiant unique pour ce serveur
       const serverId = uuidv4();
       
-      // Créer une URL pour le serveur
-      const serverUrl = `/preview?screenId=${screenId}&content=${content.id}&server=${serverId}`;
+      // Créer une URL pour accéder au serveur depuis l'extérieur
+      // Cette URL pointe vers le port spécifique de cet écran
+      const serverUrl = `http://${window.location.hostname}:${port}`;
       
-      // Créer un Web Worker pour gérer le serveur en arrière-plan
-      const worker = this.createServerWorker(screenId, port, content);
-      
-      // Enregistrer le serveur
+      // Enregistrer le serveur dans notre liste
       this.servers.set(screenId, { 
         id: serverId,
         isRunning: true, 
         port, 
         content,
         serverUrl,
-        worker
       });
       
-      // Enregistrer l'URL et le contenu dans localStorage pour permettre à la page de prévisualisation d'y accéder
-      this.saveServerData(serverId, content);
+      // Démarrer un vrai serveur HTTP sur le port spécifié
+      this.startHttpServer(port, content);
       
       return true;
     } catch (error) {
@@ -75,54 +70,47 @@ class ScreenServerRealService {
   }
   
   /**
-   * Crée un Web Worker qui simule un serveur web
+   * Démarre un serveur HTTP réel sur le port spécifié
    */
-  private createServerWorker(screenId: string, port: number, content: Content): Worker {
-    // Créer un blob qui contient le code du worker
-    const workerCode = `
-      // Worker pour simuler un serveur web
-      let isRunning = true;
-      let content = ${JSON.stringify(content)};
-      
-      self.onmessage = function(e) {
-        if (e.data.action === 'stop') {
-          isRunning = false;
-          self.close();
-        } else if (e.data.action === 'updateContent') {
-          content = e.data.content;
-        }
-      };
-      
-      // Simuler un processus de serveur qui tourne en continu
-      setInterval(() => {
-        if (isRunning) {
-          self.postMessage({ status: 'running', screenId: '${screenId}', port: ${port} });
-        }
-      }, 5000);
-    `;
-    
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    const workerUrl = URL.createObjectURL(blob);
-    const worker = new Worker(workerUrl);
-    
-    // Nettoyer l'URL après la création du Worker
-    URL.revokeObjectURL(workerUrl);
-    
-    return worker;
-  }
-  
-  /**
-   * Sauvegarde les données du serveur dans localStorage
-   */
-  private saveServerData(serverId: string, content: Content): void {
+  private startHttpServer(port: number, content: Content): void {
     // Générer le HTML pour l'affichage
     const html = htmlGenerator.generateHtml(content);
     
-    // Sauvegarder dans localStorage pour que la page de prévisualisation puisse y accéder
-    localStorage.setItem(`server-${serverId}`, JSON.stringify({
-      content,
-      html
-    }));
+    // Dans un environnement navigateur, nous ne pouvons pas créer de serveur HTTP directement
+    // Nous allons donc envoyer une requête à notre backend pour démarrer un serveur
+    
+    // URL de notre API backend qui gère les serveurs
+    const backendUrl = "/api/start-server";
+    
+    // Envoyer la requête pour démarrer le serveur
+    fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        port,
+        content,
+        html
+      }),
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log(`Serveur démarré avec succès sur le port ${port}:`, data);
+    })
+    .catch(error => {
+      console.error(`Erreur lors du démarrage du serveur HTTP sur le port ${port}:`, error);
+      toast({
+        title: "Erreur serveur",
+        description: `Impossible de démarrer le serveur sur le port ${port}. Assurez-vous que le port est disponible.`,
+        variant: "destructive",
+      });
+    });
   }
   
   /**
@@ -135,22 +123,13 @@ class ScreenServerRealService {
         return false;
       }
       
-      console.log(`Arrêt du serveur pour l'écran ${screenId}`);
-      
       const server = this.servers.get(screenId)!;
+      console.log(`Arrêt du serveur pour l'écran ${screenId} sur le port ${server.port}`);
       
-      // Arrêter le worker
-      if (server.worker) {
-        server.worker.postMessage({ action: 'stop' });
-        server.worker.terminate();
-      }
+      // Arrêter le serveur HTTP
+      this.stopHttpServer(server.port);
       
-      // Supprimer les données du serveur du localStorage
-      if (server.id) {
-        localStorage.removeItem(`server-${server.id}`);
-      }
-      
-      // Supprimer le serveur de la liste
+      // Supprimer le serveur de notre liste
       this.servers.delete(screenId);
       
       return true;
@@ -161,7 +140,35 @@ class ScreenServerRealService {
   }
   
   /**
-   * Met à jour le serveur web
+   * Arrête un serveur HTTP réel
+   */
+  private stopHttpServer(port: number): void {
+    // Envoyer une requête à notre backend pour arrêter le serveur
+    const backendUrl = "/api/stop-server";
+    
+    fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ port }),
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log(`Serveur arrêté avec succès sur le port ${port}:`, data);
+    })
+    .catch(error => {
+      console.error(`Erreur lors de l'arrêt du serveur HTTP sur le port ${port}:`, error);
+    });
+  }
+  
+  /**
+   * Met à jour le contenu d'un serveur web
    */
   updateServer(screenId: string, port: number, content?: Content): boolean {
     if (!content) {
@@ -172,16 +179,39 @@ class ScreenServerRealService {
     if (this.servers.has(screenId)) {
       const server = this.servers.get(screenId)!;
       
-      // Mettre à jour le contenu
+      // Mettre à jour le contenu du serveur
       server.content = content;
       
-      // Mettre à jour le worker
-      if (server.worker) {
-        server.worker.postMessage({ action: 'updateContent', content });
-      }
+      // Générer le nouveau HTML
+      const html = htmlGenerator.generateHtml(content);
       
-      // Mettre à jour les données du serveur dans localStorage
-      this.saveServerData(server.id, content);
+      // Envoyer une requête à notre backend pour mettre à jour le contenu
+      const backendUrl = "/api/update-server";
+      
+      fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          port,
+          content,
+          html
+        }),
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log(`Contenu du serveur mis à jour avec succès sur le port ${port}:`, data);
+      })
+      .catch(error => {
+        console.error(`Erreur lors de la mise à jour du serveur HTTP sur le port ${port}:`, error);
+        return false;
+      });
       
       return true;
     }
@@ -198,38 +228,28 @@ class ScreenServerRealService {
   }
   
   /**
-   * Obtient le port d'un serveur web
-   */
-  getServerPort(screenId: string): number | null {
-    const serverInstance = this.servers.get(screenId);
-    return serverInstance ? serverInstance.port : null;
-  }
-  
-  /**
    * Obtient l'URL d'un serveur web
    */
   getServerUrl(screenId: string): string | null {
     const serverInstance = this.servers.get(screenId);
-    return serverInstance && serverInstance.serverUrl ? serverInstance.serverUrl : null;
+    return serverInstance ? serverInstance.serverUrl : null;
   }
   
   /**
-   * Obtient le contenu d'un serveur web
+   * Vérifie l'état d'un serveur en envoyant une requête ping
    */
-  getServerContent(screenId: string): Content | null {
-    const serverInstance = this.servers.get(screenId);
-    return serverInstance && serverInstance.content ? serverInstance.content : null;
-  }
-  
-  /**
-   * Récupère les données du serveur par son ID
-   */
-  getServerDataById(serverId: string): { content: Content; html: string } | null {
-    const data = localStorage.getItem(`server-${serverId}`);
-    if (data) {
-      return JSON.parse(data);
-    }
-    return null;
+  checkServerStatus(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const serverUrl = `http://${window.location.hostname}:${port}/ping`;
+      
+      fetch(serverUrl, { method: 'GET', mode: 'no-cors' })
+        .then(() => {
+          resolve(true);
+        })
+        .catch(() => {
+          resolve(false);
+        });
+    });
   }
 }
 
