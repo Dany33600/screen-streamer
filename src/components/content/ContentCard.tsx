@@ -1,39 +1,14 @@
 
 import React, { useState } from 'react';
 import { Content } from '@/types';
-import { 
-  File, 
-  Image, 
-  FileVideo, 
-  Presentation,
-  FileText,
-  Code,
-  MoreVertical,
-  Trash2,
-  Edit,
-  MonitorPlay
-} from 'lucide-react';
+import { Trash2, MonitorPlay } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import ContentTypeIcon, { getTypeLabel } from './ContentTypeIcon';
+import ContentActions from './ContentActions';
+import DeleteConfirmDialog from './DeleteConfirmDialog';
+import { formatDate } from '@/utils/dateFormatter';
 
 interface ContentCardProps {
   content: Content;
@@ -49,61 +24,6 @@ const ContentCard: React.FC<ContentCardProps> = ({
   onAssign
 }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  // Helpers for content type
-  const getIcon = () => {
-    switch (content.type) {
-      case 'image':
-        return <Image size={24} />;
-      case 'video':
-        return <FileVideo size={24} />;
-      case 'powerpoint':
-        return <Presentation size={24} />;
-      case 'pdf':
-        return <FileText size={24} />;
-      case 'html':
-        return <Code size={24} />;
-      default:
-        return <File size={24} />;
-    }
-  };
-
-  const getTypeLabel = () => {
-    switch (content.type) {
-      case 'image':
-        return 'Image';
-      case 'video':
-        return 'Vidéo';
-      case 'powerpoint':
-        return 'PowerPoint';
-      case 'pdf':
-        return 'PDF';
-      case 'html':
-        return 'HTML';
-      default:
-        return 'Fichier';
-    }
-  };
-
-  // Format the date safely
-  const getFormattedDate = () => {
-    try {
-      // Ensure createdAt is a valid date or timestamp
-      if (!content.createdAt) return 'Date inconnue';
-      
-      const date = typeof content.createdAt === 'number' 
-        ? new Date(content.createdAt) 
-        : new Date(Number(content.createdAt));
-      
-      // Verify that the date is valid
-      if (isNaN(date.getTime())) return 'Date invalide';
-      
-      return format(date, 'PPP', { locale: fr });
-    } catch (error) {
-      console.error('Erreur lors du formatage de la date:', error);
-      return 'Date invalide';
-    }
-  };
 
   const handleDelete = () => {
     setIsDeleteDialogOpen(false);
@@ -127,8 +47,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
             />
           ) : (
             <div className="flex flex-col items-center justify-center text-muted-foreground p-4">
-              {getIcon()}
-              <span className="mt-2 text-sm">{getTypeLabel()}</span>
+              <ContentTypeIcon type={content.type} />
+              <span className="mt-2 text-sm">{getTypeLabel(content.type)}</span>
             </div>
           )}
         </div>
@@ -138,39 +58,21 @@ const ContentCard: React.FC<ContentCardProps> = ({
             <div className="flex-1">
               <h3 className="font-medium text-lg truncate">{content.name}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Ajouté le {getFormattedDate()}
+                Ajouté le {formatDate(content.createdAt)}
               </p>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical size={16} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(content)}>
-                  <Edit size={16} className="mr-2" />
-                  Modifier
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAssign(content)}>
-                  <MonitorPlay size={16} className="mr-2" />
-                  Assigner à un écran
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={openDeleteDialog}
-                  className="text-destructive"
-                >
-                  <Trash2 size={16} className="mr-2" />
-                  Supprimer
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <ContentActions 
+              content={content}
+              onEdit={onEdit}
+              onAssign={onAssign}
+              onDelete={openDeleteDialog}
+            />
           </div>
         </CardContent>
         
         <CardFooter className="px-4 py-3 bg-muted/30 border-t flex justify-between">
           <Badge variant="outline">
-            {getTypeLabel()}
+            {getTypeLabel(content.type)}
           </Badge>
           <div className="flex gap-2">
             <Button 
@@ -195,22 +97,12 @@ const ContentCard: React.FC<ContentCardProps> = ({
         </CardFooter>
       </Card>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer le contenu</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer "{content.name}" ? Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDelete}
+        itemName={content.name}
+      />
     </>
   );
 };
