@@ -2,6 +2,26 @@
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Obtenir le chemin du répertoire actuel en utilisant ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Chemin vers le répertoire de stockage
+const STORAGE_DIR = path.join(__dirname, '..', '..', 'storage');
+const CONTENT_DIR = path.join(STORAGE_DIR, 'content');
+
+// Créer les répertoires de stockage s'ils n'existent pas
+if (!fs.existsSync(STORAGE_DIR)) {
+  fs.mkdirSync(STORAGE_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(CONTENT_DIR)) {
+  fs.mkdirSync(CONTENT_DIR, { recursive: true });
+}
 
 // Map pour stocker les serveurs en cours d'exécution
 const runningServers = new Map();
@@ -88,6 +108,79 @@ function updateServer(port, html) {
   // Arrêter puis redémarrer le serveur avec le nouveau contenu
   // C'est une approche simple mais efficace pour mettre à jour le contenu
   return startServer(port, html);
+}
+
+/**
+ * Sauvegarde les données du contenu sur le serveur
+ */
+function saveContentData(contentId, contentData) {
+  try {
+    const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
+    fs.writeFileSync(contentPath, JSON.stringify(contentData, null, 2));
+    return true;
+  } catch (error) {
+    console.error(`Erreur lors de la sauvegarde du contenu ${contentId}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Récupère les données du contenu depuis le serveur
+ */
+function getContentData(contentId) {
+  try {
+    const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
+    if (fs.existsSync(contentPath)) {
+      const data = fs.readFileSync(contentPath, 'utf8');
+      return JSON.parse(data);
+    }
+    return null;
+  } catch (error) {
+    console.error(`Erreur lors de la récupération du contenu ${contentId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Liste tous les contenus stockés sur le serveur
+ */
+function listAllContent() {
+  try {
+    const files = fs.readdirSync(CONTENT_DIR);
+    const contentList = [];
+    
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const contentId = file.replace('.json', '');
+        const content = getContentData(contentId);
+        if (content) {
+          contentList.push(content);
+        }
+      }
+    }
+    
+    return contentList;
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la liste des contenus:', error);
+    return [];
+  }
+}
+
+/**
+ * Supprime un contenu stocké sur le serveur
+ */
+function deleteContent(contentId) {
+  try {
+    const contentPath = path.join(CONTENT_DIR, `${contentId}.json`);
+    if (fs.existsSync(contentPath)) {
+      fs.unlinkSync(contentPath);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(`Erreur lors de la suppression du contenu ${contentId}:`, error);
+    return false;
+  }
 }
 
 // Créer un serveur API pour gérer les serveurs d'écran
@@ -189,6 +282,80 @@ function createApiServer(apiPort = 5000) {
       servers: Array.from(runningServers.keys())
     });
   });
+
+  // Routes pour la gestion des contenus
+  app.post('/api/content', (req, res) => {
+    try {
+      const { contentId, content } = req.body;
+      
+      if (!contentId || !content) {
+        return res.status(400).json({ success: false, message: 'ID de contenu et données requis' });
+      }
+      
+      const success = saveContentData(contentId, content);
+      
+      if (success) {
+        res.json({ success: true, message: `Contenu ${contentId} sauvegardé avec succès` });
+      } else {
+        res.status(500).json({ success: false, message: `Échec de la sauvegarde du contenu ${contentId}` });
+      }
+    } catch (error) {
+      console.error("Erreur dans /api/content (POST):", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+  
+  app.get('/api/content/:contentId', (req, res) => {
+    try {
+      const { contentId } = req.params;
+      
+      if (!contentId) {
+        return res.status(400).json({ success: false, message: 'ID de contenu requis' });
+      }
+      
+      const content = getContentData(contentId);
+      
+      if (content) {
+        res.json({ success: true, content });
+      } else {
+        res.status(404).json({ success: false, message: `Contenu ${contentId} non trouvé` });
+      }
+    } catch (error) {
+      console.error("Erreur dans /api/content/:contentId (GET):", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+  
+  app.get('/api/content', (req, res) => {
+    try {
+      const contentList = listAllContent();
+      res.json({ success: true, contentList });
+    } catch (error) {
+      console.error("Erreur dans /api/content (GET):", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+  
+  app.delete('/api/content/:contentId', (req, res) => {
+    try {
+      const { contentId } = req.params;
+      
+      if (!contentId) {
+        return res.status(400).json({ success: false, message: 'ID de contenu requis' });
+      }
+      
+      const success = deleteContent(contentId);
+      
+      if (success) {
+        res.json({ success: true, message: `Contenu ${contentId} supprimé avec succès` });
+      } else {
+        res.status(404).json({ success: false, message: `Contenu ${contentId} non trouvé ou erreur lors de la suppression` });
+      }
+    } catch (error) {
+      console.error("Erreur dans /api/content/:contentId (DELETE):", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
   
   // Middleware pour gérer les erreurs 404
   app.use((req, res) => {
@@ -200,7 +367,11 @@ function createApiServer(apiPort = 5000) {
         'GET /api/status',
         'POST /api/start-server',
         'POST /api/stop-server',
-        'POST /api/update-server'
+        'POST /api/update-server',
+        'POST /api/content',
+        'GET /api/content',
+        'GET /api/content/:contentId',
+        'DELETE /api/content/:contentId'
       ]
     });
   });

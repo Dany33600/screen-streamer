@@ -13,11 +13,6 @@ interface ServerInstance {
   serverUrl: string;
 }
 
-interface ServerData {
-  content: Content;
-  html: string;
-}
-
 class ScreenServerRealService {
   private servers: Map<string, ServerInstance> = new Map();
   private apiBaseUrl: string;
@@ -30,23 +25,58 @@ class ScreenServerRealService {
     console.log(`Service ScreenServerReal initialisé avec l'URL API: ${this.apiBaseUrl}`);
   }
   
-  // Méthode pour stocker les données d'un serveur en localStorage
-  private saveServerData(serverId: string, content: Content, html: string): void {
+  // Méthode pour stocker les données d'un serveur sur le serveur
+  private async saveServerData(serverId: string, content: Content, html: string): Promise<boolean> {
     try {
-      const serverData: ServerData = { content, html };
-      localStorage.setItem(`server_${serverId}`, JSON.stringify(serverData));
+      const apiUrl = `${this.apiBaseUrl}/content`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contentId: serverId,
+          content: {
+            content,
+            html
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
+      }
+      
+      return true;
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données du serveur:', error);
+      return false;
     }
   }
   
-  // Méthode pour récupérer les données d'un serveur depuis localStorage
-  getServerDataById(serverId: string): ServerData | null {
+  // Méthode pour récupérer les données d'un serveur depuis le serveur
+  async getServerDataById(serverId: string): Promise<{ content: Content; html: string } | null> {
     try {
-      const data = localStorage.getItem(`server_${serverId}`);
-      if (data) {
-        return JSON.parse(data) as ServerData;
+      const apiUrl = `${this.apiBaseUrl}/content/${serverId}`;
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        const errorText = await response.text();
+        throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
       }
+      
+      const data = await response.json();
+      
+      if (data.success && data.content) {
+        return data.content;
+      }
+      
       return null;
     } catch (error) {
       console.error('Erreur lors de la récupération des données du serveur:', error);
@@ -55,16 +85,16 @@ class ScreenServerRealService {
   }
 
   // Récupère le contenu HTML pour un écran spécifique
-  getServerContent(screenId: string): Content | null {
+  async getServerContent(screenId: string): Promise<Content | null> {
     try {
       const server = this.servers.get(screenId);
       if (server && server.content) {
         return server.content;
       }
       
-      // Si le serveur n'est pas trouvé en mémoire, essayez de le récupérer depuis le localStorage
+      // Si le serveur n'est pas trouvé en mémoire, essayez de le récupérer depuis l'API
       const serverId = screenId; // Utiliser l'ID de l'écran comme ID du serveur
-      const serverData = this.getServerDataById(serverId);
+      const serverData = await this.getServerDataById(serverId);
       if (serverData) {
         return serverData.content;
       }
@@ -79,7 +109,7 @@ class ScreenServerRealService {
   /**
    * Démarre un serveur web réel pour un écran spécifique
    */
-  startServer(screenId: string, port: number, content?: Content): boolean {
+  async startServer(screenId: string, port: number, content?: Content): Promise<boolean> {
     try {
       // Si un serveur existe déjà, on le réutilise
       if (this.servers.has(screenId)) {
@@ -105,7 +135,7 @@ class ScreenServerRealService {
       console.log(`Démarrage du serveur pour l'écran ${screenId} sur le port ${port}`);
       
       // Générer un identifiant unique pour ce serveur
-      const serverId = uuidv4();
+      const serverId = screenId; // Utiliser l'ID de l'écran directement comme ID du serveur
       
       // Créer une URL pour accéder au serveur depuis l'extérieur
       const hostname = window.location.hostname; // Obtenir l'IP du serveur actuel
@@ -114,8 +144,8 @@ class ScreenServerRealService {
       // Générer le HTML pour l'affichage
       const html = htmlGenerator.generateHtml(content);
       
-      // Sauvegarder les données du serveur en localStorage
-      this.saveServerData(serverId, content, html);
+      // Sauvegarder les données du serveur sur le serveur
+      await this.saveServerData(serverId, content, html);
       
       // Enregistrer le serveur dans notre liste
       this.servers.set(screenId, { 
@@ -128,7 +158,7 @@ class ScreenServerRealService {
       });
       
       // Démarrer un vrai serveur HTTP sur le port spécifié
-      this.startHttpServer(port, content, html);
+      await this.startHttpServer(port, content, html);
       
       return true;
     } catch (error) {
@@ -140,42 +170,41 @@ class ScreenServerRealService {
   /**
    * Démarre un serveur HTTP réel sur le port spécifié
    */
-  private startHttpServer(port: number, content: Content, html: string): void {
+  private async startHttpServer(port: number, content: Content, html: string): Promise<void> {
     // Utiliser l'URL de l'API configurée dans le constructeur
     const apiUrl = `${this.apiBaseUrl}/start-server`;
     
     console.log(`Envoi de la requête à ${apiUrl} pour démarrer le serveur sur le port ${port}`);
     
-    // Envoyer la requête pour démarrer le serveur
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        port,
-        html
-      }),
-    })
-    .then(response => {
+    try {
+      // Envoyer la requête pour démarrer le serveur
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          port,
+          html
+        }),
+      });
+      
       if (!response.ok) {
-        return response.text().then(text => {
-          throw new Error(`Erreur HTTP ${response.status}: ${text}`);
-        });
+        const errorText = await response.text();
+        throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
       }
-      return response.json();
-    })
-    .then(data => {
+      
+      const data = await response.json();
       console.log(`Serveur démarré avec succès sur le port ${port}:`, data);
-    })
-    .catch(error => {
+    } catch (error) {
       console.error(`Erreur lors du démarrage du serveur HTTP sur le port ${port}:`, error);
       toast({
         title: "Erreur serveur",
         description: `Impossible de démarrer le serveur sur le port ${port}. Vérifiez que le serveur API est en cours d'exécution (node src/server.js).`,
         variant: "destructive",
       });
-    });
+      throw error; // Propager l'erreur pour pouvoir la gérer au niveau supérieur
+    }
   }
   
   /**
@@ -237,7 +266,7 @@ class ScreenServerRealService {
   /**
    * Met à jour le contenu d'un serveur web
    */
-  updateServer(screenId: string, port: number, content?: Content): boolean {
+  async updateServer(screenId: string, port: number, content?: Content): Promise<boolean> {
     if (!content) {
       return false;
     }
@@ -253,39 +282,36 @@ class ScreenServerRealService {
       const html = htmlGenerator.generateHtml(content);
       server.html = html;
       
-      // Mettre à jour les données du serveur en localStorage
-      this.saveServerData(server.id, content, html);
+      // Mettre à jour les données du serveur sur le serveur
+      await this.saveServerData(server.id, content, html);
       
-      // Envoyer une requête à notre backend pour mettre à jour le contenu
-      const apiUrl = `${this.apiBaseUrl}/update-server`;
-      
-      fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          port,
-          html
-        }),
-      })
-      .then(response => {
+      try {
+        // Envoyer une requête à notre backend pour mettre à jour le contenu
+        const apiUrl = `${this.apiBaseUrl}/update-server`;
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            port,
+            html
+          }),
+        });
+        
         if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(`Erreur HTTP ${response.status}: ${text}`);
-          });
+          const errorText = await response.text();
+          throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
         }
-        return response.json();
-      })
-      .then(data => {
+        
+        const data = await response.json();
         console.log(`Contenu du serveur mis à jour avec succès sur le port ${port}:`, data);
-      })
-      .catch(error => {
+        return true;
+      } catch (error) {
         console.error(`Erreur lors de la mise à jour du serveur HTTP sur le port ${port}:`, error);
         return false;
-      });
-      
-      return true;
+      }
     }
     
     // Sinon, démarrer un nouveau serveur
