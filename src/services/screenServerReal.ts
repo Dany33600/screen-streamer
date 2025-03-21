@@ -1,4 +1,3 @@
-
 import { Content } from '@/types';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
@@ -42,11 +41,18 @@ class ScreenServerRealService {
       const formattedApiUrl = configuredApiUrl.replace('localhost', baseIpAddress);
       
       this.apiBaseUrl = formattedApiUrl.endsWith('/') 
-        ? formattedApiUrl.slice(0, -1) + '/api'
-        : formattedApiUrl + '/api';
+        ? formattedApiUrl.slice(0, -1)
+        : formattedApiUrl;
+        
+      console.log(`API URL configurée: ${this.apiBaseUrl}`);
+      
+      // S'assurer que l'URL se termine par '/api'
+      if (!this.apiBaseUrl.endsWith('/api')) {
+        this.apiBaseUrl = this.apiBaseUrl + '/api';
+      }
     } else {
       // Fallback: determine the API URL based on the current window location
-      const hostname = baseIpAddress || window.location.hostname;
+      const hostname = baseIpAddress || window.location.hostname; // Obtenir l'IP du serveur actuel
       const port = 5000; // Default API port
       this.apiBaseUrl = `http://${hostname}:${port}/api`;
     }
@@ -156,6 +162,9 @@ class ScreenServerRealService {
     try {
       console.log(`Tentative de démarrage du serveur pour l'écran ${screenId} sur le port ${port}`);
       
+      // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
+      this.updateApiBaseUrl();
+      
       // Si un serveur existe déjà, on le réutilise
       if (this.servers.has(screenId)) {
         const existingServer = this.servers.get(screenId)!;
@@ -180,8 +189,11 @@ class ScreenServerRealService {
       // Générer un identifiant unique pour ce serveur
       const serverId = screenId; // Utiliser l'ID de l'écran directement comme ID du serveur
       
-      // Créer une URL pour accéder au serveur depuis l'extérieur
+      // Récupérer l'adresse IP configurée 
       const baseIpAddress = useAppStore.getState().baseIpAddress;
+      console.log(`Utilisation de l'adresse IP configurée: ${baseIpAddress}`);
+      
+      // Créer une URL pour accéder au serveur depuis l'extérieur
       const hostname = baseIpAddress || window.location.hostname; // Obtenir l'IP du serveur actuel
       const serverUrl = `http://${hostname}:${port}`;
       
@@ -226,6 +238,9 @@ class ScreenServerRealService {
    * Démarre un serveur HTTP réel sur le port spécifié
    */
   private async startHttpServer(port: number, content: Content, html: string): Promise<void> {
+    // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
+    this.updateApiBaseUrl();
+    
     // Utiliser l'URL de l'API configurée dans le constructeur
     const apiUrl = `${this.apiBaseUrl}/start-server`;
     
@@ -290,8 +305,13 @@ class ScreenServerRealService {
    * Arrête un serveur HTTP réel
    */
   private stopHttpServer(port: number): void {
+    // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
+    this.updateApiBaseUrl();
+    
     // Envoyer une requête à notre backend pour arrêter le serveur
     const apiUrl = `${this.apiBaseUrl}/stop-server`;
+    
+    console.log(`Envoi de la requête à ${apiUrl} pour arrêter le serveur sur le port ${port}`);
     
     fetch(apiUrl, {
       method: 'POST',
@@ -324,6 +344,9 @@ class ScreenServerRealService {
       return false;
     }
     
+    // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
+    this.updateApiBaseUrl();
+    
     // Si le serveur existe déjà, mettre à jour son contenu
     if (this.servers.has(screenId)) {
       const server = this.servers.get(screenId)!;
@@ -341,6 +364,8 @@ class ScreenServerRealService {
       try {
         // Envoyer une requête à notre backend pour mettre à jour le contenu
         const apiUrl = `${this.apiBaseUrl}/update-server`;
+        
+        console.log(`Envoi de la requête à ${apiUrl} pour mettre à jour le serveur sur le port ${port}`);
         
         const response = await fetch(apiUrl, {
           method: 'POST',
@@ -391,9 +416,14 @@ class ScreenServerRealService {
    */
   checkServerStatus(port: number): Promise<boolean> {
     return new Promise((resolve) => {
+      // Récupérer l'adresse IP configurée dans les paramètres
       const baseIpAddress = useAppStore.getState().baseIpAddress;
+      console.log(`Vérification du statut du serveur avec l'adresse IP configurée: ${baseIpAddress}`);
+      
       const hostname = baseIpAddress || window.location.hostname; // Obtenir l'IP du serveur actuel
       const serverUrl = `http://${hostname}:${port}/ping`;
+      
+      console.log(`Envoi d'une requête ping à ${serverUrl}`);
       
       fetch(serverUrl, { 
         method: 'GET',
@@ -404,9 +434,11 @@ class ScreenServerRealService {
         signal: AbortSignal.timeout(2000)
       })
       .then(() => {
+        console.log(`Le serveur sur le port ${port} a répondu au ping`);
         resolve(true);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.log(`Le serveur sur le port ${port} n'a pas répondu au ping:`, error.message);
         resolve(false);
       });
     });
@@ -415,3 +447,4 @@ class ScreenServerRealService {
 
 // Export a singleton instance of the service
 export const screenServerService = new ScreenServerRealService();
+

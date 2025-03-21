@@ -10,6 +10,7 @@ export function useScreenStatus(screen: Screen) {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const contents = useAppStore((state) => state.contents);
   const updateScreen = useAppStore((state) => state.updateScreen);
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   
   const content = screen.contentId 
     ? contents.find(c => c.id === screen.contentId) 
@@ -22,6 +23,9 @@ export function useScreenStatus(screen: Screen) {
     try {
       setIsCheckingStatus(true);
       console.log(`Vérification de l'état du serveur pour l'écran ${screen.name} (${screen.id})`);
+      
+      // S'assurer que le service utilise l'adresse IP actuelle
+      screenServerService.updateApiBaseUrl();
       
       // Vérifier si le serveur est en cours d'exécution
       const isRunning = screenServerService.isServerRunning(screen.id);
@@ -45,6 +49,11 @@ export function useScreenStatus(screen: Screen) {
           // Si le serveur ne répond pas mais est censé être en ligne, essayer de le redémarrer
           if (content) {
             console.log(`Redémarrage du serveur pour l'écran ${screen.name} avec le contenu ${content.name}`);
+            // Mettre à jour l'adresse IP de l'écran avec celle de la configuration
+            if (screen.ipAddress !== baseIpAddress) {
+              console.log(`Mise à jour de l'adresse IP de l'écran: ${screen.ipAddress} -> ${baseIpAddress}`);
+              updateScreen(screen.id, { ipAddress: baseIpAddress });
+            }
             const success = await screenServerService.startServer(screen.id, screen.port, content);
             console.log(`Redémarrage du serveur pour l'écran ${screen.name}: ${success ? 'Réussi' : 'Échoué'}`);
           } else {
@@ -70,7 +79,17 @@ export function useScreenStatus(screen: Screen) {
       return false;
     }
     
+    // Mettre à jour l'adresse IP de l'écran avec celle de la configuration
+    if (screen.ipAddress !== baseIpAddress) {
+      console.log(`Mise à jour de l'adresse IP de l'écran: ${screen.ipAddress} -> ${baseIpAddress}`);
+      updateScreen(screen.id, { ipAddress: baseIpAddress });
+    }
+    
     console.log(`Démarrage du serveur pour l'écran ${screen.name} sur le port ${screen.port}...`);
+    
+    // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
+    screenServerService.updateApiBaseUrl();
+    
     const success = await screenServerService.startServer(screen.id, screen.port, content);
     
     if (success) {
@@ -79,7 +98,7 @@ export function useScreenStatus(screen: Screen) {
       
       toast({
         title: "Serveur démarré",
-        description: `L'écran "${screen.name}" est maintenant en ligne sur http://${screen.ipAddress}:${screen.port}`,
+        description: `L'écran "${screen.name}" est maintenant en ligne sur http://${baseIpAddress}:${screen.port}`,
         variant: "default",
       });
     } else {
@@ -129,6 +148,15 @@ export function useScreenStatus(screen: Screen) {
       return false;
     }
     
+    // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
+    screenServerService.updateApiBaseUrl();
+    
+    // Mettre à jour l'adresse IP de l'écran avec celle de la configuration
+    if (screen.ipAddress !== baseIpAddress) {
+      console.log(`Mise à jour de l'adresse IP de l'écran: ${screen.ipAddress} -> ${baseIpAddress}`);
+      updateScreen(screen.id, { ipAddress: baseIpAddress });
+    }
+    
     console.log(`Mise à jour du serveur pour l'écran ${screen.name} avec le contenu ${content.name}...`);
     const success = await screenServerService.updateServer(screen.id, screen.port, content);
     
@@ -155,6 +183,8 @@ export function useScreenStatus(screen: Screen) {
   // Vérifier l'état du serveur au chargement du composant
   useEffect(() => {
     console.log(`Vérification initiale de l'état du serveur pour l'écran ${screen.name}`);
+    // Mettre à jour l'URL de l'API avec l'adresse IP correcte
+    screenServerService.updateApiBaseUrl();
     checkServerStatus();
     
     // Vérifier périodiquement l'état du serveur (toutes les 10 secondes)
