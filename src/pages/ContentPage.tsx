@@ -22,8 +22,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Content, Screen, ContentType } from '@/types';
-import { PlusCircle, FileUp, Search, Film, X } from 'lucide-react';
+import { PlusCircle, FileUp, Search, Film, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConfig } from '@/hooks/use-screen-status';
 
 const ContentPage = () => {
   const contents = useAppStore((state) => state.contents);
@@ -32,6 +33,7 @@ const ContentPage = () => {
   const updateContent = useAppStore((state) => state.updateContent);
   const removeContent = useAppStore((state) => state.removeContent);
   const assignContentToScreen = useAppStore((state) => state.assignContentToScreen);
+  const { serverUrl } = useConfig();
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -45,6 +47,7 @@ const ContentPage = () => {
   const [selectedFileURL, setSelectedFileURL] = useState<string>('');
   const [selectedScreenId, setSelectedScreenId] = useState<string>('');
   const [contentType, setContentType] = useState<ContentType>('image');
+  const [isUploading, setIsUploading] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -73,7 +76,7 @@ const ContentPage = () => {
     }
   };
   
-  const handleAddContent = () => {
+  const handleAddContent = async () => {
     if (!selectedFile) {
       toast.error('Veuillez sélectionner un fichier');
       return;
@@ -83,11 +86,60 @@ const ContentPage = () => {
       toast.error('Le nom du contenu ne peut pas être vide');
       return;
     }
+
+    if (!serverUrl) {
+      toast.error('URL du serveur API non configurée');
+      return;
+    }
     
-    addContent(selectedFile, contentType, selectedFileURL);
-    resetContentForm();
-    setIsAddDialogOpen(false);
-    toast.success(`Contenu "${contentName}" ajouté avec succès`);
+    setIsUploading(true);
+    
+    try {
+      // Créer un FormData pour l'upload du fichier
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      
+      // Envoyer le fichier au serveur
+      const uploadResponse = await fetch(`${serverUrl}/api/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.message || 'Erreur lors de l\'upload du fichier');
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.message || 'Erreur lors de l\'upload du fichier');
+      }
+      
+      // Utiliser l'URL du fichier uploadé au lieu du Blob URL
+      const fileInfo = uploadResult.file;
+      
+      // Ajouter le contenu avec les informations du fichier uploadé
+      addContent(
+        selectedFile,
+        contentType, 
+        fileInfo.url,
+        {
+          filePath: fileInfo.path,
+          serverUrl: serverUrl,
+          size: fileInfo.size
+        }
+      );
+      
+      resetContentForm();
+      setIsAddDialogOpen(false);
+      toast.success(`Contenu "${contentName}" ajouté avec succès`);
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error);
+      toast.error(`Erreur: ${error instanceof Error ? error.message : 'Problème lors de l\'upload'}`);
+    } finally {
+      setIsUploading(false);
+    }
   };
   
   const handleUpdateContent = () => {
@@ -278,6 +330,7 @@ const ContentPage = () => {
                   variant="outline" 
                   onClick={() => fileInputRef.current?.click()}
                   className="gap-2"
+                  disabled={isUploading}
                 >
                   <FileUp size={16} />
                   {selectedFile ? 'Changer de fichier' : 'Sélectionner un fichier'}
@@ -294,6 +347,7 @@ const ContentPage = () => {
                         setSelectedFileURL('');
                         if (fileInputRef.current) fileInputRef.current.value = '';
                       }}
+                      disabled={isUploading}
                     >
                       <X size={14} />
                     </Button>
@@ -305,6 +359,7 @@ const ContentPage = () => {
                   className="hidden"
                   onChange={handleFileChange}
                   accept="image/*,video/*,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/html"
+                  disabled={isUploading}
                 />
               </div>
             </div>
@@ -322,12 +377,13 @@ const ContentPage = () => {
                 placeholder="Nom du contenu"
                 value={contentName}
                 onChange={(e) => setContentName(e.target.value)}
+                disabled={isUploading}
               />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="type">Type de contenu</Label>
-              <Select value={contentType} onValueChange={(value: ContentType) => setContentType(value)}>
+              <Select value={contentType} onValueChange={(value: ContentType) => setContentType(value)} disabled={isUploading}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un type" />
                 </SelectTrigger>
@@ -345,10 +401,19 @@ const ContentPage = () => {
             <Button variant="outline" onClick={() => {
               resetContentForm();
               setIsAddDialogOpen(false);
-            }}>
+            }} disabled={isUploading}>
               Annuler
             </Button>
-            <Button onClick={handleAddContent} disabled={!selectedFile}>Importer</Button>
+            <Button onClick={handleAddContent} disabled={!selectedFile || isUploading}>
+              {isUploading ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Upload en cours...
+                </>
+              ) : (
+                'Importer'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
