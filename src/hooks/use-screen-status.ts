@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { Screen, Content } from '@/types';
-import { screenServerService } from '@/services/screenServer';
+import { screenServerService } from '@/services/screenServerMock';
 import { useAppStore } from '@/store';
+import { toast } from '@/hooks/use-toast';
 
 export function useScreenStatus(screen: Screen) {
   const [isOnline, setIsOnline] = useState(screen.status === 'online');
@@ -25,10 +26,25 @@ export function useScreenStatus(screen: Screen) {
   
   // Fonction pour démarrer le serveur
   const startServer = () => {
+    if (!content) {
+      toast({
+        title: "Attention",
+        description: "Aucun contenu assigné à cet écran. Veuillez assigner du contenu avant de démarrer le serveur.",
+        variant: "warning",
+      });
+      return false;
+    }
+    
     const success = screenServerService.startServer(screen.id, screen.port, content);
     if (success) {
       setIsOnline(true);
       updateScreen(screen.id, { status: 'online' });
+      
+      toast({
+        title: "Serveur démarré",
+        description: `L'écran "${screen.name}" est maintenant en ligne`,
+        variant: "success",
+      });
     }
     return success;
   };
@@ -39,16 +55,37 @@ export function useScreenStatus(screen: Screen) {
     if (success) {
       setIsOnline(false);
       updateScreen(screen.id, { status: 'offline' });
+      
+      toast({
+        title: "Serveur arrêté",
+        description: `L'écran "${screen.name}" est maintenant hors ligne`,
+        variant: "default",
+      });
     }
     return success;
   };
   
   // Fonction pour mettre à jour le serveur avec un nouveau contenu
   const updateServer = () => {
+    if (!content) {
+      toast({
+        title: "Attention",
+        description: "Aucun contenu assigné à cet écran. Veuillez assigner du contenu avant de mettre à jour le serveur.",
+        variant: "warning",
+      });
+      return false;
+    }
+    
     const success = screenServerService.updateServer(screen.id, screen.port, content);
     if (success) {
       setIsOnline(true);
       updateScreen(screen.id, { status: 'online' });
+      
+      toast({
+        title: "Serveur mis à jour",
+        description: `L'écran "${screen.name}" a été mis à jour avec le nouveau contenu`,
+        variant: "success",
+      });
     }
     return success;
   };
