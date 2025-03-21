@@ -62,10 +62,7 @@ const ContentPage = () => {
       console.log(`ID du contenu à supprimer: "${id}"`);
       console.log(`URL complète pour la suppression: ${formattedApiUrl}/api/content/${encodeURIComponent(id)}`);
       
-      // Supprimer le contenu localement avant l'appel API pour améliorer la réactivité de l'UI
-      removeContent(id);
-      
-      // Appel à l'API pour supprimer le contenu en utilisant exactement l'ID tel que stocké dans content.id
+      // Supprimer le contenu localement après confirmation de l'API pour éviter des erreurs de synchronisation
       const response = await fetch(`${formattedApiUrl}/api/content/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
@@ -78,6 +75,9 @@ const ContentPage = () => {
         console.error("Erreur de suppression du contenu:", errorData);
         throw new Error(errorData.message || `Erreur HTTP ${response.status}`);
       }
+      
+      // Si la suppression sur le serveur a réussi, supprimer localement
+      removeContent(id);
       
       toast.success(`Le contenu "${content.name}" a été supprimé`);
       

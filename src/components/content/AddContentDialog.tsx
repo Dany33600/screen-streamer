@@ -105,8 +105,8 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
         return;
       }
       
-      // Add to store with the URL from server
-      addContent(selectedFile, contentType, result.url);
+      // Add to store with the URL and contentId from server
+      addContent(selectedFile, contentType, result.url, result.contentId);
       
       resetContentForm();
       onOpenChange(false);
