@@ -21,27 +21,35 @@ export const useContentUpload = () => {
     setIsLoading(true);
 
     try {
+      console.log(`Uploading to API URL: ${apiUrl}/api/upload`);
+      
       // Create form data to send the file
       const formData = new FormData();
       formData.append('file', file);
       formData.append('contentType', contentType);
       formData.append('contentId', Date.now().toString()); // Use timestamp as temporary ID
 
+      // Use the full API URL from the store
+      const uploadUrl = `${apiUrl}/api/upload`;
+      console.log(`Sending upload request to: ${uploadUrl}`);
+
       // Upload to server
-      const response = await fetch(`${apiUrl}/api/upload`, {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Erreur lors de l\'upload du fichier');
+        const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
+
+      const data = await response.json();
+      console.log("Upload response:", data);
 
       return {
         success: true,
-        url: data.url,
+        url: data.url || data.filePath,
       };
     } catch (error) {
       console.error('Erreur d\'upload:', error);

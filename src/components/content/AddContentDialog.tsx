@@ -19,10 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ContentType } from '@/types';
-import { FileUp, X, Loader2 } from 'lucide-react';
+import { FileUp, X, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useContentUpload } from '@/hooks/use-content-upload';
 import { useAppStore } from '@/store';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AddContentDialogProps {
   open: boolean;
@@ -37,9 +38,11 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
   const [selectedFileURL, setSelectedFileURL] = useState<string>('');
   const [contentName, setContentName] = useState('');
   const [contentType, setContentType] = useState<ContentType>('image');
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadContent, isLoading } = useContentUpload();
   const addContent = useAppStore(state => state.addContent);
+  const apiUrl = useAppStore(state => state.apiUrl);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -50,6 +53,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
     setSelectedFile(file);
     setSelectedFileURL(url);
     setContentName(file.name);
+    setUploadError(null);
     
     // Auto-detect content type
     const extension = file.name.split('.').pop()?.toLowerCase() || '';
@@ -71,6 +75,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
     setSelectedFileURL('');
     setContentName('');
     setContentType('image');
+    setUploadError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -88,20 +93,33 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
     }
     
     try {
+      setUploadError(null);
+      console.log("Starting upload process with API URL:", apiUrl);
+      
       const result = await uploadContent(selectedFile, contentType);
       
       if (!result.success || !result.url) {
+        setUploadError(`Erreur lors de l'upload: ${result.error}`);
         toast.error(`Erreur lors de l'upload: ${result.error}`);
         return;
       }
       
       // Add to store with the URL from server
-      addContent(selectedFile, contentType, result.url);
+      addContent({
+        id: Date.now().toString(),
+        name: contentName,
+        type: contentType,
+        url: result.url,
+        createdAt: new Date().toISOString()
+      });
+      
       resetContentForm();
       onOpenChange(false);
       toast.success(`Contenu "${contentName}" ajouté avec succès`);
     } catch (error) {
       console.error('Erreur lors de l\'ajout du contenu:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue';
+      setUploadError(errorMessage);
       toast.error('Une erreur est survenue lors de l\'ajout du contenu');
     }
   };
@@ -119,6 +137,13 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
+          {uploadError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              <AlertDescription>{uploadError}</AlertDescription>
+            </Alert>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="file">Fichier</Label>
             <div className="flex items-center gap-4">
@@ -140,6 +165,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
                     onClick={() => {
                       setSelectedFile(null);
                       setSelectedFileURL('');
+                      setUploadError(null);
                       if (fileInputRef.current) fileInputRef.current.value = '';
                     }}
                   >
@@ -187,6 +213,10 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
                 <SelectItem value="html">HTML</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="text-sm text-muted-foreground mt-2">
+            API URL: {apiUrl || "Non configurée"}
           </div>
         </div>
         <DialogFooter>

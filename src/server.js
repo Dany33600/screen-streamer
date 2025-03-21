@@ -28,7 +28,11 @@ for (const name of Object.keys(nets)) {
 }
 
 console.log('-'.repeat(50));
-console.log('IMPORTANT: Utilisez l\'une de ces adresses IP dans votre application');
+console.log('IMPORTANT: Pour utiliser cette API:');
+console.log('1. Assurez-vous que ce serveur est accessible depuis le navigateur');
+console.log('2. Configurez l\'URL de l\'API dans les paramètres de l\'application');
+console.log('3. URL de l\'API à utiliser: http://<adresse_ip>:5000');
+console.log('-'.repeat(50));
 console.log('Pour arrêter le serveur, appuyez sur Ctrl+C');
 console.log('='.repeat(50));
 

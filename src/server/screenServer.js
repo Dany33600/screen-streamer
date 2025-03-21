@@ -273,6 +273,44 @@ function createApiServer(apiPort = 5000) {
     });
   });
   
+  // Route pour l'upload de fichiers
+  app.post('/api/upload', upload.single('file'), (req, res) => {
+    try {
+      console.log('Upload request received:', req.body);
+      
+      if (!req.file) {
+        console.error('No file received in upload request');
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Aucun fichier reçu' 
+        });
+      }
+      
+      console.log('File uploaded:', req.file);
+      
+      // Construire l'URL relative pour accéder au fichier
+      const fileUrl = `/uploads/${req.file.filename}`;
+      
+      res.json({
+        success: true,
+        message: 'Fichier uploadé avec succès',
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        url: fileUrl,
+        filePath: req.file.path
+      });
+    } catch (error) {
+      console.error('Error in file upload:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de l\'upload du fichier',
+        error: error.message
+      });
+    }
+  });
+  
   // Route pour démarrer un serveur
   app.post('/api/start-server', (req, res) => {
     try {
@@ -457,7 +495,7 @@ function createApiServer(apiPort = 5000) {
     console.log(`Adresses IP accessibles:`);
     
     // Afficher toutes les adresses IP du système
-    const nets = os.networkInterfaces(); // Use the imported os module instead of require
+    const nets = os.networkInterfaces();
     
     for (const name of Object.keys(nets)) {
       for (const net of nets[name]) {

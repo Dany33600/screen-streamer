@@ -20,6 +20,8 @@ import {
 import { Content, Screen } from '@/types';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AssignContentDialogProps {
   open: boolean;
@@ -39,6 +41,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
   screens
 }) => {
   const assignContentToScreen = useAppStore(state => state.assignContentToScreen);
+  const apiUrl = useAppStore(state => state.apiUrl);
 
   const handleAssignContent = () => {
     if (!content || !selectedScreenId) return;
@@ -47,6 +50,9 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
     onOpenChange(false);
     toast.success('Contenu assigné à l\'écran avec succès');
   };
+
+  const noScreens = screens.length === 0;
+  const serverNotConfigured = !apiUrl || apiUrl === '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,10 +63,29 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
             Choisissez l'écran sur lequel diffuser ce contenu
           </DialogDescription>
         </DialogHeader>
+        
+        {serverNotConfigured && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            <AlertDescription>
+              Le serveur API n'est pas configuré. Veuillez configurer l'URL de l'API dans les paramètres.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {noScreens && (
+          <Alert variant="warning" className="mb-4">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            <AlertDescription>
+              Aucun écran n'est disponible. Veuillez d'abord ajouter un écran.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="screen">Écran</Label>
-            <Select value={selectedScreenId} onValueChange={setSelectedScreenId}>
+            <Select value={selectedScreenId} onValueChange={setSelectedScreenId} disabled={noScreens}>
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un écran" />
               </SelectTrigger>
@@ -78,7 +103,12 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={handleAssignContent} disabled={!selectedScreenId}>Assigner</Button>
+          <Button 
+            onClick={handleAssignContent} 
+            disabled={!selectedScreenId || noScreens || serverNotConfigured}
+          >
+            Assigner
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
