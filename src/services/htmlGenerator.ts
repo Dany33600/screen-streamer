@@ -15,7 +15,7 @@ class HtmlGeneratorService {
   /**
    * Génère le HTML pour afficher le contenu sur l'écran
    */
-  generateHtml(content?: Content): string {
+  generateHtml(content?: Content, displayOptions?: any): string {
     if (!content) {
       return `
         <!DOCTYPE html>
@@ -104,6 +104,11 @@ class HtmlGeneratorService {
         `;
         
       case 'video':
+        const autoplay = displayOptions?.autoplay !== false;
+        const loop = displayOptions?.loop !== false;
+        const controls = displayOptions?.controls !== false;
+        const muted = displayOptions?.muted !== false;
+        
         return `
           <!DOCTYPE html>
           <html lang="fr">
@@ -136,12 +141,22 @@ class HtmlGeneratorService {
             </style>
           </head>
           <body>
-            <video src="${contentUrl}" autoplay loop controls onerror="this.style.display='none';document.body.innerHTML+='<div class=\\'error-message\\'><h2>Erreur de chargement de la vidéo</h2><p>URL: ${contentUrl}</p></div>';"></video>
+            <video 
+              src="${contentUrl}" 
+              ${autoplay ? 'autoplay' : ''} 
+              ${loop ? 'loop' : ''} 
+              ${controls ? 'controls' : ''} 
+              ${muted ? 'muted' : ''}
+              onerror="this.style.display='none';document.body.innerHTML+='<div class=\\'error-message\\'><h2>Erreur de chargement de la vidéo</h2><p>URL: ${contentUrl}</p></div>';">
+            </video>
           </body>
           </html>
         `;
         
       case 'powerpoint':
+        const autoSlide = displayOptions?.autoSlide || 5000; // Default 5 seconds
+        const powerPointLoop = displayOptions?.loop !== false;
+        
         return `
           <!DOCTYPE html>
           <html lang="fr">
@@ -239,14 +254,11 @@ class HtmlGeneratorService {
                 center: true,
                 hash: false,
                 // Configuration de l'auto-slide
-                autoSlide: 5000,       // 5 secondes par slide
-                autoSlideStoppable: false, // L'utilisateur ne peut pas arrêter l'auto-slide
-                loop: true,           // Boucle à la fin de la présentation
-                transition: 'slide',  // Type de transition
+                autoSlide: ${autoSlide},
+                autoSlideStoppable: false,
+                loop: ${powerPointLoop}, 
+                transition: 'slide',
                 showNotes: false,
-                // Désactiver les interactions de l'utilisateur si nécessaire
-                // keyboard: false,      // Désactiver les raccourcis clavier
-                // touch: false,         // Désactiver la navigation tactile
               });
               
               // Initialiser reveal.js
@@ -267,7 +279,7 @@ class HtmlGeneratorService {
               // Force start the auto-slide after initialization
               document.addEventListener('DOMContentLoaded', function() {
                 // Ensure auto-slide is started
-                deck.configure({ autoSlide: 5000 });
+                deck.configure({ autoSlide: ${autoSlide} });
                 // Start auto-slide
                 deck.toggleAutoSlide(true);
                 console.log("Auto-slide enabled with interval:", deck.getConfig().autoSlide);
