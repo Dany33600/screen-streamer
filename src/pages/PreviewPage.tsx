@@ -23,7 +23,7 @@ const PreviewPage = () => {
   const [screenId, setScreenId] = useState<string | null>(null);
   const [serverId, setServerId] = useState<string | null>(null);
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
-  const [isGridView, setIsGridView] = useState<boolean>(true);
+  const [isGridView, setIsGridView] = useState<boolean>(false); // Inversé par défaut (maintenant détaillé)
   const [selectedScreen, setSelectedScreen] = useState<Screen | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -274,13 +274,20 @@ const PreviewPage = () => {
       setIsGridView(true);
       setSelectedScreen(null);
       navigate('/preview', { replace: true });
-    } else if (mode === 'detail' && selectedScreen) {
-      setIsGridView(false);
-      navigate(`/preview?screenId=${selectedScreen.id}`, { replace: true });
+    } else if (mode === 'detail' && screens.length > 0) {
+      // Dans le cas de détaillé sans écran sélectionné, prendre le premier
+      if (!selectedScreen) {
+        const firstScreen = screens[0];
+        setSelectedScreen(firstScreen);
+        navigate(`/preview?screenId=${firstScreen.id}`, { replace: true });
+      } else {
+        setIsGridView(false);
+        navigate(`/preview?screenId=${selectedScreen.id}`, { replace: true });
+      }
     }
   };
   
-  // Rendu de la vue en grille des écrans
+  // Rendu de la vue en grille des écrans (maintenant surveillance caméra)
   const renderGridView = () => {
     if (screens.length === 0) {
       return (
@@ -298,83 +305,76 @@ const PreviewPage = () => {
       );
     }
     
+    // Calculer le nombre de colonnes en fonction du nombre d'écrans
+    const gridCols = screens.length <= 4 
+      ? 'grid-cols-2' 
+      : screens.length <= 9 
+        ? 'grid-cols-3' 
+        : 'grid-cols-4';
+
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className={`grid ${gridCols} gap-2 h-[calc(100vh-8rem)]`}>
         {screens.map((screen) => {
-          // Trouver le contenu associé à cet écran
-          const screenContent = screen.contentId 
-            ? contents.find(c => c.id === screen.contentId)
-            : undefined;
-          
           const isRunning = screenServerService.isServerRunning(screen.id);
+          const screenUrl = `http://${screen.ipAddress}:${screen.port}`;
           
           return (
             <Card 
               key={screen.id} 
-              className={`overflow-hidden transition-all hover:shadow-md cursor-pointer ${
-                isRunning ? 'border-green-500 border-2' : 'border-gray-200'
+              className={`overflow-hidden hover:shadow-md ${
+                isRunning ? 'border-green-500' : 'border-red-500'
               }`}
-              onClick={() => handleScreenSelect(screen)}
             >
-              <CardHeader className="p-4 pb-2">
+              <CardHeader className="p-2 bg-slate-800 text-white">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">{screen.name}</CardTitle>
-                  <Badge variant={isRunning ? "success" : "secondary"}>
+                  <CardTitle className="text-sm truncate">{screen.name}</CardTitle>
+                  <Badge variant={isRunning ? "success" : "destructive"} className="text-xs">
                     {isRunning ? 'En ligne' : 'Hors ligne'}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-slate-300 mt-0">
                   {screen.ipAddress}:{screen.port}
                 </p>
               </CardHeader>
               
-              <CardContent className="p-4 pt-2">
-                <div className="h-40 flex items-center justify-center bg-slate-100 rounded-md overflow-hidden">
-                  {screenContent ? (
-                    screenContent.type === 'image' ? (
-                      <img 
-                        src={ensureFullUrl(screenContent.url)} 
-                        alt={screenContent.name}
-                        className="max-h-full max-w-full object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                    ) : screenContent.type === 'video' ? (
-                      <div className="flex flex-col items-center justify-center w-full h-full">
-                        <Play className="h-12 w-12 text-muted-foreground mb-2" />
-                        <span className="text-sm text-muted-foreground">Vidéo</span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center w-full h-full">
-                        <div className="bg-slate-200 p-2 rounded-full mb-2">
-                          <ExternalLink className="h-8 w-8 text-slate-500" />
-                        </div>
-                        <span className="text-sm text-muted-foreground truncate max-w-full px-2">
-                          {screenContent.name}
-                        </span>
-                      </div>
-                    )
+              <div onClick={() => handleScreenSelect(screen)} className="cursor-pointer">
+                <div className="relative w-full h-[calc(100%-80px)]">
+                  {isRunning ? (
+                    <iframe 
+                      src={screenUrl}
+                      title={screen.name}
+                      className="w-full h-full border-none"
+                      sandbox="allow-same-origin allow-scripts"
+                    />
                   ) : (
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="bg-slate-200 p-2 rounded-full mb-2">
-                        <Server className="h-8 w-8 text-slate-400" />
-                      </div>
-                      <span className="text-sm text-muted-foreground">Aucun contenu</span>
+                    <div className="flex flex-col items-center justify-center w-full h-full bg-slate-100">
+                      <Server className="h-12 w-12 text-slate-400 mb-2" />
+                      <span className="text-sm text-muted-foreground">Écran hors ligne</span>
                     </div>
                   )}
                 </div>
-              </CardContent>
+              </div>
               
-              <CardFooter className="p-4 pt-0">
-                {screenContent ? (
-                  <div className="w-full">
-                    <p className="text-sm font-medium truncate">{screenContent.name}</p>
-                    <p className="text-xs text-muted-foreground">{screenContent.type}</p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">Aucun contenu assigné</p>
-                )}
+              <CardFooter className="p-2 flex justify-between bg-slate-100">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-1 h-8" 
+                  onClick={() => handleScreenSelect(screen)}
+                >
+                  <Maximize className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Détails</span>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-1 h-8" 
+                  onClick={() => window.open(screenUrl, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Ouvrir</span>
+                </Button>
               </CardFooter>
             </Card>
           );
@@ -383,115 +383,150 @@ const PreviewPage = () => {
     );
   };
   
-  // Rendu d'un écran spécifique
+  // Rendu d'un écran spécifique (maintenant vue détaillée)
   const renderDetailView = () => {
-    if (!selectedScreen) {
+    // Si aucun écran n'est sélectionné et qu'il y a des écrans disponibles, on prend le premier
+    if (!selectedScreen && screens.length > 0) {
+      setSelectedScreen(screens[0]);
       return null;
+    }
+    
+    if (!selectedScreen) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)]">
+          <Server className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-semibold mb-2">Aucun écran sélectionné</h2>
+          <p className="text-muted-foreground">Sélectionnez un écran à visualiser</p>
+          
+          {screens.length > 0 && (
+            <Button 
+              className="mt-4" 
+              onClick={() => handleViewModeChange('grid')}
+            >
+              Voir tous les écrans
+            </Button>
+          )}
+        </div>
+      );
     }
     
     const screenStatusHook = useScreenStatus(selectedScreen);
     const isOnline = screenStatusHook.isOnline;
     const screenContent = screenStatusHook.content;
     
+    // Version détaillée qui ressemble à la capture d'écran
     return (
-      <div className="w-full h-[calc(100vh-8rem)] border rounded-md overflow-hidden bg-white">
-        {htmlContent ? (
-          <iframe
-            srcDoc={htmlContent}
-            title={screenContent?.name || selectedScreen.name}
-            className="w-full h-full border-none"
-            sandbox="allow-same-origin allow-scripts allow-popups"
-          />
-        ) : screenContent ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            {screenContent.type === 'image' && (
-              <div className="flex flex-col items-center">
-                <img 
-                  src={ensureFullUrl(screenContent.url)} 
-                  alt={screenContent.name} 
-                  className="max-w-full max-h-[calc(100vh-12rem)] object-contain"
-                  onError={(e) => {
-                    console.error("Error loading image:", screenContent.url);
-                    e.currentTarget.src = '/placeholder.svg';
-                  }}
-                />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {screenContent.name}
-                </p>
-              </div>
-            )}
-            
-            {screenContent.type === 'video' && (
-              <div className="flex flex-col items-center">
-                <video 
-                  src={ensureFullUrl(screenContent.url)} 
-                  controls 
-                  autoPlay 
-                  className="max-w-full max-h-[calc(100vh-12rem)]"
-                  onError={(e) => {
-                    console.error("Error loading video:", screenContent.url);
-                  }}
-                >
-                  Votre navigateur ne prend pas en charge la lecture vidéo.
-                </video>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {screenContent.name}
-                </p>
-              </div>
-            )}
-            
-            {screenContent.type === 'powerpoint' && (
-              <div className="flex flex-col items-center w-full">
-                <div className="w-full h-[calc(100vh-12rem)] border rounded-md overflow-hidden bg-neutral-900 text-white flex flex-col">
-                  <div className="bg-neutral-800 p-4 text-center">
-                    <h3 className="text-lg font-medium">{screenContent.name}</h3>
-                  </div>
-                  <div className="flex-1 flex items-center justify-center p-4">
-                    <iframe
-                      src={`data:text/html;charset=utf-8,${encodeURIComponent(
-                        htmlGenerator.generateHtml(screenContent)
-                      )}`}
-                      title={screenContent.name}
-                      className="w-full h-full border-none"
-                      sandbox="allow-same-origin allow-scripts allow-popups"
-                      onError={() => {
-                        console.error("Erreur lors du chargement de l'iframe pour la présentation PowerPoint");
+      <div className="space-y-4">
+        <Card className="overflow-hidden border-2 rounded-lg">
+          <CardHeader className="bg-slate-50 p-4">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-xl">{selectedScreen.name}</CardTitle>
+              <Badge variant={isOnline ? "success" : "secondary"}>
+                {isOnline ? 'En ligne' : 'Hors ligne'}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              {selectedScreen.ipAddress}:{selectedScreen.port}
+            </p>
+          </CardHeader>
+          
+          <div className="w-full h-[480px] bg-slate-100 p-6 flex items-center justify-center">
+            {htmlContent ? (
+              <iframe
+                srcDoc={htmlContent}
+                title={screenContent?.name || selectedScreen.name}
+                className="w-full h-full border-none bg-white rounded-md shadow-sm"
+                sandbox="allow-same-origin allow-scripts allow-popups"
+              />
+            ) : screenContent ? (
+              <div className="flex flex-col items-center justify-center h-full w-full max-w-2xl mx-auto">
+                {screenContent.type === 'image' && (
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <img 
+                      src={ensureFullUrl(screenContent.url)} 
+                      alt={screenContent.name} 
+                      className="max-w-full max-h-[400px] object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
                       }}
                     />
+                    <p className="mt-2 text-center text-sm text-muted-foreground">
+                      {screenContent.name}
+                    </p>
                   </div>
+                )}
+                
+                {screenContent.type === 'video' && (
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <video 
+                      src={ensureFullUrl(screenContent.url)} 
+                      controls 
+                      autoPlay 
+                      className="max-w-full max-h-[400px]"
+                      onError={(e) => {
+                        console.error("Error loading video:", screenContent.url);
+                      }}
+                    >
+                      Votre navigateur ne prend pas en charge la lecture vidéo.
+                    </video>
+                    <p className="mt-2 text-center text-sm text-muted-foreground">
+                      {screenContent.name}
+                    </p>
+                  </div>
+                )}
+                
+                {(screenContent.type === 'powerpoint' || screenContent.type === 'pdf' || screenContent.type === 'html') && (
+                  <iframe 
+                    src={ensureFullUrl(screenContent.url)} 
+                    title={screenContent.name}
+                    className="w-full h-full border rounded-lg shadow-sm bg-white"
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-sm">
+                <div className="bg-slate-100 p-4 rounded-full mb-4">
+                  <Server className="h-12 w-12 text-slate-400" />
                 </div>
+                <h3 className="text-lg font-medium mb-2">Aucun contenu assigné</h3>
+                <p className="text-muted-foreground text-center">Assignez du contenu à cet écran pour le prévisualiser</p>
+                <Button 
+                  className="mt-4" 
+                  onClick={() => navigate(`/screens/edit/${selectedScreen.id}`)}
+                >
+                  Configurer l'écran
+                </Button>
               </div>
             )}
-            
-            {screenContent.type === 'pdf' && (
-              <iframe 
-                src={ensureFullUrl(screenContent.url)} 
-                title={screenContent.name}
-                className="w-full h-[calc(100vh-12rem)] border rounded-md"
-              />
-            )}
-            
-            {screenContent.type === 'html' && (
-              <iframe 
-                src={ensureFullUrl(screenContent.url)} 
-                title={screenContent.name}
-                className="w-full h-[calc(100vh-12rem)] border rounded-md"
-              />
-            )}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Server className="h-16 w-16 text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Aucun contenu assigné</h2>
-            <p className="text-muted-foreground">Assignez du contenu à cet écran pour le prévisualiser</p>
-            <Button 
-              className="mt-4" 
-              onClick={() => navigate(`/screens/edit/${selectedScreen.id}`)}
-            >
-              Configurer l'écran
-            </Button>
-          </div>
-        )}
+          
+          <CardFooter className="p-4 bg-slate-50 flex justify-between">
+            <div>
+              {screenContent && (
+                <div>
+                  <p className="font-medium">{screenContent.name}</p>
+                  <p className="text-sm text-muted-foreground">{screenContent.type}</p>
+                </div>
+              )}
+              {!screenContent && (
+                <p className="text-sm text-muted-foreground italic">Aucun contenu assigné</p>
+              )}
+            </div>
+            
+            {screenContent && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleDownload}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Télécharger
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleOpenInNewTab}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Ouvrir
+                </Button>
+              </div>
+            )}
+          </CardFooter>
+        </Card>
       </div>
     );
   };
@@ -511,7 +546,6 @@ const PreviewPage = () => {
               : selectedScreen?.name || "Détail de l'écran"}
           </h1>
           
-          {/* Nouveau: Tabs pour changer de mode */}
           <Tabs 
             value={isGridView ? "grid" : "detail"}
             onValueChange={handleViewModeChange}
@@ -521,7 +555,7 @@ const PreviewPage = () => {
               <TabsTrigger value="grid">Grille</TabsTrigger>
               <TabsTrigger 
                 value="detail" 
-                disabled={!selectedScreen}
+                disabled={screens.length === 0}
               >
                 Détaillé
               </TabsTrigger>

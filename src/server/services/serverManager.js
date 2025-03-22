@@ -25,7 +25,8 @@ export function startServer(port, html, contentType = 'html') {
     app.use(cors({
       origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization']
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true
     }));
     
     // Servir les fichiers statiques depuis node_modules reveal.js
@@ -45,6 +46,13 @@ export function startServer(port, html, contentType = 'html') {
     // Ajouter le répertoire d'uploads comme statique
     const UPLOADS_DIR = path.join(__dirname, '..', '..', '..', 'storage', 'uploads');
     app.use('/uploads', express.static(UPLOADS_DIR));
+    
+    // Ajouter un header pour permettre l'inclusion dans un iframe
+    app.use((req, res, next) => {
+      res.setHeader('X-Frame-Options', 'ALLOWALL');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      next();
+    });
     
     app.get('/', (req, res) => {
       // En fonction du type de contenu, nous pouvons ajouter des en-têtes spécifiques
