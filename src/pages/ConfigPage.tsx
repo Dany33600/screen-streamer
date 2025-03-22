@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ConfigPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const basePort = useAppStore((state) => state.basePort);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
@@ -64,10 +65,9 @@ const ConfigPage = () => {
     }
   }, [isConfigMode, navigate]);
 
-  // When config mode changes, ensure we're on the general tab
+  // Reset tab to general if we're no longer in config mode
   useEffect(() => {
-    if (activeTab === "network") {
-      console.log("Resetting tab to general");
+    if (!isConfigMode && activeTab === "network") {
       setActiveTab("general");
     }
   }, [isConfigMode, activeTab]);
@@ -278,20 +278,9 @@ const ConfigPage = () => {
   );
 
   const handleTabChange = (value: string) => {
-    // If trying to access network tab but not in config mode, prevent it
-    if (value === "network" && !isConfigMode) {
-      toast({
-        title: "Accès restreint",
-        description: "Vous devez être en mode configuration pour accéder à cette section",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setActiveTab(value);
   };
 
-  // Early return if not in config mode
   if (!isConfigMode) {
     return null;
   }
@@ -313,12 +302,10 @@ const ConfigPage = () => {
               Général
             </TabsTrigger>
             
-            {isConfigMode && (
-              <TabsTrigger value="network" className="gap-2">
-                <Network size={16} />
-                Réseau
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="network" className="gap-2">
+              <Network size={16} />
+              Réseau
+            </TabsTrigger>
             
             <TabsTrigger value="screens" className="gap-2">
               <MonitorPlay size={16} />
@@ -584,4 +571,3 @@ const ConfigPage = () => {
 };
 
 export default ConfigPage;
-

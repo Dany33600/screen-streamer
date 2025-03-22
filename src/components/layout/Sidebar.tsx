@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { 
@@ -27,14 +27,24 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isOnRestrictedRoute = location.pathname === '/config';
+
+  useEffect(() => {
+    if (!isConfigMode && isOnRestrictedRoute) {
+      navigate('/', { replace: true });
+      toast({
+        title: "Mode configuration désactivé",
+        description: "Vous avez été redirigé vers la page d'accueil",
+      });
+    }
+  }, [isConfigMode, isOnRestrictedRoute, navigate]);
+
   const handleConfigButtonClick = () => {
     if (isConfigMode) {
-      // Exit config mode and reset PIN verification
       toggleConfigMode();
       resetPinVerification();
       
-      // If currently on a restricted page, redirect to home
-      if (location.pathname === '/config') {
+      if (isOnRestrictedRoute) {
         navigate('/', { replace: true });
         toast({
           title: "Mode configuration désactivé",
@@ -42,10 +52,8 @@ const Sidebar = () => {
         });
       }
     } else if (!isPinVerified) {
-      // Need PIN verification
       setIsPinDialogOpen(true);
     } else {
-      // Already verified, can enter
       toggleConfigMode();
     }
   };
