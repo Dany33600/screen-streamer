@@ -55,6 +55,7 @@ export function startServer(port, html, contentType = 'html') {
       res.send(html);
     });
     
+    // Endpoint de ping pour vérifier que le serveur est en cours d'exécution
     app.get('/ping', (req, res) => {
       res.status(200).send('pong');
     });

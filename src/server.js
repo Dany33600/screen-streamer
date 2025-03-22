@@ -34,6 +34,7 @@ console.log('2. Configurez l\'URL de l\'API dans les paramètres de l\'applicati
 console.log('3. URL de l\'API à utiliser: http://<adresse_ip>:5000');
 console.log('Points de terminaison disponibles:');
 console.log('  GET /api/status - État du serveur et liste des serveurs en cours d\'exécution');
+console.log('  GET /api/ping - Vérification que le serveur API est en cours d\'exécution');
 console.log('  GET /api/content - Liste de tous les contenus stockés');
 console.log('  POST /api/upload - Upload d\'un fichier');
 console.log('  POST /api/content - Enregistrer un contenu');

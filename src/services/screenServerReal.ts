@@ -464,8 +464,41 @@ class ScreenServerRealService {
   /**
    * Vérifie l'état d'un serveur en envoyant une requête ping
    */
-  checkServerStatus(port: number): Promise<boolean> {
-    return Promise.resolve(false);
+  async checkServerStatus(port: number): Promise<boolean> {
+    try {
+      // Récupérer l'adresse IP configurée 
+      const baseIpAddress = useAppStore.getState().baseIpAddress;
+      
+      // Construire l'URL du serveur à vérifier
+      const serverUrl = `http://${baseIpAddress}:${port}/ping`;
+      console.log(`Vérification de l'état du serveur à l'URL: ${serverUrl}`);
+      
+      // Définir un timeout pour la requête (3 secondes)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      // Envoyer une requête ping au serveur
+      const response = await fetch(serverUrl, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      
+      // Annuler le timeout
+      clearTimeout(timeoutId);
+      
+      // Vérifier si la réponse est OK
+      if (response.ok) {
+        const text = await response.text();
+        console.log(`Réponse du serveur sur le port ${port}: ${text}`);
+        return text === 'pong';
+      }
+      
+      console.log(`Le serveur sur le port ${port} a répondu avec le statut: ${response.status}`);
+      return false;
+    } catch (error) {
+      console.error(`Erreur lors de la vérification de l'état du serveur sur le port ${port}:`, error);
+      return false;
+    }
   }
 }
 
