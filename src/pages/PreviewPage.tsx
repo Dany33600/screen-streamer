@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { Content, Screen } from '@/types';
-import { ArrowLeft, ExternalLink, Download, RefreshCw, Server, Maximize, Minimize } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, Server, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { screenServerService } from '@/services/screenServerReal';
 import { toast } from '@/hooks/use-toast';
@@ -20,6 +20,7 @@ const PreviewPage = () => {
   const screens = useAppStore((state) => state.screens);
   const apiUrl = useAppStore((state) => state.apiUrl);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const refreshInterval = useAppStore((state) => state.refreshInterval);
   
   // Function to toggle fullscreen mode
   const toggleFullscreen = () => {
@@ -81,13 +82,16 @@ const PreviewPage = () => {
     // Rafraîchir automatiquement à l'ouverture de la page
     refreshAllServers();
     
-    // Rafraîchir l'état des écrans toutes les 30 secondes
-    const intervalId = setInterval(refreshAllServers, 30000);
+    // Convertir l'intervalle de minutes en millisecondes
+    const intervalMs = refreshInterval * 60 * 1000;
+    
+    // Rafraîchir l'état des écrans selon l'intervalle configuré
+    const intervalId = setInterval(refreshAllServers, intervalMs);
     
     return () => {
       clearInterval(intervalId);
     };
-  }, []);
+  }, [refreshInterval]);
   
   const handleBack = () => {
     navigate(-1);
@@ -195,6 +199,7 @@ const PreviewPage = () => {
         
         <div className="text-center">
           <h1 className="text-lg font-medium">Aperçu des écrans</h1>
+          <p className="text-xs text-muted-foreground">Rafraîchissement toutes les {refreshInterval} minute{refreshInterval > 1 ? 's' : ''}</p>
         </div>
         
         <div className="flex gap-2">
@@ -234,4 +239,3 @@ const PreviewPage = () => {
 };
 
 export default PreviewPage;
-

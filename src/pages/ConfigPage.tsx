@@ -35,9 +35,11 @@ import {
   Layers,
   Film,
   List,
-  PlaySquare
+  PlaySquare,
+  Clock
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Slider } from '@/components/ui/slider';
 
 const ConfigPage = () => {
   const navigate = useNavigate();
@@ -46,9 +48,11 @@ const ConfigPage = () => {
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
   const configPin = useAppStore((state) => state.configPin);
+  const refreshInterval = useAppStore((state) => state.refreshInterval);
   const setBasePort = useAppStore((state) => state.setBasePort);
   const setBaseIpAddress = useAppStore((state) => state.setBaseIpAddress);
   const setConfigPin = useAppStore((state) => state.setConfigPin);
+  const setRefreshInterval = useAppStore((state) => state.setRefreshInterval);
   const menuOptions = useAppStore((state) => state.menuOptions);
   const toggleMenuOption = useAppStore((state) => state.toggleMenuOption);
   
@@ -58,6 +62,7 @@ const ConfigPage = () => {
   const [newPin, setNewPin] = useState('');
   const [isPinSaved, setIsPinSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("general");
+  const [refreshIntervalValue, setRefreshIntervalValue] = useState(refreshInterval);
   
   useEffect(() => {
     if (!isConfigMode) {
@@ -231,6 +236,14 @@ const ConfigPage = () => {
     }
   };
 
+  const handleSaveRefreshInterval = () => {
+    setRefreshInterval(refreshIntervalValue);
+    toast({
+      title: 'Intervalle de rafraîchissement mis à jour',
+      description: `Les écrans seront rafraîchis toutes les ${refreshIntervalValue} minute${refreshIntervalValue > 1 ? 's' : ''}`,
+    });
+  };
+
   const renderServerInformation = () => (
     <Card className="mt-4">
       <CardHeader>
@@ -352,6 +365,42 @@ const ConfigPage = () => {
                     </p>
                   </div>
                   <Switch defaultChecked={true} />
+                </div>
+                
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <Clock size={18} className="text-primary" />
+                    <Label>Intervalle de rafraîchissement des écrans</Label>
+                  </div>
+                  
+                  <div className="space-y-5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">1 minute</span>
+                      <span className="font-semibold">{refreshIntervalValue} minute{refreshIntervalValue > 1 ? 's' : ''}</span>
+                      <span className="text-sm text-muted-foreground">60 minutes</span>
+                    </div>
+                    
+                    <Slider
+                      value={[refreshIntervalValue]}
+                      min={1}
+                      max={60}
+                      step={1}
+                      onValueChange={(value) => setRefreshIntervalValue(value[0])}
+                    />
+                    
+                    <p className="text-sm text-muted-foreground">
+                      Fréquence de vérification de l'état des écrans sur la page d'aperçu.
+                    </p>
+
+                    <Button 
+                      onClick={handleSaveRefreshInterval}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Save size={16} className="mr-2" />
+                      Enregistrer l'intervalle
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -690,4 +739,3 @@ const ConfigPage = () => {
 };
 
 export default ConfigPage;
-

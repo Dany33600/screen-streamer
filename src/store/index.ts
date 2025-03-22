@@ -13,6 +13,7 @@ interface AppState {
   apiUrl: string;
   configPin: string;
   isPinVerified: boolean;
+  refreshInterval: number; // Minutes between preview refreshes
   
   // Menu visibility options
   menuOptions: {
@@ -47,6 +48,7 @@ interface AppState {
   setConfigPin: (pin: string) => void;
   verifyPin: (pin: string) => boolean;
   resetPinVerification: () => void;
+  setRefreshInterval: (minutes: number) => void; // New action to set refresh interval
   
   // Menu options actions
   toggleMenuOption: (option: keyof AppState['menuOptions'], value: boolean) => void;
@@ -64,6 +66,7 @@ export const useAppStore = create<AppState>()(
       apiUrl: 'http://localhost:5000',
       configPin: '1234', // Default PIN
       isPinVerified: false,
+      refreshInterval: 1, // Default to 1 minute
       
       // Default menu options - all enabled by default
       menuOptions: {
@@ -191,6 +194,10 @@ export const useAppStore = create<AppState>()(
         return isValid;
       },
       resetPinVerification: () => set({ isPinVerified: false }),
+      
+      setRefreshInterval: (minutes) => set({ 
+        refreshInterval: Math.min(Math.max(minutes, 1), 60) // Ensure value is between 1-60
+      }),
       
       // Menu options actions
       toggleMenuOption: (option, value) => set((state) => ({
