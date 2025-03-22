@@ -59,13 +59,26 @@ export function startServer(port, html, contentType = 'html') {
       res.status(200).send('pong');
     });
     
+    app.get('/status', (req, res) => {
+      res.status(200).json({
+        running: true,
+        port,
+        contentType,
+        startTime: runningServers.get(port)?.startTime || new Date(),
+      });
+    });
+    
     const server = createServer(app);
     
     server.listen(port, '0.0.0.0', () => {
       console.log(`Serveur démarré sur le port ${port} pour le contenu de type ${contentType}`);
     });
     
-    runningServers.set(port, { server, contentType });
+    runningServers.set(port, { 
+      server, 
+      contentType,
+      startTime: new Date()
+    });
     
     return true;
   } catch (error) {
@@ -106,6 +119,8 @@ export function updateServer(port, html, contentType = 'html') {
 export function getRunningServers() {
   return Array.from(runningServers.entries()).map(([port, data]) => ({
     port,
-    contentType: data.contentType || 'html'
+    contentType: data.contentType || 'html',
+    startTime: data.startTime || new Date(),
+    uptime: data.startTime ? Math.floor((new Date() - data.startTime) / 1000) : 0 // uptime in seconds
   }));
 }
