@@ -34,43 +34,28 @@ const InputOTPSlot = React.forwardRef<
   React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext)
-  
-  // Safely check if context and slots exist
-  if (!inputOTPContext || !inputOTPContext.slots) {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          "relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-          className
-        )}
-        {...props}
-      />
-    );
-  }
+  const slots = inputOTPContext?.slots || []
+  const slot = slots[index]
 
-  // Get slot data with proper TypeScript handling
-  const slot = inputOTPContext.slots[index] || {};
-  
-  // Use type assertion to tell TypeScript these properties exist
-  const slotData = slot as { char?: string; hasFakeCaret?: boolean; isActive?: boolean };
-  const char = slotData.char || "";
-  const hasFakeCaret = Boolean(slotData.hasFakeCaret);
-  const isActive = Boolean(slotData.isActive);
+  const char = slot?.char || ""
+  const hasFakeCaret = !!slot?.hasFakeCaret
+  const isActive = !!slot?.isActive
 
   return (
     <div
       ref={ref}
       className={cn(
-        "relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md text-foreground font-bold",
+        "relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
         isActive && "z-10 ring-2 ring-ring ring-offset-background",
         className
       )}
       {...props}
     >
-      {char && (
-        <span className="text-base text-black dark:text-white">{char}</span>
-      )}
+      {char ? (
+        <span className="text-base font-bold" style={{ color: "currentColor" }}>
+          {char}
+        </span>
+      ) : null}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
