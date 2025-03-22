@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -52,23 +51,43 @@ const ConfigPage = () => {
   const [isPinSaved, setIsPinSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("general");
   
-  // Redirect to home if not in config mode
+  // Stronger redirection check - immediately redirect if not in config mode
   useEffect(() => {
     if (!isConfigMode) {
-      navigate('/');
+      console.log("Redirecting: Not in config mode");
+      navigate('/', { replace: true });
       toast({
         title: "Accès restreint",
         description: "Vous devez être en mode configuration pour accéder à cette page",
+        variant: "destructive",
       });
     }
   }, [isConfigMode, navigate]);
 
-  // Reset to general tab when config mode changes
+  // When config mode changes, ensure we're on the general tab
   useEffect(() => {
-    if (isConfigMode && activeTab === "network") {
+    if (activeTab === "network") {
+      console.log("Resetting tab to general");
       setActiveTab("general");
     }
   }, [isConfigMode, activeTab]);
+  
+  // Listen for changes to the URL to ensure we don't stay on restricted page
+  useEffect(() => {
+    const checkAccess = () => {
+      if (!isConfigMode && window.location.pathname === '/config') {
+        console.log("URL check redirecting to home");
+        navigate('/', { replace: true });
+      }
+    };
+    
+    checkAccess();
+    window.addEventListener('popstate', checkAccess);
+    
+    return () => {
+      window.removeEventListener('popstate', checkAccess);
+    };
+  }, [isConfigMode, navigate]);
   
   const getLocalIpAddress = async () => {
     try {
@@ -259,10 +278,20 @@ const ConfigPage = () => {
   );
 
   const handleTabChange = (value: string) => {
+    // If trying to access network tab but not in config mode, prevent it
+    if (value === "network" && !isConfigMode) {
+      toast({
+        title: "Accès restreint",
+        description: "Vous devez être en mode configuration pour accéder à cette section",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setActiveTab(value);
   };
 
-  // If not in config mode, don't render the page
+  // Early return if not in config mode
   if (!isConfigMode) {
     return null;
   }
@@ -555,3 +584,4 @@ const ConfigPage = () => {
 };
 
 export default ConfigPage;
+

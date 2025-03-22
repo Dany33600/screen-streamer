@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAppStore } from "@/store";
 import Index from "./pages/Index";
@@ -14,6 +14,17 @@ import PreviewPage from "./pages/PreviewPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Protected route component to handle restricted access
+const ProtectedConfigRoute = () => {
+  const isConfigMode = useAppStore((state) => state.isConfigMode);
+  
+  if (!isConfigMode) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <ConfigPage />;
+};
 
 const App = () => {
   const setConfigPin = useAppStore((state) => state.setConfigPin);
@@ -36,7 +47,7 @@ const App = () => {
             <Route path="/screens" element={<ScreensPage />} />
             <Route path="/content" element={<ContentPage />} />
             <Route path="/playlists" element={<PlaylistsPage />} />
-            <Route path="/config" element={<ConfigPage />} />
+            <Route path="/config" element={<ProtectedConfigRoute />} />
             <Route path="/preview" element={<PreviewPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

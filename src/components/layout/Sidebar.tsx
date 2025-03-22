@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { 
   Layers,
@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import PinVerificationDialog from '../config/PinVerificationDialog';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -23,12 +24,23 @@ const Sidebar = () => {
   const isPinVerified = useAppStore((state) => state.isPinVerified);
   const toggleConfigMode = useAppStore((state) => state.toggleConfigMode);
   const resetPinVerification = useAppStore((state) => state.resetPinVerification);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleConfigButtonClick = () => {
     if (isConfigMode) {
       // Exit config mode and reset PIN verification
       toggleConfigMode();
       resetPinVerification();
+      
+      // If currently on a restricted page, redirect to home
+      if (location.pathname === '/config') {
+        navigate('/', { replace: true });
+        toast({
+          title: "Mode configuration désactivé",
+          description: "Vous avez été redirigé vers la page d'accueil",
+        });
+      }
     } else if (!isPinVerified) {
       // Need PIN verification
       setIsPinDialogOpen(true);
