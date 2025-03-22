@@ -1,3 +1,4 @@
+
 import { Content } from '@/types';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
@@ -69,9 +70,26 @@ class ScreenServerRealService {
     console.log(`API Base URL updated to: ${this.apiBaseUrl}`);
   }
   
+  // Vérifie si un contenu existe déjà pour éviter les doublons
+  private async contentExists(contentId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/content/${contentId}`);
+      return response.ok; // Si la réponse est OK, le contenu existe
+    } catch (error) {
+      console.error(`Erreur lors de la vérification de l'existence du contenu ${contentId}:`, error);
+      return false; // En cas d'erreur, supposons que le contenu n'existe pas
+    }
+  }
+  
   // Méthode pour stocker les données d'un serveur sur le serveur
   private async saveServerData(serverId: string, content: Content, html: string, displayOptions?: any): Promise<boolean> {
     try {
+      // Vérifier d'abord si le contenu existe déjà
+      const exists = await this.contentExists(serverId);
+      if (exists) {
+        console.log(`Le contenu ${serverId} existe déjà, mise à jour des données`);
+      }
+      
       const apiUrl = `${this.apiBaseUrl}/content`;
       
       console.log(`Sauvegarde des données du serveur pour l'ID: ${serverId} sur ${apiUrl}`);
@@ -407,7 +425,7 @@ class ScreenServerRealService {
       const html = htmlGenerator.generateHtml(content, mergedDisplayOptions);
       server.html = html;
       
-      // Mettre à jour les données du serveur sur le serveur
+      // Mettre à jour les données du serveur sur le serveur, seulement si elles n'existent pas déjà
       await this.saveServerData(server.id, content, html, mergedDisplayOptions);
       
       try {
