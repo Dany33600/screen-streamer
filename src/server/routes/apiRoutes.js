@@ -178,6 +178,13 @@ router.post('/content', (req, res) => {
     }
     
     console.log(`Sauvegarde du contenu ${contentId} via API POST`);
+    
+    // Vérifier si le contenu existe déjà pour éviter les doublons
+    const existingContent = getContentData(contentId);
+    if (existingContent) {
+      console.log(`Contenu ${contentId} existe déjà, mise à jour des données`);
+    }
+    
     const success = saveContentData(contentId, content);
     
     if (success) {

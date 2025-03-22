@@ -107,52 +107,9 @@ export const useContentUpload = () => {
       console.log("Generated full file URL:", fullFileUrl);
 
       // Vérifier si le contenu a été correctement créé en appelant l'API pour récupérer les détails
-      console.log(`Vérification de la création du contenu avec ID: ${contentId}`);
-      try {
-        // Attendre un moment pour que le serveur ait le temps de traiter le fichier et créer l'entrée
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const contentCheckUrl = `${baseUrl}/api/content/${contentId}`;
-        console.log(`Requête de vérification du contenu: ${contentCheckUrl}`);
-        
-        const contentCheckResponse = await fetch(contentCheckUrl);
-        if (contentCheckResponse.ok) {
-          const contentData = await contentCheckResponse.json();
-          console.log("Le contenu a été correctement enregistré sur le serveur:", contentData);
-        } else {
-          console.warn(`Le contenu n'a pas pu être vérifié (${contentCheckResponse.status}), mais l'upload a réussi`);
-          
-          // Si le contenu n'est pas trouvé, essayons d'enregistrer manuellement les métadonnées
-          const contentRegisterUrl = `${baseUrl}/api/content`;
-          console.log(`Tentative d'enregistrement manuel du contenu: ${contentRegisterUrl}`);
-          
-          const contentRegisterResponse = await fetch(contentRegisterUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contentId,
-              content: {
-                id: contentId,
-                name: file.name,
-                type: contentType,
-                url: fullFileUrl,
-                createdAt: Date.now()
-              }
-            }),
-          });
-          
-          if (contentRegisterResponse.ok) {
-            console.log("Le contenu a été manuellement enregistré sur le serveur.");
-          } else {
-            console.warn("Échec de l'enregistrement manuel du contenu.");
-          }
-        }
-      } catch (checkError) {
-        console.warn("Erreur lors de la vérification du contenu:", checkError);
-      }
-
+      // IMPORTANT: Suppression de la vérification et de l'enregistrement manuel, qui causaient
+      // la création de multiples fichiers JSON pour le même contenu
+      
       toast.success(`Fichier "${file.name}" uploadé avec succès`);
       
       return {
