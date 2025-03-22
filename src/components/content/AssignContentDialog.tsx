@@ -20,7 +20,7 @@ import {
 import { Content, Screen } from '@/types';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { screenServerService } from '@/services/screenServerReal';
 import DisplayOptionsDialog from '@/components/screens/DisplayOptionsDialog';
@@ -50,12 +50,31 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
   const [pendingScreenId, setPendingScreenId] = useState<string | null>(null);
   const [serverContents, setServerContents] = useState<Content[]>([]);
   const [selectedContentId, setSelectedContentId] = useState<string>('none');
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Ensure API base URL is updated when the dialog opens
+  useEffect(() => {
+    if (open) {
+      screenServerService.updateApiBaseUrl();
+    }
+  }, [open]);
 
   // Récupérer la liste des contenus depuis le serveur
-  const { data: serverContentData, isLoading: isLoadingContents, error: contentsError } = useQuery({
-    queryKey: ['contents'],
+  const { 
+    data: serverContentData, 
+    isLoading: isLoadingContents, 
+    error: contentsError,
+    refetch: refetchContents 
+  } = useQuery({
+    queryKey: ['contents', apiUrl, open],
     queryFn: async () => {
       if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
+      
+      // Make sure the API URL is updated before making the request
+      screenServerService.updateApiBaseUrl();
+      
+      // Add a slight delay to ensure the API is ready (helps with newly created screens)
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       const response = await fetch(`${apiUrl}/api/content`);
       if (!response.ok) {
@@ -66,6 +85,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
       return data.success ? data.contentList : [];
     },
     enabled: !!apiUrl && open,
+    retry: 1,
   });
 
   // Mettre à jour les contenus du serveur quand les données sont chargées
@@ -80,6 +100,8 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
           setSelectedContentId('none');
         }
       }
+      
+      setIsRetrying(false);
     }
   }, [serverContentData, content, selectedContentId]);
 
@@ -91,6 +113,12 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
       setSelectedContentId('none');
     }
   }, [open, content]);
+
+  const handleRetry = () => {
+    setIsRetrying(true);
+    screenServerService.updateApiBaseUrl();
+    refetchContents();
+  };
 
   const handleAssignContent = async () => {
     if (!selectedScreenId) return;
@@ -211,18 +239,29 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
             
             <div className="space-y-2">
               <Label htmlFor="content">Contenu</Label>
-              {isLoadingContents ? (
+              {isLoadingContents || isRetrying ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Chargement des contenus...
                 </div>
               ) : contentsError ? (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  <AlertDescription>
-                    Erreur lors du chargement des contenus. Veuillez vérifier la connexion au serveur.
-                  </AlertDescription>
-                </Alert>
+                <div>
+                  <Alert variant="destructive" className="mb-2">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    <AlertDescription>
+                      Erreur lors du chargement des contenus. Veuillez vérifier la connexion au serveur.
+                    </AlertDescription>
+                  </Alert>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleRetry}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Réessayer
+                  </Button>
+                </div>
               ) : (
                 <Select 
                   value={selectedContentId} 
@@ -250,7 +289,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
             </Button>
             <Button 
               onClick={handleAssignContent} 
-              disabled={!selectedScreenId || noScreens || serverNotConfigured || isLoadingContents}
+              disabled={!selectedScreenId || noScreens || serverNotConfigured || isLoadingContents || isRetrying}
             >
               Assigner
             </Button>

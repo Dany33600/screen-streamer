@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { saveContentData, getContentData, listAllContent, deleteContent } from '../services/contentService.js';
+import { saveContentData, getContentData, listAllContent, deleteContent, contentExists } from '../services/contentService.js';
 import { startServer, stopServer, updateServer, getRunningServers } from '../services/serverManager.js';
 import { createUploadMiddleware, getFirstIpAddress } from '../utils/fileStorage.js';
 
@@ -179,10 +179,20 @@ router.post('/content', (req, res) => {
     
     console.log(`Sauvegarde du contenu ${contentId} via API POST`);
     
-    // Vérifier si le contenu existe déjà - si c'est un UUID d'écran, ne pas écraser un fichier existant
+    // Ne pas créer de fichiers JSON pour les UUID de serveur d'écran
+    // Ces UUIDs sont générés lorsqu'un écran démarre et n'ont pas besoin d'être enregistrés comme contenu
     if (contentId.includes('-') && contentId.length > 30) {
-      const existingContent = getContentData(contentId);
-      if (existingContent) {
+      // Vérifier si c'est un fichier de serveur d'écran (UUID) qui contient un champ "html"
+      if (content.html && content.content) {
+        console.log(`Le contenu ${contentId} semble être un fichier de serveur d'écran (contient HTML), ignoré pour éviter les doublons`);
+        return res.json({ 
+          success: true, 
+          message: `Contenu ${contentId} non enregistré pour éviter les doublons de serveur d'écran` 
+        });
+      }
+      
+      // Vérifier si le contenu existe déjà
+      if (contentExists(contentId)) {
         console.log(`Le contenu ${contentId} existe déjà, annulation de la sauvegarde pour éviter les doublons`);
         return res.json({ 
           success: true, 

@@ -21,12 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PlusCircle, MonitorPlay, Search, Loader2, AlertTriangle } from 'lucide-react';
+import { PlusCircle, MonitorPlay, Search, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { screenServerService } from '@/services/screenServerReal';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Content } from '@/types';
+import AssignContentDialog from '@/components/content/AssignContentDialog';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
@@ -46,12 +47,21 @@ const ScreensPage = () => {
   const [newScreenName, setNewScreenName] = useState('');
   const [selectedContentId, setSelectedContentId] = useState('none');
   const [serverContents, setServerContents] = useState<Content[]>([]);
+  const [isRetrying, setIsRetrying] = useState(false);
   
   // Récupérer la liste des contenus depuis le serveur
-  const { data: serverContentData, isLoading: isLoadingContents, error: contentsError } = useQuery({
-    queryKey: ['contents'],
+  const { 
+    data: serverContentData, 
+    isLoading: isLoadingContents, 
+    error: contentsError,
+    refetch: refetchContents
+  } = useQuery({
+    queryKey: ['contents', apiUrl],
     queryFn: async () => {
       if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
+      
+      // Ensure the API URL is updated before making requests
+      screenServerService.updateApiBaseUrl();
       
       const response = await fetch(`${apiUrl}/api/content`);
       if (!response.ok) {
@@ -62,12 +72,14 @@ const ScreensPage = () => {
       return data.success ? data.contentList : [];
     },
     enabled: !!apiUrl,
+    retry: 2,
   });
 
   // Mettre à jour les contenus du serveur quand les données sont chargées
   useEffect(() => {
     if (serverContentData) {
       setServerContents(serverContentData);
+      setIsRetrying(false);
     }
   }, [serverContentData]);
   
@@ -86,6 +98,9 @@ const ScreensPage = () => {
     toast({
       title: `Écran "${newScreenName}" ajouté avec succès`,
     });
+    
+    // Make sure to update the API URL after adding a screen
+    screenServerService.updateApiBaseUrl();
   };
   
   const handleUpdateScreen = () => {
@@ -185,7 +200,20 @@ const ScreensPage = () => {
   const handleOpenAssignDialog = (screen) => {
     setCurrentScreen(screen);
     setSelectedContentId(screen.contentId || 'none');
+    
+    // Force update API URL before opening dialog
+    screenServerService.updateApiBaseUrl();
+    
+    // Refresh content data before opening the dialog
+    refetchContents();
+    
     setIsAssignDialogOpen(true);
+  };
+  
+  const handleRetry = () => {
+    setIsRetrying(true);
+    screenServerService.updateApiBaseUrl();
+    refetchContents();
   };
   
   const filteredScreens = searchTerm
@@ -315,62 +343,14 @@ const ScreensPage = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assigner du contenu</DialogTitle>
-            <DialogDescription>
-              Choisissez le contenu à diffuser sur l'écran {currentScreen?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="content">Contenu</Label>
-              {isLoadingContents ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Chargement des contenus...
-                </div>
-              ) : contentsError ? (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  <AlertDescription>
-                    Erreur lors du chargement des contenus. Veuillez vérifier la connexion au serveur.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Select 
-                  value={selectedContentId} 
-                  onValueChange={setSelectedContentId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un contenu" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucun contenu</SelectItem>
-                    {serverContents.map((content) => (
-                      <SelectItem key={content.id} value={content.id}>
-                        {content.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button 
-              onClick={handleAssignContent}
-              disabled={isLoadingContents}
-            >
-              Assigner
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AssignContentDialog
+        open={isAssignDialogOpen}
+        onOpenChange={setIsAssignDialogOpen}
+        content={currentScreen?.contentId ? serverContents.find(c => c.id === currentScreen.contentId) || null : null}
+        selectedScreenId={currentScreen?.id || ''}
+        setSelectedScreenId={() => {}}
+        screens={screens}
+      />
     </MainLayout>
   );
 };
