@@ -124,6 +124,16 @@
   .content-card {
     @apply bg-card rounded-lg border p-4 transition-all duration-300 hover:shadow-md;
   }
+  
+  /* Styles spécifiques pour le champ de code PIN */
+  div[role="group"] span.text-base {
+    font-weight: 600;
+    color: #000;
+  }
+  
+  .dark div[role="group"] span.text-base {
+    color: #fff;
+  }
 }
 
 .screen-transition-enter {
