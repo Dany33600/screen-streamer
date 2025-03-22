@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { useAppStore } from "@/store";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, Eye, EyeOff } from "lucide-react";
 
 interface PinVerificationDialogProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
 }) => {
   const [pin, setPin] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const verifyPin = useAppStore((state) => state.verifyPin);
 
   const handleVerify = () => {
@@ -59,6 +60,10 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
     }
   };
 
+  const togglePinVisibility = () => {
+    setShowPin(!showPin);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -73,9 +78,9 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4 py-4">
-          <div className="w-full flex justify-center">
+          <div className="w-full flex justify-center relative">
             <Input
-              type="password"
+              type={showPin ? "text" : "password"}
               inputMode="numeric"
               pattern="[0-9]*"
               value={pin}
@@ -85,6 +90,14 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
               placeholder="••••"
               autoFocus
             />
+            <button 
+              type="button"
+              onClick={togglePinVisibility}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none"
+              aria-label={showPin ? "Cacher le PIN" : "Afficher le PIN"}
+            >
+              {showPin ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+            </button>
           </div>
 
           <Button 
