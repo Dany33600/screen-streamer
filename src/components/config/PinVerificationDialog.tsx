@@ -59,7 +59,7 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4 py-4">
-          <div className="w-full">
+          <div className="w-full flex justify-center">
             <InputOTP
               maxLength={4}
               value={pin}
@@ -69,7 +69,11 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
               render={({ slots }) => (
                 <InputOTPGroup className="flex justify-center gap-2">
                   {slots.map((slot, i) => (
-                    <InputOTPSlot key={i} index={i} className="border-primary text-foreground" />
+                    <InputOTPSlot 
+                      key={i} 
+                      index={i} 
+                      className="h-12 w-12 border-2 border-primary rounded-md" 
+                    />
                   ))}
                 </InputOTPGroup>
               )}
