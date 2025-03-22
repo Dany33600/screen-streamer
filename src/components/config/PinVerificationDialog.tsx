@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { useAppStore } from "@/store";
 import { LockKeyhole } from "lucide-react";
@@ -45,6 +45,20 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
     }, 500);
   };
 
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers and limit to 4 digits
+    if (/^\d*$/.test(value) && value.length <= 4) {
+      setPin(value);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && pin.length === 4) {
+      handleVerify();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -60,23 +74,16 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
 
         <div className="flex flex-col items-center gap-4 py-4">
           <div className="w-full flex justify-center">
-            <InputOTP
-              maxLength={4}
-              value={pin}
-              onChange={setPin}
-              pattern="[0-9]*"
+            <Input
+              type="text"
               inputMode="numeric"
-              render={({ slots }) => (
-                <InputOTPGroup className="flex justify-center gap-3">
-                  {slots.map((slot, i) => (
-                    <InputOTPSlot 
-                      key={i} 
-                      index={i} 
-                      className="h-14 w-14 border-2 border-primary rounded-md" 
-                    />
-                  ))}
-                </InputOTPGroup>
-              )}
+              pattern="[0-9]*"
+              value={pin}
+              onChange={handlePinChange}
+              onKeyDown={handleKeyDown}
+              className="text-center text-2xl font-bold h-14 max-w-[200px] bg-white dark:bg-gray-800"
+              placeholder="••••"
+              autoFocus
             />
           </div>
 
