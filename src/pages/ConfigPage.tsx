@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ConfigPage = () => {
+  const navigate = useNavigate();
   const basePort = useAppStore((state) => state.basePort);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
@@ -47,6 +50,25 @@ const ConfigPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [newPin, setNewPin] = useState('');
   const [isPinSaved, setIsPinSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("general");
+  
+  // Redirect to home if not in config mode
+  useEffect(() => {
+    if (!isConfigMode) {
+      navigate('/');
+      toast({
+        title: "Accès restreint",
+        description: "Vous devez être en mode configuration pour accéder à cette page",
+      });
+    }
+  }, [isConfigMode, navigate]);
+
+  // Reset to general tab when config mode changes
+  useEffect(() => {
+    if (isConfigMode && activeTab === "network") {
+      setActiveTab("general");
+    }
+  }, [isConfigMode, activeTab]);
   
   const getLocalIpAddress = async () => {
     try {
@@ -236,6 +258,15 @@ const ConfigPage = () => {
     </Card>
   );
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
+  // If not in config mode, don't render the page
+  if (!isConfigMode) {
+    return null;
+  }
+
   return (
     <MainLayout>
       <div className="space-y-8 animate-fade-in">
@@ -246,7 +277,7 @@ const ConfigPage = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="general" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsList>
             <TabsTrigger value="general" className="gap-2">
               <Settings size={16} />
