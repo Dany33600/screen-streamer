@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { 
@@ -10,15 +10,32 @@ import {
   List,
   PlaySquare,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import PinVerificationDialog from '../config/PinVerificationDialog';
 import { cn } from '@/lib/utils';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
+  const isPinVerified = useAppStore((state) => state.isPinVerified);
   const toggleConfigMode = useAppStore((state) => state.toggleConfigMode);
+
+  const handleConfigButtonClick = () => {
+    if (isConfigMode) {
+      // Exit config mode
+      toggleConfigMode();
+    } else if (!isPinVerified) {
+      // Need PIN verification
+      setIsPinDialogOpen(true);
+    } else {
+      // Already verified, can enter
+      toggleConfigMode();
+    }
+  };
 
   return (
     <div 
@@ -90,16 +107,21 @@ const Sidebar = () => {
       <div className="mt-auto border-t p-4">
         <Button 
           variant={isConfigMode ? "default" : "outline"}
-          onClick={toggleConfigMode} 
+          onClick={handleConfigButtonClick} 
           className={cn(
             "w-full justify-start gap-2 transition-all", 
             isCollapsed ? "px-2" : "px-4"
           )}
         >
-          <Settings size={18} />
+          {isConfigMode ? <Settings size={18} /> : <Lock size={18} />}
           {!isCollapsed && <span>{isConfigMode ? "Mode Utilisation" : "Mode Configuration"}</span>}
         </Button>
       </div>
+      
+      <PinVerificationDialog 
+        isOpen={isPinDialogOpen} 
+        onClose={() => setIsPinDialogOpen(false)} 
+      />
     </div>
   );
 };

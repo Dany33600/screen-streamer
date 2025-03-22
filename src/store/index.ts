@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +11,8 @@ interface AppState {
   baseIpAddress: string;
   isConfigMode: boolean;
   apiUrl: string;
+  configPin: string;
+  isPinVerified: boolean;
   
   // Screens actions
   addScreen: (name: string) => void;
@@ -34,11 +35,14 @@ interface AppState {
   setBaseIpAddress: (ipAddress: string) => void;
   toggleConfigMode: () => void;
   setApiUrl: (url: string) => void;
+  setConfigPin: (pin: string) => void;
+  verifyPin: (pin: string) => boolean;
+  resetPinVerification: () => void;
 }
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       screens: [],
       contents: [],
       playlists: [],
@@ -46,6 +50,8 @@ export const useAppStore = create<AppState>()(
       baseIpAddress: '192.168.0.14',
       isConfigMode: false,
       apiUrl: 'http://localhost:5000',
+      configPin: '1234', // Default PIN
+      isPinVerified: false,
       
       // Screens actions
       addScreen: (name) => set((state) => {
@@ -141,8 +147,29 @@ export const useAppStore = create<AppState>()(
       // Config actions
       setBasePort: (port) => set({ basePort: port }),
       setBaseIpAddress: (ipAddress) => set({ baseIpAddress: ipAddress }),
-      toggleConfigMode: () => set((state) => ({ isConfigMode: !state.isConfigMode })),
+      toggleConfigMode: () => set((state) => {
+        // If currently in config mode, reset pin verification when leaving
+        if (state.isConfigMode) {
+          return { isConfigMode: false, isPinVerified: false };
+        }
+        // If verified, can enter config mode
+        if (state.isPinVerified) {
+          return { isConfigMode: true };
+        }
+        // Otherwise, don't change the mode (PIN will be requested by UI)
+        return state;
+      }),
       setApiUrl: (url) => set({ apiUrl: url }),
+      setConfigPin: (pin) => set({ configPin: pin }),
+      verifyPin: (pin) => {
+        const state = get();
+        const isValid = pin === state.configPin;
+        if (isValid) {
+          set({ isPinVerified: true, isConfigMode: true });
+        }
+        return isValid;
+      },
+      resetPinVerification: () => set({ isPinVerified: false }),
     }),
     {
       name: 'screen-streamer-storage',

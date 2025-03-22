@@ -20,20 +20,33 @@ import {
 } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Settings, Network, MonitorPlay, Save, RefreshCw, AlertTriangle } from 'lucide-react';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { 
+  Settings, 
+  Network, 
+  MonitorPlay, 
+  Save, 
+  RefreshCw, 
+  AlertTriangle,
+  LockKeyhole,
+  Check
+} from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ConfigPage = () => {
   const basePort = useAppStore((state) => state.basePort);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
+  const configPin = useAppStore((state) => state.configPin);
   const setBasePort = useAppStore((state) => state.setBasePort);
   const setBaseIpAddress = useAppStore((state) => state.setBaseIpAddress);
-  const toggleConfigMode = useAppStore((state) => state.toggleConfigMode);
+  const setConfigPin = useAppStore((state) => state.setConfigPin);
   
   const [portValue, setPortValue] = useState(basePort.toString());
   const [ipValue, setIpValue] = useState(baseIpAddress);
   const [isSaving, setIsSaving] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [isPinSaved, setIsPinSaved] = useState(false);
   
   const getLocalIpAddress = async () => {
     try {
@@ -158,6 +171,21 @@ const ConfigPage = () => {
     }
   };
 
+  const handleSavePin = () => {
+    if (newPin.length === 4) {
+      setConfigPin(newPin);
+      setIsPinSaved(true);
+      toast({
+        title: 'Code PIN mis à jour',
+        description: 'Votre nouveau code PIN a été enregistré',
+      });
+      
+      setTimeout(() => {
+        setIsPinSaved(false);
+      }, 2000);
+    }
+  };
+
   const renderServerInformation = () => (
     <Card className="mt-4">
       <CardHeader>
@@ -224,10 +252,14 @@ const ConfigPage = () => {
               <Settings size={16} />
               Général
             </TabsTrigger>
-            <TabsTrigger value="network" className="gap-2">
-              <Network size={16} />
-              Réseau
-            </TabsTrigger>
+            
+            {isConfigMode && (
+              <TabsTrigger value="network" className="gap-2">
+                <Network size={16} />
+                Réseau
+              </TabsTrigger>
+            )}
+            
             <TabsTrigger value="screens" className="gap-2">
               <MonitorPlay size={16} />
               Écrans
@@ -252,7 +284,7 @@ const ConfigPage = () => {
                   </div>
                   <Switch
                     checked={isConfigMode}
-                    onCheckedChange={toggleConfigMode}
+                    disabled={true}
                   />
                 </div>
                 
@@ -267,6 +299,51 @@ const ConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            {isConfigMode && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <LockKeyhole size={20} />
+                    Sécurité
+                  </CardTitle>
+                  <CardDescription>
+                    Configurez le code PIN pour accéder au mode configuration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Code PIN à 4 chiffres</Label>
+                    <div className="flex justify-center my-4">
+                      <InputOTP
+                        maxLength={4}
+                        value={newPin}
+                        onChange={setNewPin}
+                        render={({ slots }) => (
+                          <InputOTPGroup className="gap-3">
+                            {slots.map((slot, index) => (
+                              <InputOTPSlot key={index} {...slot} index={index} className="h-12 w-12 text-lg" />
+                            ))}
+                          </InputOTPGroup>
+                        )}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center">
+                      Ce code sera demandé pour accéder au mode configuration
+                    </p>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleSavePin} 
+                    disabled={newPin.length !== 4 || isPinSaved}
+                    className="w-full mt-4"
+                  >
+                    {isPinSaved ? <Check className="mr-2" size={16} /> : null}
+                    {isPinSaved ? "Code PIN enregistré" : "Enregistrer le code PIN"}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
             
             <Card>
               <CardHeader>
