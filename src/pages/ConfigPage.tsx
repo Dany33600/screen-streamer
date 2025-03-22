@@ -258,16 +258,6 @@ const ConfigPage = () => {
                 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Démarrage automatique</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Démarrer l'application au démarrage du système
-                    </p>
-                  </div>
-                  <Switch defaultChecked={false} />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
                     <Label>Rotation automatique</Label>
                     <p className="text-sm text-muted-foreground">
                       Faire tourner les contenus dans les playlists
@@ -294,16 +284,6 @@ const ConfigPage = () => {
                     </p>
                   </div>
                   <Switch defaultChecked={false} />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Animations</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Activer les animations dans l'interface
-                    </p>
-                  </div>
-                  <Switch defaultChecked={true} />
                 </div>
               </CardContent>
             </Card>
