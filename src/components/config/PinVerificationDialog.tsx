@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,14 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const verifyPin = useAppStore((state) => state.verifyPin);
+
+  // Reset PIN when dialog closes for security
+  useEffect(() => {
+    if (!isOpen) {
+      setPin("");
+      setShowPin(false);
+    }
+  }, [isOpen]);
 
   const handleVerify = () => {
     setIsVerifying(true);

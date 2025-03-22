@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -23,11 +22,13 @@ const Sidebar = () => {
   const isConfigMode = useAppStore((state) => state.isConfigMode);
   const isPinVerified = useAppStore((state) => state.isPinVerified);
   const toggleConfigMode = useAppStore((state) => state.toggleConfigMode);
+  const resetPinVerification = useAppStore((state) => state.resetPinVerification);
 
   const handleConfigButtonClick = () => {
     if (isConfigMode) {
-      // Exit config mode
+      // Exit config mode and reset PIN verification
       toggleConfigMode();
+      resetPinVerification();
     } else if (!isPinVerified) {
       // Need PIN verification
       setIsPinDialogOpen(true);
