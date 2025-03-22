@@ -14,6 +14,15 @@ interface AppState {
   configPin: string;
   isPinVerified: boolean;
   
+  // Menu visibility options
+  menuOptions: {
+    dashboard: boolean;
+    screens: boolean;
+    content: boolean;
+    playlists: boolean;
+    preview: boolean;
+  };
+  
   // Screens actions
   addScreen: (name: string) => void;
   updateScreen: (id: string, data: Partial<Screen>) => void;
@@ -38,6 +47,9 @@ interface AppState {
   setConfigPin: (pin: string) => void;
   verifyPin: (pin: string) => boolean;
   resetPinVerification: () => void;
+  
+  // Menu options actions
+  toggleMenuOption: (option: keyof AppState['menuOptions'], value: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -52,6 +64,15 @@ export const useAppStore = create<AppState>()(
       apiUrl: 'http://localhost:5000',
       configPin: '1234', // Default PIN
       isPinVerified: false,
+      
+      // Default menu options - all enabled by default
+      menuOptions: {
+        dashboard: true,
+        screens: true,
+        content: true,
+        playlists: true,
+        preview: true,
+      },
       
       // Screens actions
       addScreen: (name) => set((state) => {
@@ -170,6 +191,14 @@ export const useAppStore = create<AppState>()(
         return isValid;
       },
       resetPinVerification: () => set({ isPinVerified: false }),
+      
+      // Menu options actions
+      toggleMenuOption: (option, value) => set((state) => ({
+        menuOptions: {
+          ...state.menuOptions,
+          [option]: value,
+        },
+      })),
     }),
     {
       name: 'screen-streamer-storage',

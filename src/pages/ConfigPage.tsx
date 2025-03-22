@@ -30,7 +30,12 @@ import {
   RefreshCw, 
   AlertTriangle,
   LockKeyhole,
-  Check
+  Check,
+  Bug,
+  Layers,
+  Film,
+  List,
+  PlaySquare
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -44,6 +49,8 @@ const ConfigPage = () => {
   const setBasePort = useAppStore((state) => state.setBasePort);
   const setBaseIpAddress = useAppStore((state) => state.setBaseIpAddress);
   const setConfigPin = useAppStore((state) => state.setConfigPin);
+  const menuOptions = useAppStore((state) => state.menuOptions);
+  const toggleMenuOption = useAppStore((state) => state.toggleMenuOption);
   
   const [portValue, setPortValue] = useState(basePort.toString());
   const [ipValue, setIpValue] = useState(baseIpAddress);
@@ -52,7 +59,6 @@ const ConfigPage = () => {
   const [isPinSaved, setIsPinSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("general");
   
-  // Stronger redirection check - immediately redirect if not in config mode
   useEffect(() => {
     if (!isConfigMode) {
       console.log("Redirecting: Not in config mode");
@@ -65,14 +71,12 @@ const ConfigPage = () => {
     }
   }, [isConfigMode, navigate]);
 
-  // Reset tab to general if we're no longer in config mode
   useEffect(() => {
     if (!isConfigMode && activeTab === "network") {
       setActiveTab("general");
     }
   }, [isConfigMode, activeTab]);
   
-  // Listen for changes to the URL to ensure we don't stay on restricted page
   useEffect(() => {
     const checkAccess = () => {
       if (!isConfigMode && window.location.pathname === '/config') {
@@ -310,6 +314,11 @@ const ConfigPage = () => {
             <TabsTrigger value="screens" className="gap-2">
               <MonitorPlay size={16} />
               Écrans
+            </TabsTrigger>
+            
+            <TabsTrigger value="debug" className="gap-2">
+              <Bug size={16} />
+              Debug
             </TabsTrigger>
           </TabsList>
           
@@ -564,6 +573,116 @@ const ConfigPage = () => {
               </CardFooter>
             </Card>
           </TabsContent>
+          
+          <TabsContent value="debug" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bug size={20} className="text-primary" />
+                  Débogage - Visibilité des menus
+                </CardTitle>
+                <CardDescription>
+                  Activez ou désactivez les différentes options du menu principal
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Alert className="bg-yellow-50 border-yellow-200 text-yellow-800">
+                  <AlertTriangle className="h-4 w-4 text-yellow-800" />
+                  <AlertDescription>
+                    Ces options permettent de contrôler la visibilité des éléments du menu principal.
+                    La désactivation d'une option masquera l'élément correspondant pour tous les utilisateurs.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Layers size={20} className="text-primary" />
+                      <div className="space-y-0.5">
+                        <Label>Tableau de bord</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Page d'accueil avec les statistiques et informations générales
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={menuOptions.dashboard} 
+                      onCheckedChange={(checked) => toggleMenuOption('dashboard', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <MonitorPlay size={20} className="text-primary" />
+                      <div className="space-y-0.5">
+                        <Label>Écrans</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Gestion des écrans d'affichage et de leur contenu
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={menuOptions.screens} 
+                      onCheckedChange={(checked) => toggleMenuOption('screens', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Film size={20} className="text-primary" />
+                      <div className="space-y-0.5">
+                        <Label>Contenus</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Gestion des médias et fichiers à afficher
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={menuOptions.content} 
+                      onCheckedChange={(checked) => toggleMenuOption('content', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <List size={20} className="text-primary" />
+                      <div className="space-y-0.5">
+                        <Label>Playlists</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Gestion des séquences de contenus
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={menuOptions.playlists} 
+                      onCheckedChange={(checked) => toggleMenuOption('playlists', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <PlaySquare size={20} className="text-primary" />
+                      <div className="space-y-0.5">
+                        <Label>Aperçu</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Prévisualisation des contenus avant diffusion
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={menuOptions.preview} 
+                      onCheckedChange={(checked) => toggleMenuOption('preview', checked)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <p className="text-xs text-muted-foreground">
+                  Note: Ces modifications sont appliquées immédiatement et conservées même après la déconnexion
+                </p>
+              </CardFooter>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </MainLayout>
@@ -571,3 +690,4 @@ const ConfigPage = () => {
 };
 
 export default ConfigPage;
+

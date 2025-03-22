@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -24,6 +25,7 @@ const Sidebar = () => {
   const isPinVerified = useAppStore((state) => state.isPinVerified);
   const toggleConfigMode = useAppStore((state) => state.toggleConfigMode);
   const resetPinVerification = useAppStore((state) => state.resetPinVerification);
+  const menuOptions = useAppStore((state) => state.menuOptions);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -92,36 +94,50 @@ const Sidebar = () => {
 
       <div className="flex-1 py-6">
         <nav className="space-y-1 px-2">
-          <NavItem 
-            to="/" 
-            icon={<Layers size={20} />} 
-            text="Tableau de bord" 
-            isCollapsed={isCollapsed} 
-          />
-          <NavItem 
-            to="/screens" 
-            icon={<MonitorPlay size={20} />} 
-            text="Écrans" 
-            isCollapsed={isCollapsed} 
-          />
-          <NavItem 
-            to="/content" 
-            icon={<Film size={20} />} 
-            text="Contenus" 
-            isCollapsed={isCollapsed} 
-          />
-          <NavItem 
-            to="/playlists" 
-            icon={<List size={20} />} 
-            text="Playlists" 
-            isCollapsed={isCollapsed} 
-          />
-          <NavItem 
-            to="/preview" 
-            icon={<PlaySquare size={20} />} 
-            text="Aperçu" 
-            isCollapsed={isCollapsed} 
-          />
+          {menuOptions.dashboard && (
+            <NavItem 
+              to="/" 
+              icon={<Layers size={20} />} 
+              text="Tableau de bord" 
+              isCollapsed={isCollapsed} 
+            />
+          )}
+          
+          {menuOptions.screens && (
+            <NavItem 
+              to="/screens" 
+              icon={<MonitorPlay size={20} />} 
+              text="Écrans" 
+              isCollapsed={isCollapsed} 
+            />
+          )}
+          
+          {menuOptions.content && (
+            <NavItem 
+              to="/content" 
+              icon={<Film size={20} />} 
+              text="Contenus" 
+              isCollapsed={isCollapsed} 
+            />
+          )}
+          
+          {menuOptions.playlists && (
+            <NavItem 
+              to="/playlists" 
+              icon={<List size={20} />} 
+              text="Playlists" 
+              isCollapsed={isCollapsed} 
+            />
+          )}
+          
+          {menuOptions.preview && (
+            <NavItem 
+              to="/preview" 
+              icon={<PlaySquare size={20} />} 
+              text="Aperçu" 
+              isCollapsed={isCollapsed} 
+            />
+          )}
         </nav>
       </div>
 
