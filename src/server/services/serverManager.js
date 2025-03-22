@@ -4,6 +4,11 @@ import { createServer } from 'http';
 import path from 'path';
 import cors from 'cors';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Get current file path and directory in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Map to track running servers
 const runningServers = new Map();
