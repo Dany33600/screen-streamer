@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { useAppStore } from "@/store";
 import { LockKeyhole } from "lucide-react";
 
@@ -66,7 +66,7 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
             render={({ slots }) => (
               <InputOTPGroup>
                 {slots.map((slot, index) => (
-                  <InputOTPSlot key={index} {...slot} index={index} />
+                  <InputOTPSlot key={index} {...slot} />
                 ))}
               </InputOTPGroup>
             )}
