@@ -67,12 +67,12 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
               pattern="[0-9]*"
               inputMode="numeric"
               render={({ slots }) => (
-                <InputOTPGroup className="flex justify-center gap-2">
+                <InputOTPGroup className="flex justify-center gap-3">
                   {slots.map((slot, i) => (
                     <InputOTPSlot 
                       key={i} 
                       index={i} 
-                      className="h-12 w-12 border-2 border-primary rounded-md" 
+                      className="h-14 w-14 border-2 border-primary rounded-md" 
                     />
                   ))}
                 </InputOTPGroup>

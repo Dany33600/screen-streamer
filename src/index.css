@@ -127,20 +127,45 @@
 }
 
 /* OTP Input specific styles to ensure visibility */
+.otp-digit {
+  color: black !important;
+}
+
+.dark .otp-digit {
+  color: white !important;
+}
+
+/* Explicit styles for OTP slots */
 [role="group"] [class*="InputOTPSlot"] {
-  background-color: white;
+  background-color: white !important;
 }
 
 [role="group"] [class*="InputOTPSlot"] span {
   color: black !important;
   font-weight: 700 !important;
+  font-size: 1.25rem !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .dark [role="group"] [class*="InputOTPSlot"] {
-  background-color: hsl(217.2 32.6% 17.5%);
+  background-color: hsl(217.2 32.6% 17.5%) !important;
 }
 
 .dark [role="group"] [class*="InputOTPSlot"] span {
+  color: white !important;
+}
+
+/* Force input character visibility */
+input-otp [role="group"] span, 
+.input-otp-slot span {
+  color: black !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.dark input-otp [role="group"] span,
+.dark .input-otp-slot span {
   color: white !important;
 }
 
