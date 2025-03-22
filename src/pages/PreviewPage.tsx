@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { Content, Screen } from '@/types';
-import { ArrowLeft, ExternalLink, Download, RefreshCw, Server, Play, Pause } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Download, RefreshCw, Server, Play, Pause, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { screenServerService } from '@/services/screenServerReal';
 import { toast } from '@/hooks/use-toast';
@@ -12,6 +12,9 @@ import { useScreenStatus } from '@/hooks/use-screen-status';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Toggle } from '@/components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const PreviewPage = () => {
   const location = useLocation();
@@ -23,11 +26,41 @@ const PreviewPage = () => {
   const [isGridView, setIsGridView] = useState<boolean>(true);
   const [selectedScreen, setSelectedScreen] = useState<Screen | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   
   const contents = useAppStore((state) => state.contents);
   const screens = useAppStore((state) => state.screens);
   const apiUrl = useAppStore((state) => state.apiUrl);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  
+  // Function to toggle fullscreen mode
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        toast({
+          title: "Erreur",
+          description: `Impossible de passer en plein écran: ${err.message}`,
+          variant: "destructive",
+        });
+      });
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  // Listen for fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
   
   const ensureFullUrl = (url: string): string => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -232,6 +265,18 @@ const PreviewPage = () => {
         };
         setContent(contentWithFullUrl);
       }
+    }
+  };
+
+  // Function to switch view mode manually
+  const handleViewModeChange = (mode: string) => {
+    if (mode === 'grid') {
+      setIsGridView(true);
+      setSelectedScreen(null);
+      navigate('/preview', { replace: true });
+    } else if (mode === 'detail' && selectedScreen) {
+      setIsGridView(false);
+      navigate(`/preview?screenId=${selectedScreen.id}`, { replace: true });
     }
   };
   
@@ -465,8 +510,26 @@ const PreviewPage = () => {
               ? "Aperçu des écrans" 
               : selectedScreen?.name || "Détail de l'écran"}
           </h1>
+          
+          {/* Nouveau: Tabs pour changer de mode */}
+          <Tabs 
+            value={isGridView ? "grid" : "detail"}
+            onValueChange={handleViewModeChange}
+            className="mt-2"
+          >
+            <TabsList className="grid w-48 grid-cols-2">
+              <TabsTrigger value="grid">Grille</TabsTrigger>
+              <TabsTrigger 
+                value="detail" 
+                disabled={!selectedScreen}
+              >
+                Détaillé
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
           {!isGridView && selectedScreen && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               {selectedScreen.ipAddress}:{selectedScreen.port}
               {screenServerService.isServerRunning(selectedScreen.id) && (
                 <Badge variant="success" className="ml-2">En ligne</Badge>
@@ -476,6 +539,20 @@ const PreviewPage = () => {
         </div>
         
         <div className="flex gap-2">
+          {/* Plein écran */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={toggleFullscreen}
+          >
+            {isFullscreen ? (
+              <Minimize className="mr-2 h-4 w-4" />
+            ) : (
+              <Maximize className="mr-2 h-4 w-4" />
+            )}
+            {isFullscreen ? "Quitter" : "Plein écran"}
+          </Button>
+          
           <Button 
             variant="outline" 
             size="sm" 
@@ -501,7 +578,7 @@ const PreviewPage = () => {
         </div>
       </div>
       
-      <div className="pt-20 px-4 pb-4 flex justify-center min-h-screen">
+      <div className="pt-28 px-4 pb-4 flex justify-center min-h-screen">
         <div className="w-full max-w-7xl">
           {isGridView ? renderGridView() : renderDetailView()}
         </div>
