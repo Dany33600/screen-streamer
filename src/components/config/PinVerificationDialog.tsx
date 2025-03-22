@@ -75,7 +75,7 @@ const PinVerificationDialog: React.FC<PinVerificationDialogProps> = ({
         <div className="flex flex-col items-center gap-4 py-4">
           <div className="w-full flex justify-center">
             <Input
-              type="text"
+              type="password"
               inputMode="numeric"
               pattern="[0-9]*"
               value={pin}
