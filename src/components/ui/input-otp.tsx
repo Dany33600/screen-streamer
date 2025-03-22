@@ -49,13 +49,14 @@ const InputOTPSlot = React.forwardRef<
     );
   }
 
-  // Get slot data or provide fallback values
+  // Get slot data with proper TypeScript handling
   const slot = inputOTPContext.slots[index] || {};
   
-  // Explicitly type the properties with defaults
-  const char = slot.char || "";
-  const hasFakeCaret = Boolean(slot.hasFakeCaret);
-  const isActive = Boolean(slot.isActive);
+  // Use type assertion to tell TypeScript these properties exist
+  const slotData = slot as { char?: string; hasFakeCaret?: boolean; isActive?: boolean };
+  const char = slotData.char || "";
+  const hasFakeCaret = Boolean(slotData.hasFakeCaret);
+  const isActive = Boolean(slotData.isActive);
 
   return (
     <div
