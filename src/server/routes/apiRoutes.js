@@ -179,10 +179,16 @@ router.post('/content', (req, res) => {
     
     console.log(`Sauvegarde du contenu ${contentId} via API POST`);
     
-    // Vérifier si le contenu existe déjà pour éviter les doublons
-    const existingContent = getContentData(contentId);
-    if (existingContent) {
-      console.log(`Contenu ${contentId} existe déjà, mise à jour des données`);
+    // Vérifier si le contenu existe déjà - si c'est un UUID d'écran, ne pas écraser un fichier existant
+    if (contentId.includes('-') && contentId.length > 30) {
+      const existingContent = getContentData(contentId);
+      if (existingContent) {
+        console.log(`Le contenu ${contentId} existe déjà, annulation de la sauvegarde pour éviter les doublons`);
+        return res.json({ 
+          success: true, 
+          message: `Contenu ${contentId} existe déjà, utilisation de la version existante` 
+        });
+      }
     }
     
     const success = saveContentData(contentId, content);

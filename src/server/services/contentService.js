@@ -3,6 +3,30 @@ import fs from 'fs';
 import path from 'path';
 import { CONTENT_DIR, UPLOADS_DIR } from '../utils/fileStorage.js';
 
+// Check if content exists
+export function contentExists(contentId) {
+  try {
+    // Vérifier si l'ID est déjà formaté comme un nom de fichier complet (avec .json)
+    if (contentId.endsWith('.json')) {
+      const directPath = path.join(CONTENT_DIR, contentId);
+      if (fs.existsSync(directPath)) {
+        return true;
+      }
+    }
+    
+    // Essayer avec l'ID exact
+    const exactPath = path.join(CONTENT_DIR, `${contentId}.json`);
+    if (fs.existsSync(exactPath)) {
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`Erreur lors de la vérification d'existence du contenu ${contentId}:`, error);
+    return false;
+  }
+}
+
 // Save content data to a JSON file
 export function saveContentData(contentId, contentData) {
   try {
