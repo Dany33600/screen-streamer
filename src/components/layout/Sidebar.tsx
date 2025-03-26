@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -140,14 +139,12 @@ const Sidebar = () => {
             />
           )}
           
-          {/* Bouton de configuration visible uniquement en mode configuration */}
           {isConfigMode && (
             <NavItem 
               to="/config" 
               icon={<Cog size={20} />} 
               text="Configuration" 
               isCollapsed={isCollapsed} 
-              highlightMode={true}
             />
           )}
         </nav>
@@ -193,7 +190,6 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, text, isCollapsed, highligh
           isActive 
             ? "bg-primary/10 text-primary" 
             : "text-foreground/70 hover:bg-muted hover:text-foreground",
-          highlightMode && "bg-primary/5 text-primary font-medium",
           isCollapsed && "justify-center"
         )
       }
