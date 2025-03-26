@@ -36,7 +36,7 @@ export const RefreshIntervalSlider: React.FC<RefreshIntervalSliderProps> = ({
         />
         
         <p className="text-sm text-muted-foreground">
-          Fréquence de vérification de l'état des écrans sur la page d'aperçu (synchronisé avec le champ en secondes).
+          Fréquence de vérification de l'état des écrans sur la page d'aperçu.
         </p>
       </div>
     </div>
