@@ -5,7 +5,7 @@ import { Content, Screen } from '@/types';
 import { ArrowLeft, ExternalLink, RefreshCw, Server, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { screenServerService } from '@/services/screenServerReal';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -24,11 +24,7 @@ const PreviewPage = () => {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
-        toast({
-          title: "Erreur",
-          description: `Impossible de passer en plein écran: ${err.message}`,
-          variant: "destructive",
-        });
+        toast.error(`Impossible de passer en plein écran: ${err.message}`);
       });
       setIsFullscreen(true);
     } else {
@@ -59,16 +55,13 @@ const PreviewPage = () => {
         setIsRefreshing(false);
       }, 1000);
       
-      toast({
-        title: "Rafraîchissement terminé",
-        description: "L'état des écrans a été actualisé",
+      toast.success("Rafraîchissement terminé", {
+        description: "L'état des écrans a été actualisé"
       });
     } catch (error) {
       console.error("Erreur lors du rafraîchissement:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de rafraîchir l'état des écrans",
-        variant: "destructive",
+      toast.error("Erreur", {
+        description: "Impossible de rafraîchir l'état des écrans"
       });
       setIsRefreshing(false);
     }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore, initializeScreens } from '@/store';
@@ -22,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PlusCircle, MonitorPlay, Search, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { screenServerService } from '@/services/screenServerReal';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -38,6 +37,7 @@ const ScreensPage = () => {
   const assignContentToScreen = useAppStore((state) => state.assignContentToScreen);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
   const apiUrl = useAppStore((state) => state.apiUrl);
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const isLoadingScreens = useAppStore((state) => state.isLoadingScreens);
   const loadScreens = useAppStore((state) => state.loadScreens);
   
@@ -72,7 +72,7 @@ const ScreensPage = () => {
       if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
       
       // Update API URL with store values
-      screenServerService.updateApiBaseUrl(apiUrl, useAppStore.getState().baseIpAddress);
+      screenServerService.updateApiBaseUrl(apiUrl, baseIpAddress);
       
       const response = await fetch(`${apiUrl}/api/content`);
       if (!response.ok) {
@@ -96,10 +96,7 @@ const ScreensPage = () => {
   
   const handleAddScreen = async () => {
     if (newScreenName.trim() === '') {
-      toast({
-        title: 'Le nom de l\'écran ne peut pas être vide',
-        variant: "destructive"
-      });
+      toast.error('Le nom de l\'écran ne peut pas être vide');
       return;
     }
     
@@ -107,22 +104,17 @@ const ScreensPage = () => {
     if (screen) {
       setNewScreenName('');
       setIsAddDialogOpen(false);
-      toast({
-        title: `Écran "${newScreenName}" ajouté avec succès`,
-      });
+      toast.success(`Écran "${newScreenName}" ajouté avec succès`);
       
       // Make sure to update the API URL after adding a screen
-      screenServerService.updateApiBaseUrl();
+      screenServerService.updateApiBaseUrl(apiUrl, baseIpAddress);
     }
   };
   
   const handleUpdateScreen = async () => {
     if (!currentScreen) return;
     if (newScreenName.trim() === '') {
-      toast({
-        title: 'Le nom de l\'écran ne peut pas être vide',
-        variant: "destructive"
-      });
+      toast.error('Le nom de l\'écran ne peut pas être vide');
       return;
     }
     
@@ -131,9 +123,7 @@ const ScreensPage = () => {
       setCurrentScreen(null);
       setNewScreenName('');
       setIsEditDialogOpen(false);
-      toast({
-        title: 'Écran mis à jour avec succès',
-      });
+      toast.success('Écran mis à jour avec succès');
     }
   };
   
@@ -150,9 +140,7 @@ const ScreensPage = () => {
     // Supprimer l'écran du serveur et du store
     const success = await removeScreen(id);
     if (success) {
-      toast({
-        title: 'Écran supprimé avec succès',
-      });
+      toast.success('Écran supprimé avec succès');
     }
   };
   
@@ -181,31 +169,26 @@ const ScreensPage = () => {
             const success = await screenServerService.updateServer(currentScreen.id, currentScreen.port, content);
             
             if (success) {
-              toast({
-                title: 'Serveur mis à jour',
-                description: `Le serveur pour l'écran "${currentScreen.name}" a été mis à jour avec le nouveau contenu.`,
+              toast.success('Serveur mis à jour', {
+                description: `Le serveur pour l'écran "${currentScreen.name}" a été mis à jour avec le nouveau contenu.`
               });
             } else {
-              toast({
-                title: 'Erreur de mise à jour',
-                description: `Impossible de mettre à jour le serveur pour l'écran "${currentScreen.name}".`,
-                variant: "destructive",
+              toast.error('Erreur de mise à jour', {
+                description: `Impossible de mettre à jour le serveur pour l'écran "${currentScreen.name}".`
               });
             }
           } else if (isServerRunning) {
             // Si aucun contenu n'est assigné mais que le serveur est en cours d'exécution, l'arrêter
             screenServerService.stopServer(currentScreen.id);
-            toast({
-              title: 'Serveur arrêté',
-              description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`,
+            toast.info('Serveur arrêté', {
+              description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`
             });
           }
         } else if (isServerRunning) {
           // Si le nouveau contentId est undefined et que le serveur est en cours d'exécution, l'arrêter
           screenServerService.stopServer(currentScreen.id);
-          toast({
-            title: 'Serveur arrêté',
-            description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`,
+          toast.info('Serveur arrêté', {
+            description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`
           });
         }
       }
@@ -213,9 +196,7 @@ const ScreensPage = () => {
       setCurrentScreen(null);
       setSelectedContentId('none');
       setIsAssignDialogOpen(false);
-      toast({
-        title: 'Contenu assigné avec succès',
-      });
+      toast.success('Contenu assigné avec succès');
     }
   };
   
