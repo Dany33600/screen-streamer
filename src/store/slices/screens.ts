@@ -1,20 +1,17 @@
 
-import { create } from 'zustand';
-import { v4 as uuidv4 } from 'uuid';
 import { Screen } from '@/types';
-import { screenService } from '@/services/screenService';
-import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ScreensState {
   screens: Screen[];
   isLoadingScreens: boolean;
   
   // Actions
-  loadScreens: () => Promise<void>;
-  addScreen: (name: string) => Promise<Screen | null>;
-  updateScreen: (id: string, data: Partial<Screen>) => Promise<Screen | null>;
+  addScreen: (name: string) => Promise<Screen>;
+  updateScreen: (id: string, data: Partial<Screen>) => Promise<Screen>;
   removeScreen: (id: string) => Promise<boolean>;
-  assignContentToScreen: (screenId: string, contentId: string | undefined) => Promise<Screen | null>;
+  assignContentToScreen: (screenId: string, contentId?: string) => Promise<Screen>;
+  loadScreens: () => Promise<Screen[]>;
 }
 
 export const createScreensSlice = (
@@ -25,147 +22,192 @@ export const createScreensSlice = (
   isLoadingScreens: false,
   
   loadScreens: async () => {
-    set({ isLoadingScreens: true });
     try {
-      const state = get();
-      const screens = await screenService.getAllScreens(state.apiUrl, state.baseIpAddress);
+      set((state) => ({ 
+        ...state,
+        isLoadingScreens: true 
+      }));
       
-      if (screens && screens.length > 0) {
-        set({ screens });
-        console.log(`Chargé ${screens.length} écrans depuis le serveur`);
-      } else {
-        console.log('Aucun écran trouvé sur le serveur');
+      // Make API call to load screens
+      const apiUrl = get().apiUrl;
+      
+      if (!apiUrl) {
+        console.warn("Aucune URL d'API configurée, impossible de charger les écrans");
+        set((state) => ({ 
+          ...state, 
+          isLoadingScreens: false 
+        }));
+        return [];
       }
+      
+      const response = await fetch(`${apiUrl}/api/screens`);
+      
+      if (!response.ok) {
+        throw new Error(`Error loading screens: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        set((state) => ({ 
+          ...state, 
+          screens: data.screens || [] 
+        }));
+        return data.screens || [];
+      }
+      
+      return [];
     } catch (error) {
-      console.error('Erreur lors du chargement des écrans:', error);
-      toast.error('Impossible de charger les écrans depuis le serveur');
+      console.error('Error loading screens:', error);
+      return [];
     } finally {
-      set({ isLoadingScreens: false });
+      set((state) => ({ 
+        ...state, 
+        isLoadingScreens: false 
+      }));
     }
   },
   
   addScreen: async (name) => {
+    // Get the next available port from config slice
+    const basePort = get().basePort || 5550;
+    const screens = get().screens;
+    
+    // Find the highest port currently in use and add 1 for the new screen
+    const highestPort = screens.reduce(
+      (maxPort, screen) => (screen.port > maxPort ? screen.port : maxPort),
+      basePort - 1
+    );
+    
+    const newPort = highestPort + 1;
+    
+    // Use the configured base IP address
+    const baseIpAddress = get().baseIpAddress || '127.0.0.1';
+    
+    // Create a new screen object
+    const newScreen: Screen = {
+      id: uuidv4(),
+      name,
+      ipAddress: baseIpAddress,
+      port: newPort,
+      status: 'offline',
+      createdAt: Date.now(),
+    };
+    
     try {
-      const state = get();
-      const newPort = state.basePort + state.screens.length;
+      // Make API call to save the screen
+      const apiUrl = get().apiUrl;
       
-      const newScreen: Screen = {
-        id: uuidv4(),
-        name,
-        port: newPort,
-        ipAddress: state.baseIpAddress,
-        status: 'offline',
-        createdAt: Date.now(),
-      };
-      
-      // Sauvegarder l'écran sur le serveur
-      const savedScreen = await screenService.saveScreen(newScreen, state.apiUrl, state.baseIpAddress);
-      
-      if (savedScreen) {
-        // Mettre à jour l'état local uniquement après une sauvegarde réussie
-        set((state: any) => ({
-          screens: [...state.screens, savedScreen],
-        }));
+      if (apiUrl) {
+        const response = await fetch(`${apiUrl}/api/screens`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ screen: newScreen }),
+        });
         
-        toast.success(`L'écran "${name}" a été ajouté avec succès`);
-        
-        return savedScreen;
-      } else {
-        throw new Error('Échec de la sauvegarde de l\'écran sur le serveur');
+        if (!response.ok) {
+          console.error(`Error creating screen: ${response.statusText}`);
+        }
       }
+      
+      // Update the local state
+      set((state) => ({
+        ...state,
+        screens: [...state.screens, newScreen],
+      }));
+      
+      return newScreen;
     } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'écran:', error);
-      toast.error('Impossible d\'ajouter l\'écran');
-      return null;
+      console.error('Error adding screen:', error);
+      // Add to local state anyway
+      set((state) => ({
+        ...state,
+        screens: [...state.screens, newScreen],
+      }));
+      return newScreen;
     }
   },
   
   updateScreen: async (id, data) => {
     try {
-      const state = get();
-      // Mettre à jour l'écran sur le serveur
-      const updatedScreen = await screenService.updateScreen(id, data, state.apiUrl, state.baseIpAddress);
+      // Update the screen on the API
+      const apiUrl = get().apiUrl;
       
-      if (updatedScreen) {
-        // Mettre à jour l'état local uniquement après une mise à jour réussie
-        set((state: any) => ({
-          screens: state.screens.map((screen: Screen) =>
-            screen.id === id ? updatedScreen : screen
-          ),
-        }));
-        
-        toast.success(`L'écran a été mis à jour avec succès`);
-        
-        return updatedScreen;
-      } else {
-        throw new Error('Échec de la mise à jour de l\'écran sur le serveur');
+      if (apiUrl) {
+        await fetch(`${apiUrl}/api/screens/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ data }),
+        });
       }
+      
+      // Update the local state
+      set((state) => ({
+        ...state,
+        screens: state.screens.map((screen) =>
+          screen.id === id ? { ...screen, ...data } : screen
+        ),
+      }));
+      
+      // Return the updated screen
+      return get().screens.find((screen) => screen.id === id);
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de l\'écran:', error);
-      toast.error('Impossible de mettre à jour l\'écran');
-      return null;
+      console.error('Error updating screen:', error);
+      // Still update the local state
+      set((state) => ({
+        ...state,
+        screens: state.screens.map((screen) =>
+          screen.id === id ? { ...screen, ...data } : screen
+        ),
+      }));
+      
+      return get().screens.find((screen) => screen.id === id);
     }
   },
   
   removeScreen: async (id) => {
     try {
-      const state = get();
-      // Supprimer l'écran du serveur
-      const success = await screenService.deleteScreen(id, state.apiUrl, state.baseIpAddress);
+      // Delete the screen on the API
+      const apiUrl = get().apiUrl;
       
-      if (success) {
-        // Mettre à jour l'état local uniquement après une suppression réussie
-        set((state: any) => ({
-          screens: state.screens.filter((screen: Screen) => screen.id !== id),
-        }));
-        
-        toast.success('L\'écran a été supprimé avec succès');
-        
-        return true;
-      } else {
-        throw new Error('Échec de la suppression de l\'écran du serveur');
+      if (apiUrl) {
+        await fetch(`${apiUrl}/api/screens/${id}`, {
+          method: 'DELETE',
+        });
       }
+      
+      // Update the local state
+      set((state) => ({
+        ...state,
+        screens: state.screens.filter((screen) => screen.id !== id),
+      }));
+      
+      return true;
     } catch (error) {
-      console.error('Erreur lors de la suppression de l\'écran:', error);
-      toast.error('Impossible de supprimer l\'écran');
-      return false;
+      console.error('Error removing screen:', error);
+      
+      // Still update the local state
+      set((state) => ({
+        ...state,
+        screens: state.screens.filter((screen) => screen.id !== id),
+      }));
+      
+      return true;
     }
   },
   
   assignContentToScreen: async (screenId, contentId) => {
     try {
-      // Récupérer l'écran actuel
-      const currentScreen = get().screens.find((screen: Screen) => screen.id === screenId);
-      const state = get();
-      
-      if (!currentScreen) {
-        throw new Error('Écran non trouvé');
-      }
-      
-      // Mettre à jour l'écran sur le serveur
-      const updatedScreen = await screenService.updateScreen(
-        screenId, 
-        { contentId }, 
-        state.apiUrl, 
-        state.baseIpAddress
-      );
-      
-      if (updatedScreen) {
-        // Mettre à jour l'état local uniquement après une mise à jour réussie
-        set((state: any) => ({
-          screens: state.screens.map((screen: Screen) =>
-            screen.id === screenId ? updatedScreen : screen
-          ),
-        }));
-        
-        return updatedScreen;
-      } else {
-        throw new Error('Échec de l\'assignation du contenu à l\'écran sur le serveur');
-      }
+      // Update the screen data
+      const updatedScreen = await get().updateScreen(screenId, { contentId });
+      return updatedScreen;
     } catch (error) {
-      console.error('Erreur lors de l\'assignation du contenu à l\'écran:', error);
-      toast.error('Impossible d\'assigner le contenu à l\'écran');
-      return null;
+      console.error('Error assigning content to screen:', error);
+      throw error;
     }
   },
 });

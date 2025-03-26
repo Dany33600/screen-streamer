@@ -47,43 +47,60 @@ export const createConfigSlice = (
     preview: true,
   },
   
-  setBasePort: (port) => set({ basePort: port }),
+  setBasePort: (port) => set((state) => ({ 
+    ...state, 
+    basePort: port 
+  })),
   
-  setBaseIpAddress: (ipAddress) => set({ baseIpAddress: ipAddress }),
+  setBaseIpAddress: (ipAddress) => set((state) => ({ 
+    ...state, 
+    baseIpAddress: ipAddress 
+  })),
   
-  toggleConfigMode: () => set((state: any) => {
+  toggleConfigMode: () => set((state) => {
     // If currently in config mode, reset pin verification when leaving
     if (state.isConfigMode) {
-      return { isConfigMode: false, isPinVerified: false };
+      return { ...state, isConfigMode: false, isPinVerified: false };
     }
     // If verified, can enter config mode
     if (state.isPinVerified) {
-      return { isConfigMode: true };
+      return { ...state, isConfigMode: true };
     }
     // Otherwise, don't change the mode (PIN will be requested by UI)
     return state;
   }),
   
-  setApiUrl: (url) => set({ apiUrl: url }),
+  setApiUrl: (url) => set((state) => ({ 
+    ...state, 
+    apiUrl: url 
+  })),
   
-  setConfigPin: (pin) => set({ configPin: pin }),
+  setConfigPin: (pin) => set((state) => ({ 
+    ...state, 
+    configPin: pin 
+  })),
   
   verifyPin: (pin) => {
     const state = get();
     const isValid = pin === state.configPin;
     if (isValid) {
-      set({ isPinVerified: true, isConfigMode: true });
+      set((state) => ({ ...state, isPinVerified: true, isConfigMode: true }));
     }
     return isValid;
   },
   
-  resetPinVerification: () => set({ isPinVerified: false }),
+  resetPinVerification: () => set((state) => ({ 
+    ...state, 
+    isPinVerified: false 
+  })),
   
-  setRefreshInterval: (minutes) => set({ 
+  setRefreshInterval: (minutes) => set((state) => ({ 
+    ...state, 
     refreshInterval: Math.min(Math.max(minutes, 1), 60) // Ensure value is between 1-60
-  }),
+  })),
   
-  toggleMenuOption: (option, value) => set((state: any) => ({
+  toggleMenuOption: (option, value) => set((state) => ({
+    ...state,
     menuOptions: {
       ...state.menuOptions,
       [option]: value,
