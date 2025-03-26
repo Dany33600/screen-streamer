@@ -1,0 +1,11 @@
+ping en local host à corriger dans fichier vite.config.ts 
+add screen dashboard bouton vers 404
+on peut modifier,supprimer un écran en mode utilisation mais on ne peut pas ouvrir le contenu dans un onglet
+import de URL Google Slides non fonctionnel
+playlist non fonctionnel
+possibilité d'edit un fichier htlm directement depuis la page de contenus
+bug d'affichage sur l'apercu des screens
+détéction d'ip non fonctionnel dans les réglages
+update des routes du backend
+code pin en mémoire cache
+bouton détails sur Écrans récents => 404 not found
