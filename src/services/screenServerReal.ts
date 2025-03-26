@@ -1,9 +1,13 @@
-
 import { Content } from '@/types';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { htmlGenerator } from './htmlGenerator';
 import { useAppStore } from '@/store';
+
+interface ApiUrlConfig {
+  apiUrl: string;
+  baseIpAddress?: string;
+}
 
 interface ServerInstance {
   id: string;
@@ -35,39 +39,26 @@ class ScreenServerRealService {
   }
   
   // Method to update the API base URL (can be called when the API URL changes)
-  public updateApiBaseUrl(customApiUrl?: string): void {
-    // Get the current state from the store
-    const state = useAppStore.getState();
-    const configuredApiUrl = state.apiUrl;
-    const baseIpAddress = state.baseIpAddress;
-    
-    if (customApiUrl) {
-      // Remove trailing slash if present
-      this.apiBaseUrl = customApiUrl.endsWith('/') 
-        ? customApiUrl.slice(0, -1) + '/api'
-        : customApiUrl + '/api';
-    } else if (configuredApiUrl) {
-      // Use the API URL from the store, replacing localhost with the actual IP address
-      const formattedApiUrl = configuredApiUrl.replace('localhost', baseIpAddress);
+  public updateApiBaseUrl(config: ApiUrlConfig): void {
+    const { apiUrl, baseIpAddress } = config;
+    if (apiUrl) {
+      // Replace 'localhost' with the base IP address if provided
+      const formattedApiUrl = apiUrl.replace('localhost', baseIpAddress || 'localhost');
       
       this.apiBaseUrl = formattedApiUrl.endsWith('/') 
         ? formattedApiUrl.slice(0, -1)
         : formattedApiUrl;
         
-      console.log(`API URL configurée: ${this.apiBaseUrl}`);
-      
-      // S'assurer que l'URL se termine par '/api'
+      // Make sure the URL ends with '/api'
       if (!this.apiBaseUrl.endsWith('/api')) {
         this.apiBaseUrl = this.apiBaseUrl + '/api';
       }
+      
+      console.log(`API URL configurée: ${this.apiBaseUrl}`);
     } else {
-      // Fallback: determine the API URL based on the current window location
-      const hostname = baseIpAddress || window.location.hostname; // Obtenir l'IP du serveur actuel
-      const port = 5000; // Default API port
-      this.apiBaseUrl = `http://${hostname}:${port}/api`;
+      // Fallback to a default API URL
+      console.warn('Aucune URL d\'API fournie, utilisation de l\'URL par défaut');
     }
-    
-    console.log(`API Base URL updated to: ${this.apiBaseUrl}`);
   }
   
   // Vérifie si un contenu existe déjà pour éviter les doublons

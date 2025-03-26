@@ -71,8 +71,11 @@ const ScreensPage = () => {
     queryFn: async () => {
       if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
       
-      // Update API URL with store values
-      screenServerService.updateApiBaseUrl(apiUrl, baseIpAddress);
+      // Update API URL with store values - Fix: use object parameter
+      screenServerService.updateApiBaseUrl({
+        apiUrl,
+        baseIpAddress
+      });
       
       const response = await fetch(`${apiUrl}/api/content`);
       if (!response.ok) {
@@ -106,8 +109,11 @@ const ScreensPage = () => {
       setIsAddDialogOpen(false);
       toast.success(`Écran "${newScreenName}" ajouté avec succès`);
       
-      // Make sure to update the API URL after adding a screen
-      screenServerService.updateApiBaseUrl(apiUrl, baseIpAddress);
+      // Make sure to update the API URL after adding a screen - Fix: use object parameter
+      screenServerService.updateApiBaseUrl({
+        apiUrl,
+        baseIpAddress
+      });
     }
   };
   
@@ -204,9 +210,12 @@ const ScreensPage = () => {
     setCurrentScreen(screen);
     setSelectedContentId(screen.contentId || 'none');
     
-    // Use store values to update API URL
+    // Use store values to update API URL - Fix: use object parameter
     const state = useAppStore.getState();
-    screenServerService.updateApiBaseUrl(state.apiUrl, state.baseIpAddress);
+    screenServerService.updateApiBaseUrl({
+      apiUrl: state.apiUrl,
+      baseIpAddress: state.baseIpAddress
+    });
     
     // Refresh content data before opening the dialog
     refetchContents();
@@ -217,7 +226,11 @@ const ScreensPage = () => {
   const handleRetry = () => {
     setIsRetrying(true);
     const state = useAppStore.getState();
-    screenServerService.updateApiBaseUrl(state.apiUrl, state.baseIpAddress);
+    // Fix: use object parameter
+    screenServerService.updateApiBaseUrl({
+      apiUrl: state.apiUrl,
+      baseIpAddress: state.baseIpAddress
+    });
     loadScreens();
     refetchContents();
   };

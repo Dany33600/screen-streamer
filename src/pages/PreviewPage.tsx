@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -49,7 +50,11 @@ const PreviewPage = () => {
     
     try {
       const state = useAppStore.getState();
-      screenServerService.updateApiBaseUrl(state.apiUrl, state.baseIpAddress);
+      // Fix: Pass apiUrl as a single parameter object instead of two separate parameters
+      screenServerService.updateApiBaseUrl({
+        apiUrl: state.apiUrl,
+        baseIpAddress: state.baseIpAddress
+      });
       
       setTimeout(() => {
         setIsRefreshing(false);
