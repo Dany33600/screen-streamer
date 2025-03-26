@@ -1,4 +1,3 @@
-
 export type ContentType = 'image' | 'video' | 'powerpoint' | 'pdf' | 'html' | 'google-slides';
 
 export interface Content {

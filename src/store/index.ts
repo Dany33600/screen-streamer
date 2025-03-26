@@ -31,7 +31,7 @@ interface AppState {
   assignContentToScreen: (screenId: string, contentId: string | undefined) => void;
   
   // Content actions
-  addContent: (file: File, type: ContentType, url: string, contentId?: string, thumbnail?: string) => void;
+  addContent: (file: File | null, type: ContentType, url: string, contentId?: string, content?: Partial<Content>) => void;
   updateContent: (id: string, data: Partial<Content>) => void;
   removeContent: (id: string) => void;
   
@@ -112,20 +112,20 @@ export const useAppStore = create<AppState>()(
       })),
       
       // Content actions
-      addContent: (file, type, url, contentId, thumbnail) => set((state) => {
+      addContent: (file, type, url, contentId, content) => set((state) => {
         // Utiliser le contentId fourni par le serveur ou générer un nouvel ID
-        const id = contentId || `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+        const id = contentId || (file ? `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}` : uuidv4());
         
         return {
           contents: [
             ...state.contents,
             {
               id,
-              name: file.name,
+              name: file ? file.name : content?.name || 'Nouveau contenu',
               type,
               url,
               file,
-              thumbnail,
+              thumbnail: content?.thumbnail,
               createdAt: Date.now(),
             },
           ],

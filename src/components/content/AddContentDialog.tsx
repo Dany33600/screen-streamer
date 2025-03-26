@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +35,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
   open, 
   onOpenChange 
 }) => {
-  // États existants
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileURL, setSelectedFileURL] = useState<string>('');
   const [contentName, setContentName] = useState('');
@@ -48,7 +46,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
   const apiUrl = useAppStore(state => state.apiUrl);
   const baseIpAddress = useAppStore(state => state.baseIpAddress);
   
-  // Nouvel état pour l'onglet actif et l'URL Google Slides
   const [activeTab, setActiveTab] = useState<'file' | 'link'>('file');
   const [googleSlidesUrl, setGoogleSlidesUrl] = useState<string>('');
   
@@ -63,7 +60,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
     setContentName(file.name);
     setUploadError(null);
     
-    // Auto-detect content type
     const extension = file.name.split('.').pop()?.toLowerCase() || '';
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) {
       setContentType('image');
@@ -115,7 +111,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
           return;
         }
         
-        // Add to store with the URL and contentId from server
         addContent(selectedFile, contentType, result.url, result.contentId);
         
         resetContentForm();
@@ -128,13 +123,11 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
         toast.error('Une erreur est survenue lors de l\'ajout du contenu');
       }
     } else {
-      // Gestion de l'ajout par lien Google Slides
       if (!googleSlidesUrl) {
         toast.error("Veuillez entrer une URL Google Slides");
         return;
       }
       
-      // Vérification basique du format URL Google Slides
       if (!isValidGoogleSlidesUrl(googleSlidesUrl)) {
         toast.error("L'URL ne semble pas être une URL Google Slides valide");
         return;
@@ -148,22 +141,15 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
       try {
         setUploadError(null);
         
-        // Préparation du lien d'intégration Google Slides
         const embeddableUrl = convertToEmbeddableGoogleSlidesUrl(googleSlidesUrl);
         
-        // Générer un ID unique pour ce contenu
         const contentId = uuidv4();
         
-        // Ajouter au store sans télécharger de fichier
         const newContent = {
-          id: contentId,
           name: contentName,
-          type: 'google-slides' as ContentType,
-          url: embeddableUrl,
-          createdAt: Date.now()
+          thumbnail: undefined
         };
         
-        // Enregistrer dans le store
         addContent(null, 'google-slides', embeddableUrl, contentId, newContent);
         
         resetContentForm();
@@ -178,27 +164,21 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({
     }
   };
 
-  // Format the display URL to show the actual IP being used
   const getDisplayApiUrl = () => {
     if (!apiUrl) return "Non configurée";
     return apiUrl.replace('localhost', baseIpAddress);
   };
 
-  // Fonction pour vérifier si l'URL est une URL Google Slides valide
   const isValidGoogleSlidesUrl = (url: string): boolean => {
     return url.includes('docs.google.com/presentation') || 
            url.includes('drive.google.com') || 
            url.includes('slides.google.com');
   };
 
-  // Fonction pour convertir l'URL Google Slides en URL embarquable
   const convertToEmbeddableGoogleSlidesUrl = (url: string): string => {
-    // Format de base pour une URL intégrable
     let embeddableUrl = url;
     
-    // Si l'URL est un lien de partage standard, convertir en format embarquable
     if (url.includes('docs.google.com/presentation/d/')) {
-      // Extraire l'ID de la présentation
       const matches = url.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/);
       if (matches && matches[1]) {
         const presentationId = matches[1];
