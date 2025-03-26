@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -9,21 +9,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Content, Screen } from '@/types';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store';
-import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { screenServerService } from '@/services/screenServerReal';
 import DisplayOptionsDialog from '@/components/screens/DisplayOptionsDialog';
 import { useQuery } from '@tanstack/react-query';
+import DialogAlerts from './DialogAlerts';
+import ScreenSelectionComponent from './ScreenSelectionComponent';
+import ContentSelectionComponent from './ContentSelectionComponent';
 
 interface AssignContentDialogProps {
   open: boolean;
@@ -211,86 +205,29 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
             </DialogDescription>
           </DialogHeader>
           
-          {serverNotConfigured && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              <AlertDescription>
-                Le serveur API n'est pas configuré. Veuillez configurer l'URL de l'API dans les paramètres.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {noScreens && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              <AlertDescription>
-                Aucun écran n'est disponible. Veuillez d'abord ajouter un écran.
-              </AlertDescription>
-            </Alert>
-          )}
+          <DialogAlerts 
+            serverNotConfigured={serverNotConfigured}
+            noScreens={noScreens}
+          />
           
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="screen">Écran</Label>
-              <Select value={selectedScreenId} onValueChange={setSelectedScreenId} disabled={noScreens}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un écran" />
-                </SelectTrigger>
-                <SelectContent>
-                  {screens.map((screen) => (
-                    <SelectItem key={screen.id} value={screen.id}>
-                      {screen.name} ({screen.ipAddress}:{screen.port})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <ScreenSelectionComponent
+              screens={screens}
+              selectedScreenId={selectedScreenId}
+              setSelectedScreenId={setSelectedScreenId}
+              disabled={noScreens}
+            />
             
-            <div className="space-y-2">
-              <Label htmlFor="content">Contenu</Label>
-              {isLoadingContents || isRetrying ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Chargement des contenus...
-                </div>
-              ) : contentsError ? (
-                <div>
-                  <Alert variant="destructive" className="mb-2">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    <AlertDescription>
-                      Erreur lors du chargement des contenus. Veuillez vérifier la connexion au serveur.
-                    </AlertDescription>
-                  </Alert>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full flex items-center justify-center gap-2"
-                    onClick={handleRetry}
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Réessayer
-                  </Button>
-                </div>
-              ) : (
-                <Select 
-                  value={selectedContentId} 
-                  onValueChange={setSelectedContentId}
-                  disabled={noScreens || serverNotConfigured}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un contenu" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucun contenu</SelectItem>
-                    {serverContents.map((content) => (
-                      <SelectItem key={content.id} value={content.id}>
-                        {content.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+            <ContentSelectionComponent
+              isLoadingContents={isLoadingContents}
+              isRetrying={isRetrying}
+              contentsError={contentsError as Error | null}
+              serverContents={serverContents}
+              selectedContentId={selectedContentId}
+              setSelectedContentId={setSelectedContentId}
+              handleRetry={handleRetry}
+              disabled={noScreens || serverNotConfigured}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
