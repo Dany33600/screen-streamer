@@ -11,7 +11,8 @@ import {
   PlaySquare,
   ChevronLeft,
   ChevronRight,
-  Lock
+  Lock,
+  Cog
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PinVerificationDialog from '../config/PinVerificationDialog';
@@ -138,6 +139,17 @@ const Sidebar = () => {
               isCollapsed={isCollapsed} 
             />
           )}
+          
+          {/* Bouton de configuration visible uniquement en mode configuration */}
+          {isConfigMode && (
+            <NavItem 
+              to="/config" 
+              icon={<Cog size={20} />} 
+              text="Configuration" 
+              isCollapsed={isCollapsed} 
+              highlightMode={true}
+            />
+          )}
         </nav>
       </div>
 
@@ -168,9 +180,10 @@ interface NavItemProps {
   icon: React.ReactNode;
   text: string;
   isCollapsed: boolean;
+  highlightMode?: boolean;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, text, isCollapsed }) => {
+const NavItem: React.FC<NavItemProps> = ({ to, icon, text, isCollapsed, highlightMode = false }) => {
   return (
     <NavLink
       to={to}
@@ -180,6 +193,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, text, isCollapsed }) => {
           isActive 
             ? "bg-primary/10 text-primary" 
             : "text-foreground/70 hover:bg-muted hover:text-foreground",
+          highlightMode && "bg-primary/5 text-primary font-medium",
           isCollapsed && "justify-center"
         )
       }
