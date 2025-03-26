@@ -1,7 +1,10 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { Content, Screen, Playlist, ContentType } from '@/types';
+import { screenService } from '@/services/screenService';
+import { toast } from 'sonner';
 
 interface AppState {
   screens: Screen[];
@@ -14,6 +17,7 @@ interface AppState {
   configPin: string;
   isPinVerified: boolean;
   refreshInterval: number; // Minutes between preview refreshes
+  isLoadingScreens: boolean;
   
   // Menu visibility options
   menuOptions: {
@@ -25,10 +29,11 @@ interface AppState {
   };
   
   // Screens actions
-  addScreen: (name: string) => void;
-  updateScreen: (id: string, data: Partial<Screen>) => void;
-  removeScreen: (id: string) => void;
-  assignContentToScreen: (screenId: string, contentId: string | undefined) => void;
+  loadScreens: () => Promise<void>;
+  addScreen: (name: string) => Promise<Screen | null>;
+  updateScreen: (id: string, data: Partial<Screen>) => Promise<Screen | null>;
+  removeScreen: (id: string) => Promise<boolean>;
+  assignContentToScreen: (screenId: string, contentId: string | undefined) => Promise<Screen | null>;
   
   // Content actions
   addContent: (file: File | null, type: ContentType, url: string, contentId?: string, content?: Partial<Content>) => void;
@@ -48,7 +53,7 @@ interface AppState {
   setConfigPin: (pin: string) => void;
   verifyPin: (pin: string) => boolean;
   resetPinVerification: () => void;
-  setRefreshInterval: (minutes: number) => void; // New action to set refresh interval
+  setRefreshInterval: (minutes: number) => void;
   
   // Menu options actions
   toggleMenuOption: (option: keyof AppState['menuOptions'], value: boolean) => void;
@@ -67,6 +72,7 @@ export const useAppStore = create<AppState>()(
       configPin: '1234', // Default PIN
       isPinVerified: false,
       refreshInterval: 1, // Default to 1 minute
+      isLoadingScreens: false,
       
       // Default menu options - all enabled by default
       menuOptions: {
@@ -78,38 +84,170 @@ export const useAppStore = create<AppState>()(
       },
       
       // Screens actions
-      addScreen: (name) => set((state) => {
-        const newPort = state.basePort + state.screens.length;
-        return {
-          screens: [
-            ...state.screens,
-            {
-              id: uuidv4(),
-              name,
-              port: newPort,
-              ipAddress: state.baseIpAddress,
-              status: 'offline',
-              createdAt: Date.now(),
-            },
-          ],
-        };
-      }),
+      loadScreens: async () => {
+        set({ isLoadingScreens: true });
+        try {
+          const screens = await screenService.getAllScreens();
+          
+          if (screens && screens.length > 0) {
+            set({ screens });
+            console.log(`Chargé ${screens.length} écrans depuis le serveur`);
+          } else {
+            console.log('Aucun écran trouvé sur le serveur');
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement des écrans:', error);
+          toast({
+            title: 'Erreur de chargement',
+            description: 'Impossible de charger les écrans depuis le serveur',
+            variant: 'destructive',
+          });
+        } finally {
+          set({ isLoadingScreens: false });
+        }
+      },
       
-      updateScreen: (id, data) => set((state) => ({
-        screens: state.screens.map((screen) =>
-          screen.id === id ? { ...screen, ...data } : screen
-        ),
-      })),
+      addScreen: async (name) => {
+        try {
+          const state = get();
+          const newPort = state.basePort + state.screens.length;
+          
+          const newScreen: Screen = {
+            id: uuidv4(),
+            name,
+            port: newPort,
+            ipAddress: state.baseIpAddress,
+            status: 'offline',
+            createdAt: Date.now(),
+          };
+          
+          // Sauvegarder l'écran sur le serveur
+          const savedScreen = await screenService.saveScreen(newScreen);
+          
+          if (savedScreen) {
+            // Mettre à jour l'état local uniquement après une sauvegarde réussie
+            set((state) => ({
+              screens: [...state.screens, savedScreen],
+            }));
+            
+            toast({
+              title: 'Écran ajouté',
+              description: `L'écran "${name}" a été ajouté avec succès`,
+            });
+            
+            return savedScreen;
+          } else {
+            throw new Error('Échec de la sauvegarde de l\'écran sur le serveur');
+          }
+        } catch (error) {
+          console.error('Erreur lors de l\'ajout de l\'écran:', error);
+          toast({
+            title: 'Erreur',
+            description: 'Impossible d\'ajouter l\'écran',
+            variant: 'destructive',
+          });
+          return null;
+        }
+      },
       
-      removeScreen: (id) => set((state) => ({
-        screens: state.screens.filter((screen) => screen.id !== id),
-      })),
+      updateScreen: async (id, data) => {
+        try {
+          // Mettre à jour l'écran sur le serveur
+          const updatedScreen = await screenService.updateScreen(id, data);
+          
+          if (updatedScreen) {
+            // Mettre à jour l'état local uniquement après une mise à jour réussie
+            set((state) => ({
+              screens: state.screens.map((screen) =>
+                screen.id === id ? updatedScreen : screen
+              ),
+            }));
+            
+            toast({
+              title: 'Écran mis à jour',
+              description: `L'écran a été mis à jour avec succès`,
+            });
+            
+            return updatedScreen;
+          } else {
+            throw new Error('Échec de la mise à jour de l\'écran sur le serveur');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la mise à jour de l\'écran:', error);
+          toast({
+            title: 'Erreur',
+            description: 'Impossible de mettre à jour l\'écran',
+            variant: 'destructive',
+          });
+          return null;
+        }
+      },
       
-      assignContentToScreen: (screenId, contentId) => set((state) => ({
-        screens: state.screens.map((screen) =>
-          screen.id === screenId ? { ...screen, contentId } : screen
-        ),
-      })),
+      removeScreen: async (id) => {
+        try {
+          // Supprimer l'écran du serveur
+          const success = await screenService.deleteScreen(id);
+          
+          if (success) {
+            // Mettre à jour l'état local uniquement après une suppression réussie
+            set((state) => ({
+              screens: state.screens.filter((screen) => screen.id !== id),
+            }));
+            
+            toast({
+              title: 'Écran supprimé',
+              description: 'L\'écran a été supprimé avec succès',
+            });
+            
+            return true;
+          } else {
+            throw new Error('Échec de la suppression de l\'écran du serveur');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la suppression de l\'écran:', error);
+          toast({
+            title: 'Erreur',
+            description: 'Impossible de supprimer l\'écran',
+            variant: 'destructive',
+          });
+          return false;
+        }
+      },
+      
+      assignContentToScreen: async (screenId, contentId) => {
+        try {
+          // Récupérer l'écran actuel
+          const currentScreen = get().screens.find(screen => screen.id === screenId);
+          
+          if (!currentScreen) {
+            throw new Error('Écran non trouvé');
+          }
+          
+          // Mettre à jour l'écran sur le serveur
+          const updatedScreen = await screenService.updateScreen(screenId, { contentId });
+          
+          if (updatedScreen) {
+            // Mettre à jour l'état local uniquement après une mise à jour réussie
+            set((state) => ({
+              screens: state.screens.map((screen) =>
+                screen.id === screenId ? updatedScreen : screen
+              ),
+            }));
+            
+            return updatedScreen;
+          } else {
+            throw new Error('Échec de l\'assignation du contenu à l\'écran sur le serveur');
+          }
+        } catch (error) {
+          console.error('Erreur lors de l\'assignation du contenu à l\'écran:', error);
+          toast({
+            title: 'Erreur',
+            description: 'Impossible d\'assigner le contenu à l\'écran',
+            variant: 'destructive',
+          });
+          return null;
+        }
+      },
       
       // Content actions
       addContent: (file, type, url, contentId, content) => set((state) => {
@@ -212,3 +350,15 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
+// Load screens from the server when the app starts
+// This function should be called at app initialization
+export const initializeScreens = async () => {
+  console.log('Initializing screens from server...');
+  
+  try {
+    await useAppStore.getState().loadScreens();
+  } catch (error) {
+    console.error('Error initializing screens:', error);
+  }
+};

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import { useAppStore } from '@/store';
+import { useAppStore, initializeScreens } from '@/store';
 import ScreenCard from '@/components/screens/ScreenCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,8 @@ const ScreensPage = () => {
   const assignContentToScreen = useAppStore((state) => state.assignContentToScreen);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
   const apiUrl = useAppStore((state) => state.apiUrl);
+  const isLoadingScreens = useAppStore((state) => state.isLoadingScreens);
+  const loadScreens = useAppStore((state) => state.loadScreens);
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -48,6 +50,14 @@ const ScreensPage = () => {
   const [selectedContentId, setSelectedContentId] = useState('none');
   const [serverContents, setServerContents] = useState<Content[]>([]);
   const [isRetrying, setIsRetrying] = useState(false);
+  
+  // Charger les écrans au montage du composant
+  useEffect(() => {
+    // Initialiser les écrans depuis le serveur au chargement de la page
+    loadScreens().catch(error => {
+      console.error('Erreur lors du chargement initial des écrans:', error);
+    });
+  }, [loadScreens]);
   
   // Récupérer la liste des contenus depuis le serveur
   const { 
@@ -83,7 +93,7 @@ const ScreensPage = () => {
     }
   }, [serverContentData]);
   
-  const handleAddScreen = () => {
+  const handleAddScreen = async () => {
     if (newScreenName.trim() === '') {
       toast({
         title: 'Le nom de l\'écran ne peut pas être vide',
@@ -92,18 +102,20 @@ const ScreensPage = () => {
       return;
     }
     
-    addScreen(newScreenName);
-    setNewScreenName('');
-    setIsAddDialogOpen(false);
-    toast({
-      title: `Écran "${newScreenName}" ajouté avec succès`,
-    });
-    
-    // Make sure to update the API URL after adding a screen
-    screenServerService.updateApiBaseUrl();
+    const screen = await addScreen(newScreenName);
+    if (screen) {
+      setNewScreenName('');
+      setIsAddDialogOpen(false);
+      toast({
+        title: `Écran "${newScreenName}" ajouté avec succès`,
+      });
+      
+      // Make sure to update the API URL after adding a screen
+      screenServerService.updateApiBaseUrl();
+    }
   };
   
-  const handleUpdateScreen = () => {
+  const handleUpdateScreen = async () => {
     if (!currentScreen) return;
     if (newScreenName.trim() === '') {
       toast({
@@ -113,13 +125,15 @@ const ScreensPage = () => {
       return;
     }
     
-    updateScreen(currentScreen.id, { name: newScreenName });
-    setCurrentScreen(null);
-    setNewScreenName('');
-    setIsEditDialogOpen(false);
-    toast({
-      title: 'Écran mis à jour avec succès',
-    });
+    const screen = await updateScreen(currentScreen.id, { name: newScreenName });
+    if (screen) {
+      setCurrentScreen(null);
+      setNewScreenName('');
+      setIsEditDialogOpen(false);
+      toast({
+        title: 'Écran mis à jour avec succès',
+      });
+    }
   };
   
   const handleEditScreen = (screen) => {
@@ -128,12 +142,17 @@ const ScreensPage = () => {
     setIsEditDialogOpen(true);
   };
   
-  const handleDeleteScreen = (id) => {
+  const handleDeleteScreen = async (id) => {
+    // Arrêter le serveur d'écran s'il est en cours d'exécution
     screenServerService.stopServer(id);
-    removeScreen(id);
-    toast({
-      title: 'Écran supprimé avec succès',
-    });
+    
+    // Supprimer l'écran du serveur et du store
+    const success = await removeScreen(id);
+    if (success) {
+      toast({
+        title: 'Écran supprimé avec succès',
+      });
+    }
   };
   
   const handleAssignContent = async () => {
@@ -143,58 +162,60 @@ const ScreensPage = () => {
     const contentId = selectedContentId === 'none' ? undefined : selectedContentId;
     
     // Mettre à jour l'écran avec le nouveau contenu
-    assignContentToScreen(currentScreen.id, contentId);
+    const updatedScreen = await assignContentToScreen(currentScreen.id, contentId);
     
-    // Vérifier si le serveur est en cours d'exécution
-    const isServerRunning = screenServerService.isServerRunning(currentScreen.id);
-    
-    // Si le contenu a changé et que le serveur est en cours d'exécution, le redémarrer
-    if (isServerRunning && previousContentId !== contentId) {
-      if (contentId) {
-        // Récupérer le nouveau contenu
-        const content = serverContents.find(c => c.id === contentId);
-        
-        if (content) {
-          // Redémarrer le serveur avec le nouveau contenu
-          console.log(`Redémarrage du serveur pour l'écran ${currentScreen.name} avec le nouveau contenu ${content.name}`);
-          const success = await screenServerService.updateServer(currentScreen.id, currentScreen.port, content);
+    if (updatedScreen) {
+      // Vérifier si le serveur est en cours d'exécution
+      const isServerRunning = screenServerService.isServerRunning(currentScreen.id);
+      
+      // Si le contenu a changé et que le serveur est en cours d'exécution, le redémarrer
+      if (isServerRunning && previousContentId !== contentId) {
+        if (contentId) {
+          // Récupérer le nouveau contenu
+          const content = serverContents.find(c => c.id === contentId);
           
-          if (success) {
+          if (content) {
+            // Redémarrer le serveur avec le nouveau contenu
+            console.log(`Redémarrage du serveur pour l'écran ${currentScreen.name} avec le nouveau contenu ${content.name}`);
+            const success = await screenServerService.updateServer(currentScreen.id, currentScreen.port, content);
+            
+            if (success) {
+              toast({
+                title: 'Serveur mis à jour',
+                description: `Le serveur pour l'écran "${currentScreen.name}" a été mis à jour avec le nouveau contenu.`,
+              });
+            } else {
+              toast({
+                title: 'Erreur de mise à jour',
+                description: `Impossible de mettre à jour le serveur pour l'écran "${currentScreen.name}".`,
+                variant: "destructive",
+              });
+            }
+          } else if (isServerRunning) {
+            // Si aucun contenu n'est assigné mais que le serveur est en cours d'exécution, l'arrêter
+            screenServerService.stopServer(currentScreen.id);
             toast({
-              title: 'Serveur mis à jour',
-              description: `Le serveur pour l'écran "${currentScreen.name}" a été mis à jour avec le nouveau contenu.`,
-            });
-          } else {
-            toast({
-              title: 'Erreur de mise à jour',
-              description: `Impossible de mettre à jour le serveur pour l'écran "${currentScreen.name}".`,
-              variant: "destructive",
+              title: 'Serveur arrêté',
+              description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`,
             });
           }
         } else if (isServerRunning) {
-          // Si aucun contenu n'est assigné mais que le serveur est en cours d'exécution, l'arrêter
+          // Si le nouveau contentId est undefined et que le serveur est en cours d'exécution, l'arrêter
           screenServerService.stopServer(currentScreen.id);
           toast({
             title: 'Serveur arrêté',
             description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`,
           });
         }
-      } else if (isServerRunning) {
-        // Si le nouveau contentId est undefined et que le serveur est en cours d'exécution, l'arrêter
-        screenServerService.stopServer(currentScreen.id);
-        toast({
-          title: 'Serveur arrêté',
-          description: `Le serveur pour l'écran "${currentScreen.name}" a été arrêté car aucun contenu n'est assigné.`,
-        });
       }
+      
+      setCurrentScreen(null);
+      setSelectedContentId('none');
+      setIsAssignDialogOpen(false);
+      toast({
+        title: 'Contenu assigné avec succès',
+      });
     }
-    
-    setCurrentScreen(null);
-    setSelectedContentId('none');
-    setIsAssignDialogOpen(false);
-    toast({
-      title: 'Contenu assigné avec succès',
-    });
   };
   
   const handleOpenAssignDialog = (screen) => {
@@ -213,6 +234,7 @@ const ScreensPage = () => {
   const handleRetry = () => {
     setIsRetrying(true);
     screenServerService.updateApiBaseUrl();
+    loadScreens();
     refetchContents();
   };
   
@@ -252,10 +274,30 @@ const ScreensPage = () => {
                 Ajouter
               </Button>
             )}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handleRetry} 
+              disabled={isLoadingScreens || isRetrying}
+              title="Rafraîchir les écrans"
+            >
+              {isLoadingScreens || isRetrying ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <RefreshCw size={16} />
+              )}
+            </Button>
           </div>
         </div>
 
-        {filteredScreens.length > 0 ? (
+        {isLoadingScreens && (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 size={32} className="animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Chargement des écrans...</span>
+          </div>
+        )}
+
+        {!isLoadingScreens && filteredScreens.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredScreens.map((screen) => (
               <ScreenCard
@@ -267,7 +309,7 @@ const ScreensPage = () => {
               />
             ))}
           </div>
-        ) : (
+        ) : !isLoadingScreens && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <MonitorPlay size={64} className="text-muted-foreground mb-4" />
             <h3 className="text-xl font-medium mb-1">Aucun écran configuré</h3>
@@ -310,7 +352,7 @@ const ScreensPage = () => {
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleAddScreen}>Ajouter</Button>
+            <Button onClick={handleAddScreen} disabled={isLoadingScreens}>Ajouter</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -338,7 +380,7 @@ const ScreensPage = () => {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleUpdateScreen}>Enregistrer</Button>
+            <Button onClick={handleUpdateScreen} disabled={isLoadingScreens}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

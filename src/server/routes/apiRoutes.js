@@ -1,8 +1,8 @@
-
 import express from 'express';
 import { saveContentData, getContentData, listAllContent, deleteContent, contentExists } from '../services/contentService.js';
 import { startServer, stopServer, updateServer, getRunningServers } from '../services/serverManager.js';
 import { createUploadMiddleware, getFirstIpAddress } from '../utils/fileStorage.js';
+import { getAllScreens, getScreenById, saveScreen, updateScreen, deleteScreen } from '../services/screenService.js';
 
 const router = express.Router();
 const upload = createUploadMiddleware();
@@ -271,6 +271,114 @@ router.delete('/content/:contentId', (req, res) => {
     }
   } catch (error) {
     console.error("Erreur dans /api/content/:contentId (DELETE):", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// SCREEN MANAGEMENT ENDPOINTS
+// Get all screens
+router.get('/screens', (req, res) => {
+  try {
+    console.log('Récupération de tous les écrans via API GET');
+    const screens = getAllScreens();
+    res.json({ success: true, screens });
+  } catch (error) {
+    console.error("Erreur dans /api/screens (GET):", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Get a specific screen
+router.get('/screens/:screenId', (req, res) => {
+  try {
+    const { screenId } = req.params;
+    
+    if (!screenId) {
+      return res.status(400).json({ success: false, message: 'ID d\'écran requis' });
+    }
+    
+    console.log(`Récupération de l'écran ${screenId} via API GET`);
+    const screen = getScreenById(screenId);
+    
+    if (screen) {
+      res.json({ success: true, screen });
+    } else {
+      console.log(`Écran ${screenId} non trouvé`);
+      res.status(404).json({ success: false, message: `Écran ${screenId} non trouvé` });
+    }
+  } catch (error) {
+    console.error("Erreur dans /api/screens/:screenId (GET):", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Create or update a screen
+router.post('/screens', (req, res) => {
+  try {
+    const { screen } = req.body;
+    
+    if (!screen) {
+      return res.status(400).json({ success: false, message: 'Données d\'écran requises' });
+    }
+    
+    console.log(`Sauvegarde de l'écran via API POST:`, screen);
+    
+    const savedScreen = saveScreen(screen);
+    
+    if (savedScreen) {
+      res.json({ success: true, screen: savedScreen, message: `Écran sauvegardé avec succès` });
+    } else {
+      res.status(500).json({ success: false, message: `Échec de la sauvegarde de l'écran` });
+    }
+  } catch (error) {
+    console.error("Erreur dans /api/screens (POST):", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Update a screen
+router.put('/screens/:screenId', (req, res) => {
+  try {
+    const { screenId } = req.params;
+    const { data } = req.body;
+    
+    if (!screenId || !data) {
+      return res.status(400).json({ success: false, message: 'ID d\'écran et données requis' });
+    }
+    
+    console.log(`Mise à jour de l'écran ${screenId} via API PUT`);
+    const updatedScreen = updateScreen(screenId, data);
+    
+    if (updatedScreen) {
+      res.json({ success: true, screen: updatedScreen, message: `Écran ${screenId} mis à jour avec succès` });
+    } else {
+      res.status(500).json({ success: false, message: `Échec de la mise à jour de l'écran ${screenId}` });
+    }
+  } catch (error) {
+    console.error("Erreur dans /api/screens/:screenId (PUT):", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Delete a screen
+router.delete('/screens/:screenId', (req, res) => {
+  try {
+    const { screenId } = req.params;
+    
+    if (!screenId) {
+      return res.status(400).json({ success: false, message: 'ID d\'écran requis' });
+    }
+    
+    console.log(`Suppression de l'écran ${screenId} via API DELETE`);
+    const success = deleteScreen(screenId);
+    
+    if (success) {
+      res.json({ success: true, message: `Écran ${screenId} supprimé avec succès` });
+    } else {
+      res.status(404).json({ success: false, message: `Écran ${screenId} non trouvé ou erreur lors de la suppression` });
+    }
+  } catch (error) {
+    console.error("Erreur dans /api/screens/:screenId (DELETE):", error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
