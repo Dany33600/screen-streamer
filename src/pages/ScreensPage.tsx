@@ -1,34 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import { useAppStore, initializeScreens } from '@/store';
-import ScreenCard from '@/components/screens/ScreenCard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { PlusCircle, MonitorPlay, Search, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
-import { screenServerService } from '@/services/screenServerReal';
+import { useAppStore } from '@/store';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 import { Content } from '@/types';
+import { screenServerService } from '@/services/screenServerReal';
+
+// Composants refactorisés
+import ScreensHeader from '@/components/screens/ScreensHeader';
+import ScreensList from '@/components/screens/ScreensList';
+import AddScreenDialog from '@/components/screens/AddScreenDialog';
+import EditScreenDialog from '@/components/screens/EditScreenDialog';
 import AssignContentDialog from '@/components/content/AssignContentDialog';
-import { screenService } from '@/services/screenService';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
@@ -98,17 +82,11 @@ const ScreensPage = () => {
     }
   }, [serverContentData]);
   
-  const handleAddScreen = async () => {
-    if (newScreenName.trim() === '') {
-      toast.error('Le nom de l\'écran ne peut pas être vide');
-      return;
-    }
-    
-    const screen = await addScreen(newScreenName);
+  const handleAddScreen = async (screenName: string) => {
+    const screen = await addScreen(screenName);
     if (screen) {
-      setNewScreenName('');
       setIsAddDialogOpen(false);
-      toast.success(`Écran "${newScreenName}" ajouté avec succès`);
+      toast.success(`Écran "${screenName}" ajouté avec succès`);
       
       // Make sure to update the API URL after adding a screen
       screenServerService.updateApiBaseUrl({
@@ -118,17 +96,10 @@ const ScreensPage = () => {
     }
   };
   
-  const handleUpdateScreen = async () => {
-    if (!currentScreen) return;
-    if (newScreenName.trim() === '') {
-      toast.error('Le nom de l\'écran ne peut pas être vide');
-      return;
-    }
-    
-    const screen = await updateScreen(currentScreen.id, { name: newScreenName });
+  const handleUpdateScreen = async (screenId: string, screenName: string) => {
+    const screen = await updateScreen(screenId, { name: screenName });
     if (screen) {
       setCurrentScreen(null);
-      setNewScreenName('');
       setIsEditDialogOpen(false);
       toast.success('Écran mis à jour avec succès');
     }
@@ -136,7 +107,6 @@ const ScreensPage = () => {
   
   const handleEditScreen = (screen) => {
     setCurrentScreen(screen);
-    setNewScreenName(screen.name);
     setIsEditDialogOpen(true);
   };
   
@@ -246,141 +216,43 @@ const ScreensPage = () => {
   return (
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Écrans</h1>
-            <p className="text-muted-foreground mt-1">
-              Gérez vos écrans et assignez-leur du contenu
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Rechercher..."
-                className="pl-8 w-full md:w-[260px]"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            {isConfigMode && (
-              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                <PlusCircle size={16} />
-                Ajouter
-              </Button>
-            )}
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={handleRetry} 
-              disabled={isLoadingScreens || isRetrying}
-              title="Rafraîchir les écrans"
-            >
-              {isLoadingScreens || isRetrying ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <RefreshCw size={16} />
-              )}
-            </Button>
-          </div>
-        </div>
+        <ScreensHeader
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onAddScreen={() => setIsAddDialogOpen(true)}
+          onRefresh={handleRetry}
+          isConfigMode={isConfigMode}
+          isLoading={isLoadingScreens}
+          isRetrying={isRetrying}
+        />
 
-        {isLoadingScreens && (
-          <div className="flex items-center justify-center py-10">
-            <Loader2 size={32} className="animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Chargement des écrans...</span>
-          </div>
-        )}
-
-        {!isLoadingScreens && filteredScreens.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredScreens.map((screen) => (
-              <ScreenCard
-                key={screen.id}
-                screen={screen}
-                onEdit={handleEditScreen}
-                onDelete={handleDeleteScreen}
-                onSelect={handleOpenAssignDialog}
-              />
-            ))}
-          </div>
-        ) : !isLoadingScreens && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <MonitorPlay size={64} className="text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-1">Aucun écran configuré</h3>
-            <p className="text-muted-foreground mb-4 max-w-md">
-              {searchTerm 
-                ? "Aucun écran ne correspond à votre recherche. Essayez d'autres termes."
-                : "Commencez par ajouter un écran pour diffuser du contenu. Vous pourrez ensuite lui assigner du contenu."}
-            </p>
-            {isConfigMode && !searchTerm && (
-              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                <PlusCircle size={16} />
-                Ajouter un écran
-              </Button>
-            )}
-          </div>
-        )}
+        <ScreensList
+          screens={screens}
+          filteredScreens={filteredScreens}
+          isLoading={isLoadingScreens}
+          searchTerm={searchTerm}
+          onEdit={handleEditScreen}
+          onDelete={handleDeleteScreen}
+          onSelect={handleOpenAssignDialog}
+          onAddScreen={() => setIsAddDialogOpen(true)}
+          isConfigMode={isConfigMode}
+        />
       </div>
 
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter un écran</DialogTitle>
-            <DialogDescription>
-              Configurez un nouvel écran pour diffuser du contenu
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nom de l'écran</Label>
-              <Input
-                id="name"
-                placeholder="Ex: Écran d'accueil"
-                value={newScreenName}
-                onChange={(e) => setNewScreenName(e.target.value)}
-                autoFocus
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleAddScreen} disabled={isLoadingScreens}>Ajouter</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddScreenDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onAddScreen={handleAddScreen}
+        isLoading={isLoadingScreens}
+      />
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier l'écran</DialogTitle>
-            <DialogDescription>
-              Modifiez les paramètres de l'écran
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Nom de l'écran</Label>
-              <Input
-                id="edit-name"
-                value={newScreenName}
-                onChange={(e) => setNewScreenName(e.target.value)}
-                autoFocus
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleUpdateScreen} disabled={isLoadingScreens}>Enregistrer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditScreenDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onUpdateScreen={handleUpdateScreen}
+        currentScreen={currentScreen}
+        isLoading={isLoadingScreens}
+      />
 
       <AssignContentDialog
         open={isAssignDialogOpen}
