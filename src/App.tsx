@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAppStore } from "@/store";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import Index from "./pages/Index";
 import ScreensPage from "./pages/ScreensPage";
 import ContentPage from "./pages/ContentPage";
@@ -39,20 +40,22 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/screens" element={<ScreensPage />} />
-            <Route path="/content" element={<ContentPage />} />
-            <Route path="/playlists" element={<PlaylistsPage />} />
-            <Route path="/config" element={<ProtectedConfigRoute />} />
-            <Route path="/preview" element={<PreviewPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/screens" element={<ScreensPage />} />
+              <Route path="/content" element={<ContentPage />} />
+              <Route path="/playlists" element={<PlaylistsPage />} />
+              <Route path="/config" element={<ProtectedConfigRoute />} />
+              <Route path="/preview" element={<PreviewPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

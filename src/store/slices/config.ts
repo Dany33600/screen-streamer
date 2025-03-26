@@ -1,3 +1,4 @@
+
 export interface ConfigState {
   basePort: number;
   baseIpAddress: string;
@@ -6,6 +7,7 @@ export interface ConfigState {
   configPin: string;
   isPinVerified: boolean;
   refreshInterval: number;
+  isDarkMode: boolean;
   menuOptions: {
     dashboard: boolean;
     screens: boolean;
@@ -24,6 +26,7 @@ export interface ConfigState {
   resetPinVerification: () => void;
   setRefreshInterval: (minutes: number) => void;
   toggleMenuOption: (option: keyof ConfigState['menuOptions'], value: boolean) => void;
+  toggleDarkMode: () => void;
 }
 
 export const createConfigSlice = (
@@ -37,6 +40,7 @@ export const createConfigSlice = (
   configPin: '1234', // Default PIN
   isPinVerified: false,
   refreshInterval: 1, // Default to 1 minute
+  isDarkMode: false, // Thème clair par défaut
   
   // Default menu options - all enabled by default
   menuOptions: {
@@ -105,5 +109,10 @@ export const createConfigSlice = (
       ...state.menuOptions,
       [option]: value,
     },
+  })),
+  
+  toggleDarkMode: () => set((state) => ({
+    ...state,
+    isDarkMode: !state.isDarkMode
   })),
 });

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
+import { useTheme } from '@/components/theme/ThemeProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +37,9 @@ import {
   Film,
   List,
   PlaySquare,
-  Clock
+  Clock,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Slider } from '@/components/ui/slider';
@@ -55,6 +58,8 @@ const ConfigPage = () => {
   const setRefreshInterval = useAppStore((state) => state.setRefreshInterval);
   const menuOptions = useAppStore((state) => state.menuOptions);
   const toggleMenuOption = useAppStore((state) => state.toggleMenuOption);
+  
+  const { isDarkMode, toggleDarkMode } = useTheme();
   
   const [portValue, setPortValue] = useState(basePort.toString());
   const [ipValue, setIpValue] = useState(baseIpAddress);
@@ -435,13 +440,16 @@ const ConfigPage = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Thème sombre</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Utiliser un thème sombre pour l'interface
-                    </p>
+                  <div className="space-y-0.5 flex items-center gap-2">
+                    {isDarkMode ? <Moon size={18} className="text-blue-400" /> : <Sun size={18} className="text-yellow-500" />}
+                    <div>
+                      <Label>Thème sombre</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Utiliser un thème sombre pour l'interface
+                      </p>
+                    </div>
                   </div>
-                  <Switch defaultChecked={false} />
+                  <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
                 </div>
               </CardContent>
             </Card>
