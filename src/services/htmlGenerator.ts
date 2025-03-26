@@ -331,6 +331,124 @@ class HtmlGeneratorService {
           </html>
         `;
         
+      case 'google-slides':
+        const googleSlidesLoop = displayOptions?.loop !== false;
+        const googleSlidesAutoSlide = displayOptions?.autoSlide || 3000; // Default 3 seconds
+        
+        // Vérifier si l'URL contient déjà les paramètres embed
+        let embedUrl = contentUrl;
+        
+        // S'assurer que l'URL contient les paramètres nécessaires pour le mode présentation
+        if (!embedUrl.includes('embed')) {
+          // Ajouter les paramètres si nécessaires
+          if (embedUrl.includes('?')) {
+            embedUrl += '&start=false';
+          } else {
+            embedUrl += '?start=false';
+          }
+          
+          if (!embedUrl.includes('loop=')) {
+            embedUrl += `&loop=${googleSlidesLoop}`;
+          }
+          
+          if (!embedUrl.includes('delayms=')) {
+            embedUrl += `&delayms=${googleSlidesAutoSlide}`;
+          }
+        }
+        
+        return `
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Écran - ${content.name}</title>
+            <style>
+              body, html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                width: 100%;
+                overflow: hidden;
+                background-color: #000;
+              }
+              .iframe-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+              }
+              iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+              }
+              .presentation-title {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                text-align: center;
+                font-size: 18px;
+                color: white;
+                z-index: 1000;
+                padding: 10px;
+                background-color: rgba(0,0,0,0.5);
+              }
+              .error-message {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                background-color: rgba(0,0,0,0.8);
+                padding: 20px;
+                border-radius: 10px;
+                text-align: center;
+                max-width: 80%;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="presentation-title">${content.name}</div>
+            <div class="iframe-container">
+              <iframe
+                src="${embedUrl}"
+                frameborder="0"
+                allowfullscreen="true"
+                mozallowfullscreen="true"
+                webkitallowfullscreen="true"
+                onerror="handleError()"
+                onload="handleLoad()"
+              ></iframe>
+            </div>
+            
+            <script>
+              function handleError() {
+                document.body.innerHTML += \`
+                  <div class="error-message">
+                    <h2>Erreur de chargement de la présentation</h2>
+                    <p>Impossible de charger la présentation Google Slides.</p>
+                    <p>Veuillez vérifier que l'URL est correcte et que la présentation est partagée publiquement.</p>
+                    <p><a href="${embedUrl}" target="_blank" style="color: #4CAF50; text-decoration: none;">Ouvrir la présentation dans Google Slides</a></p>
+                  </div>
+                \`;
+              }
+              
+              function handleLoad() {
+                console.log("Google Slides presentation loaded successfully");
+              }
+              
+              window.addEventListener('message', function(event) {
+                // Écouter les messages de l'iframe Google Slides
+                console.log("Message received from iframe:", event.data);
+              });
+            </script>
+          </body>
+          </html>
+        `;
+        
       case 'pdf':
         return `
           <!DOCTYPE html>

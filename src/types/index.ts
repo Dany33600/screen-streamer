@@ -1,5 +1,5 @@
 
-export type ContentType = 'image' | 'video' | 'powerpoint' | 'pdf' | 'html';
+export type ContentType = 'image' | 'video' | 'powerpoint' | 'pdf' | 'html' | 'google-slides';
 
 export interface Content {
   id: string;

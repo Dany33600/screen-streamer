@@ -61,6 +61,7 @@ const DisplayOptionsDialog: React.FC<DisplayOptionsDialogProps> = ({
       case 'video': return 'video';
       case 'image': return 'image';
       case 'powerpoint': return 'powerpoint';
+      case 'google-slides': return 'google-slides';
       case 'pdf': return 'pdf';
       default: return 'general';
     }
@@ -81,6 +82,7 @@ const DisplayOptionsDialog: React.FC<DisplayOptionsDialogProps> = ({
             {content.type === 'video' && <TabsTrigger value="video">Vidéo</TabsTrigger>}
             {content.type === 'image' && <TabsTrigger value="image">Image</TabsTrigger>}
             {content.type === 'powerpoint' && <TabsTrigger value="powerpoint">PowerPoint</TabsTrigger>}
+            {content.type === 'google-slides' && <TabsTrigger value="google-slides">Google Slides</TabsTrigger>}
             {content.type === 'pdf' && <TabsTrigger value="pdf">PDF</TabsTrigger>}
             <TabsTrigger value="general">Général</TabsTrigger>
           </TabsList>
@@ -165,6 +167,36 @@ const DisplayOptionsDialog: React.FC<DisplayOptionsDialogProps> = ({
           
           {content.type === 'powerpoint' && (
             <TabsContent value="powerpoint" className="space-y-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="autoSlide">Temps par diapositive (ms)</Label>
+                <Input
+                  id="autoSlide"
+                  type="number"
+                  min="1000"
+                  step="1000"
+                  value={options.autoSlide}
+                  onChange={(e) => setOptions({...options, autoSlide: parseInt(e.target.value)})}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Temps d'affichage de chaque diapositive (en millisecondes)
+                </p>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="powerPointLoop" 
+                  checked={options.powerPointLoop} 
+                  onCheckedChange={(checked) => 
+                    setOptions({...options, powerPointLoop: checked})
+                  }
+                />
+                <Label htmlFor="powerPointLoop">Lecture en boucle</Label>
+              </div>
+            </TabsContent>
+          )}
+          
+          {content.type === 'google-slides' && (
+            <TabsContent value="google-slides" className="space-y-4">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="autoSlide">Temps par diapositive (ms)</Label>
                 <Input

@@ -99,6 +99,7 @@ const EditContentDialog: React.FC<EditContentDialogProps> = ({
                 <SelectItem value="powerpoint">PowerPoint</SelectItem>
                 <SelectItem value="pdf">PDF</SelectItem>
                 <SelectItem value="html">HTML</SelectItem>
+                <SelectItem value="google-slides">Google Slides</SelectItem>
               </SelectContent>
             </Select>
           </div>
