@@ -1,222 +1,83 @@
+
 import { useState, useEffect } from 'react';
-import { Screen, Content } from '@/types';
+import { Screen } from '@/types';
 import { screenServerService } from '@/services/screenServerReal';
-import { useAppStore } from '@/store';
-import { toast } from '@/hooks/use-toast';
+import { useServerStatusCheck } from './use-server-status-check';
+import { useServerOperations } from './use-server-operations';
+import { useContentResolver } from './use-content-resolver';
 
 export function useScreenStatus(screen: Screen) {
   const [isOnline, setIsOnline] = useState(screen.status === 'online');
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const contents = useAppStore((state) => state.contents);
-  const updateScreen = useAppStore((state) => state.updateScreen);
-  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
-  const apiUrl = useAppStore((state) => state.apiUrl);
-  
-  const content = screen.contentId 
-    ? contents.find(c => c.id === screen.contentId) 
-    : undefined;
-    
-  // Fonction pour vérifier l'état du serveur
-  const checkServerStatus = async () => {
-    if (isCheckingStatus) return; // Éviter les vérifications simultanées
-    
-    try {
-      setIsCheckingStatus(true);
-      console.log(`Vérification de l'état du serveur pour l'écran ${screen.name} (${screen.id})`);
-      
-      // S'assurer que le service utilise l'adresse IP actuelle
-      screenServerService.updateApiBaseUrl({
-        apiUrl,
-        baseIpAddress
-      });
-      
-      // Vérifier si le serveur est en cours d'exécution
-      const isRunning = screenServerService.isServerRunning(screen.id);
-      console.log(`État interne du serveur pour l'écran ${screen.name}: ${isRunning ? 'en ligne' : 'hors ligne'}`);
-      
-      // Si notre état local diffère de l'état réel du serveur, le mettre à jour
-      if (isRunning !== isOnline) {
-        console.log(`État du serveur pour l'écran ${screen.name} (${screen.id}) changé: ${isRunning ? 'en ligne' : 'hors ligne'}`);
-        setIsOnline(isRunning);
-        updateScreen(screen.id, { status: isRunning ? 'online' : 'offline' });
-      }
-      
-      // Si le serveur est censé être en cours d'exécution, vérifier qu'il répond bien
-      if (isRunning) {
-        console.log(`Vérification que le serveur répond bien pour l'écran ${screen.name} sur le port ${screen.port}`);
-        const isResponding = await screenServerService.checkServerStatus(screen.port);
-        console.log(`Le serveur pour l'écran ${screen.name} répond-il ? ${isResponding ? 'Oui' : 'Non'}`);
-        
-        if (!isResponding) {
-          console.log(`Le serveur pour l'écran ${screen.name} ne répond pas, tentative de redémarrage...`);
-          // Si le serveur ne répond pas mais est censé être en ligne, essayer de le redémarrer
-          if (content) {
-            console.log(`Redémarrage du serveur pour l'écran ${screen.name} avec le contenu ${content.name}`);
-            // Mettre à jour l'adresse IP de l'écran avec celle de la configuration
-            if (screen.ipAddress !== baseIpAddress) {
-              console.log(`Mise à jour de l'adresse IP de l'écran: ${screen.ipAddress} -> ${baseIpAddress}`);
-              updateScreen(screen.id, { ipAddress: baseIpAddress });
-            }
-            const success = await screenServerService.startServer(screen.id, screen.port, content);
-            console.log(`Redémarrage du serveur pour l'écran ${screen.name}: ${success ? 'Réussi' : 'Échoué'}`);
-          } else {
-            console.log(`Impossible de redémarrer le serveur pour l'écran ${screen.name}: aucun contenu assigné`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Erreur lors de la vérification de l'état du serveur:", error);
-    } finally {
-      setIsCheckingStatus(false);
-    }
-  };
-  
-  // Fonction pour démarrer le serveur
-  const startServer = async (displayOptions?: any) => {
-    if (!content) {
-      toast({
-        title: "Attention",
-        description: "Aucun contenu assigné à cet écran. Veuillez assigner du contenu avant de démarrer le serveur.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    // Mettre à jour l'adresse IP de l'écran avec celle de la configuration
-    if (screen.ipAddress !== baseIpAddress) {
-      console.log(`Mise à jour de l'adresse IP de l'écran: ${screen.ipAddress} -> ${baseIpAddress}`);
-      updateScreen(screen.id, { ipAddress: baseIpAddress });
-    }
-    
-    console.log(`Démarrage du serveur pour l'écran ${screen.name} sur le port ${screen.port}...`);
-    console.log(`Options d'affichage:`, displayOptions);
-    
-    // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
-    screenServerService.updateApiBaseUrl({
-      apiUrl,
-      baseIpAddress
-    });
-    
-    const success = await screenServerService.startServer(screen.id, screen.port, content, displayOptions);
-    
-    if (success) {
-      setIsOnline(true);
-      updateScreen(screen.id, { status: 'online' });
-      
-      toast({
-        title: "Serveur démarré",
-        description: `L'écran "${screen.name}" est maintenant en ligne sur http://${baseIpAddress}:${screen.port}`,
-        variant: "default",
-      });
-    } else {
-      toast({
-        title: "Erreur de démarrage",
-        description: `Impossible de démarrer le serveur pour l'écran "${screen.name}". Vérifiez la console pour plus de détails.`,
-        variant: "destructive",
-      });
-    }
-    
-    return success;
-  };
-  
-  // Fonction pour arrêter le serveur
-  const stopServer = () => {
-    console.log(`Arrêt du serveur pour l'écran ${screen.name}...`);
-    const success = screenServerService.stopServer(screen.id);
-    
-    if (success) {
-      setIsOnline(false);
-      updateScreen(screen.id, { status: 'offline' });
-      
-      toast({
-        title: "Serveur arrêté",
-        description: `L'écran "${screen.name}" est maintenant hors ligne`,
-        variant: "default",
-      });
-    } else {
-      toast({
-        title: "Erreur d'arrêt",
-        description: `Impossible d'arrêter le serveur pour l'écran "${screen.name}". Vérifiez la console pour plus de détails.`,
-        variant: "destructive",
-      });
-    }
-    
-    return success;
-  };
-  
-  // Fonction pour mettre à jour le serveur avec un nouveau contenu
-  const updateServer = async (displayOptions?: any) => {
-    if (!content) {
-      toast({
-        title: "Attention",
-        description: "Aucun contenu assigné à cet écran. Veuillez assigner du contenu avant de mettre à jour le serveur.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
-    screenServerService.updateApiBaseUrl({
-      apiUrl,
-      baseIpAddress
-    });
-    
-    // Mettre à jour l'adresse IP de l'écran avec celle de la configuration
-    if (screen.ipAddress !== baseIpAddress) {
-      console.log(`Mise à jour de l'adresse IP de l'écran: ${screen.ipAddress} -> ${baseIpAddress}`);
-      updateScreen(screen.id, { ipAddress: baseIpAddress });
-    }
-    
-    console.log(`Mise à jour du serveur pour l'écran ${screen.name} avec le contenu ${content.name}...`);
-    console.log(`Options d'affichage:`, displayOptions);
-    
-    const success = await screenServerService.updateServer(screen.id, screen.port, content, displayOptions);
-    
-    if (success) {
-      setIsOnline(true);
-      updateScreen(screen.id, { status: 'online' });
-      
-      toast({
-        title: "Serveur mis à jour",
-        description: `L'écran "${screen.name}" a été mis à jour avec le nouveau contenu`,
-        variant: "default",
-      });
-    } else {
-      toast({
-        title: "Erreur de mise à jour",
-        description: `Impossible de mettre à jour le serveur pour l'écran "${screen.name}". Vérifiez la console pour plus de détails.`,
-        variant: "destructive",
-      });
-    }
-    
-    return success;
-  };
+  const { content } = useContentResolver(screen);
+  const { isCheckingStatus, checkServerStatus } = useServerStatusCheck(screen);
+  const { startServer, stopServer, updateServer } = useServerOperations(
+    screen.id, 
+    screen.port, 
+    screen.ipAddress, 
+    screen.name
+  );
   
   // Vérifier l'état du serveur au chargement du composant
   useEffect(() => {
     console.log(`Vérification initiale de l'état du serveur pour l'écran ${screen.name}`);
     // Mettre à jour l'URL de l'API avec l'adresse IP correcte
-    screenServerService.updateApiBaseUrl({
-      apiUrl,
-      baseIpAddress
-    });
-    checkServerStatus();
+    screenServerService.updateApiBaseUrl();
+    
+    const checkAndUpdateStatus = async () => {
+      const updatedIsOnline = await checkServerStatus(isOnline, screen.contentId);
+      if (updatedIsOnline !== undefined && updatedIsOnline !== isOnline) {
+        setIsOnline(updatedIsOnline);
+      }
+    };
+    
+    checkAndUpdateStatus();
     
     // Vérifier périodiquement l'état du serveur (toutes les 10 secondes)
-    const intervalId = setInterval(checkServerStatus, 10000);
+    const intervalId = setInterval(checkAndUpdateStatus, 10000);
     
     return () => {
       clearInterval(intervalId);
     };
   }, [screen.id]);
   
+  // Wrapper pour la fonction startServer qui met à jour l'état isOnline
+  const handleStartServer = async (displayOptions?: any) => {
+    const success = await startServer(content, displayOptions);
+    if (success) {
+      setIsOnline(true);
+    }
+    return success;
+  };
+  
+  // Wrapper pour la fonction stopServer qui met à jour l'état isOnline
+  const handleStopServer = () => {
+    const success = stopServer();
+    if (success) {
+      setIsOnline(false);
+    }
+    return success;
+  };
+  
+  // Wrapper pour la fonction updateServer
+  const handleUpdateServer = async (displayOptions?: any) => {
+    const success = await updateServer(content, displayOptions);
+    if (success) {
+      setIsOnline(true);
+    }
+    return success;
+  };
+  
   return {
     isOnline,
-    startServer,
-    stopServer,
-    updateServer,
-    checkServerStatus,
-    // Exposer le contenu assigné
+    startServer: handleStartServer,
+    stopServer: handleStopServer,
+    updateServer: handleUpdateServer,
+    checkServerStatus: async () => {
+      const updatedIsOnline = await checkServerStatus(isOnline, screen.contentId);
+      if (updatedIsOnline !== undefined && updatedIsOnline !== isOnline) {
+        setIsOnline(updatedIsOnline);
+      }
+    },
     content
   };
 }
