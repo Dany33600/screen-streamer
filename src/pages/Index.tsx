@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Layers, MonitorPlay, Film, Settings, List, PlusCircle } from 'lucide-react';
+import AddScreenDialog from '@/components/screens/AddScreenDialog';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -13,6 +14,18 @@ const Index = () => {
   const contents = useAppStore((state) => state.contents);
   const playlists = useAppStore((state) => state.playlists);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
+  const isLoadingScreens = useAppStore((state) => state.isLoadingScreens);
+  const addScreen = useAppStore((state) => state.addScreen);
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  const handleAddScreen = async (name: string) => {
+    const screen = await addScreen(name);
+    if (screen) {
+      setIsAddDialogOpen(false);
+      navigate('/screens');
+    }
+  };
 
   return (
     <MainLayout>
@@ -25,7 +38,7 @@ const Index = () => {
             </p>
           </div>
           {isConfigMode && (
-            <Button onClick={() => navigate('/screens/add')} className="gap-2">
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
               <PlusCircle size={16} />
               Ajouter un écran
             </Button>
@@ -152,6 +165,13 @@ const Index = () => {
           </Card>
         </div>
       </div>
+
+      <AddScreenDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onAddScreen={handleAddScreen}
+        isLoading={isLoadingScreens}
+      />
     </MainLayout>
   );
 };
