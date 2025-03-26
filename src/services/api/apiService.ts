@@ -1,5 +1,6 @@
 
 import { useAppStore } from '@/store';
+import { toast } from 'sonner';
 
 interface ApiUrlConfig {
   apiUrl?: string;
@@ -7,7 +8,7 @@ interface ApiUrlConfig {
 }
 
 export class ApiService {
-  protected apiBaseUrl: string;
+  protected apiBaseUrl: string = '';
   
   constructor() {
     this.updateApiBaseUrl({});
@@ -30,10 +31,13 @@ export class ApiService {
         this.apiBaseUrl = this.apiBaseUrl + '/api';
       }
       
-      console.log(`API URL configurée: ${this.apiBaseUrl}`);
+      console.log(`API URL configured: ${this.apiBaseUrl}`);
     } else {
-      // Fallback to a default API URL
-      console.warn('Aucune URL d\'API fournie, utilisation de l\'URL par défaut');
+      // Fallback to determine the API URL based on the current window location
+      const hostname = baseIpAddress || window.location.hostname;
+      const port = 5000; // Default API port
+      this.apiBaseUrl = `http://${hostname}:${port}/api`;
+      console.log(`No API URL provided, using default: ${this.apiBaseUrl}`);
     }
   }
   
@@ -43,12 +47,20 @@ export class ApiService {
       
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
+        const errorMessage = `HTTP Error ${response.status}: ${errorText}`;
+        console.error(errorMessage);
+        
+        // Display toast for user feedback on errors
+        toast.error('API Error', {
+          description: `${response.status}: ${response.statusText}`
+        });
+        
+        throw new Error(errorMessage);
       }
       
       return await response.json() as T;
     } catch (error) {
-      console.error(`Erreur API lors de la requête ${url}:`, error);
+      console.error(`API Error during request to ${url}:`, error);
       throw error;
     }
   }

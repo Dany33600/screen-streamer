@@ -3,23 +3,54 @@ import { Content } from '@/types';
 
 export class DisplayOptionsService {
   /**
-   * Détermine les options d'affichage en fonction du type de contenu
+   * Determine display options based on content type
    */
   public getDisplayOptions(content: Content, userOptions?: any): any {
-    // Fusionner les options par défaut avec les options utilisateur
-    const options: any = {
-      // Options par défaut
+    // Get content-type specific default options
+    const typeDefaults = this.getTypeSpecificDefaults(content.type);
+    
+    // Merge with general defaults and user options
+    return {
+      // General defaults
       autoplay: true,
       loop: true,
       controls: true,
       muted: true,
       interval: 5000,
       autoSlide: 5000,
-      ...userOptions // Surcharger avec les options utilisateur
+      // Type-specific defaults
+      ...typeDefaults,
+      // User options override everything
+      ...userOptions
     };
-    
-    // Retourner les options fusionnées
-    return options;
+  }
+  
+  /**
+   * Get default options specific to content type
+   */
+  private getTypeSpecificDefaults(contentType: string): object {
+    switch (contentType) {
+      case 'video':
+        return {
+          muted: true,
+          controls: true,
+          autoplay: true,
+          loop: true
+        };
+      case 'image':
+        return {
+          interval: 10000, // Images show for longer by default
+          transition: 'fade'
+        };
+      case 'pdf':
+      case 'powerpoint':
+        return {
+          autoSlide: 8000, // Slides change more slowly
+          showControls: false
+        };
+      default:
+        return {};
+    }
   }
 }
 
