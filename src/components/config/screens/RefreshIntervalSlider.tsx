@@ -17,7 +17,7 @@ export const RefreshIntervalSlider: React.FC<RefreshIntervalSliderProps> = ({
     <div className="space-y-4 pt-4 border-t">
       <div className="flex items-center gap-2">
         <Clock size={18} className="text-primary" />
-        <Label>Intervalle de rafraîchissement des aperçus</Label>
+        <Label>Intervalle de rafraîchissement des aperçus (minutes)</Label>
       </div>
       
       <div className="space-y-5">
@@ -36,7 +36,7 @@ export const RefreshIntervalSlider: React.FC<RefreshIntervalSliderProps> = ({
         />
         
         <p className="text-sm text-muted-foreground">
-          Fréquence de vérification de l'état des écrans sur la page d'aperçu.
+          Fréquence de vérification de l'état des écrans sur la page d'aperçu (synchronisé avec le champ en secondes).
         </p>
       </div>
     </div>

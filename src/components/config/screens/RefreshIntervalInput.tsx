@@ -24,7 +24,7 @@ export const RefreshIntervalInput: React.FC<RefreshIntervalInputProps> = ({
         min="5"
       />
       <p className="text-sm text-muted-foreground">
-        Intervalle de temps entre chaque vérification de contenu mis à jour
+        Intervalle de temps entre chaque vérification de contenu mis à jour (synchronisé avec le slider en minutes)
       </p>
     </div>
   );
