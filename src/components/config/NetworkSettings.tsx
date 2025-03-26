@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 
 export const NetworkSettings = () => {
@@ -255,12 +256,17 @@ export const NetworkSettings = () => {
       
       <Card>
         <CardHeader>
-          <CardTitle>Avancé</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Avancé
+            <Badge variant="outline" className="bg-[#F1F0FB] text-[#8A898C] border-[#C8C8C9]">
+              En développement
+            </Badge>
+          </CardTitle>
           <CardDescription>
             Paramètres réseau avancés
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 opacity-65">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Serveur HTTPS</Label>
@@ -268,7 +274,7 @@ export const NetworkSettings = () => {
                 Utiliser HTTPS pour la diffusion (nécessite un certificat)
               </p>
             </div>
-            <Switch defaultChecked={false} />
+            <Switch defaultChecked={false} disabled />
           </div>
           
           <div className="flex items-center justify-between">
@@ -278,7 +284,7 @@ export const NetworkSettings = () => {
                 Activer la compression des données envoyées
               </p>
             </div>
-            <Switch defaultChecked={true} />
+            <Switch defaultChecked={true} disabled />
           </div>
         </CardContent>
       </Card>
