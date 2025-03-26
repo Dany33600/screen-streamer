@@ -28,6 +28,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Content } from '@/types';
 import AssignContentDialog from '@/components/content/AssignContentDialog';
+import { screenService } from '@/services/screenService';
 
 const ScreensPage = () => {
   const screens = useAppStore((state) => state.screens);
@@ -70,8 +71,8 @@ const ScreensPage = () => {
     queryFn: async () => {
       if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
       
-      // Ensure the API URL is updated before making requests
-      screenServerService.updateApiBaseUrl();
+      // Update API URL with store values
+      screenServerService.updateApiBaseUrl(apiUrl, useAppStore.getState().baseIpAddress);
       
       const response = await fetch(`${apiUrl}/api/content`);
       if (!response.ok) {
@@ -222,8 +223,9 @@ const ScreensPage = () => {
     setCurrentScreen(screen);
     setSelectedContentId(screen.contentId || 'none');
     
-    // Force update API URL before opening dialog
-    screenServerService.updateApiBaseUrl();
+    // Use store values to update API URL
+    const state = useAppStore.getState();
+    screenServerService.updateApiBaseUrl(state.apiUrl, state.baseIpAddress);
     
     // Refresh content data before opening the dialog
     refetchContents();
@@ -233,7 +235,8 @@ const ScreensPage = () => {
   
   const handleRetry = () => {
     setIsRetrying(true);
-    screenServerService.updateApiBaseUrl();
+    const state = useAppStore.getState();
+    screenServerService.updateApiBaseUrl(state.apiUrl, state.baseIpAddress);
     loadScreens();
     refetchContents();
   };

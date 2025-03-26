@@ -1,29 +1,19 @@
 
 import { Screen } from '@/types';
-import { useAppStore } from '@/store';
 import { toast } from 'sonner';
 
 class ScreenService {
-  private apiBaseUrl: string;
+  private apiBaseUrl: string = '';
   
   constructor() {
-    this.updateApiBaseUrl();
+    // Initialize with empty API URL - will be updated before each API call
   }
   
-  // Method to update the API base URL
-  public updateApiBaseUrl(customApiUrl?: string): void {
-    // Get the current state from the store
-    const state = useAppStore.getState();
-    const configuredApiUrl = state.apiUrl;
-    const baseIpAddress = state.baseIpAddress;
-    
-    if (customApiUrl) {
-      this.apiBaseUrl = customApiUrl.endsWith('/') 
-        ? customApiUrl.slice(0, -1) + '/api'
-        : customApiUrl + '/api';
-    } else if (configuredApiUrl) {
-      // Use the API URL from the store, replacing localhost with the actual IP address
-      const formattedApiUrl = configuredApiUrl.replace('localhost', baseIpAddress);
+  // Method to update the API base URL using parameters instead of store
+  public updateApiBaseUrl(apiUrl?: string, baseIpAddress?: string): void {
+    if (apiUrl) {
+      // Use the API URL from parameters
+      const formattedApiUrl = apiUrl.replace('localhost', baseIpAddress || 'localhost');
       
       this.apiBaseUrl = formattedApiUrl.endsWith('/') 
         ? formattedApiUrl.slice(0, -1)
@@ -44,9 +34,9 @@ class ScreenService {
   }
   
   // Get all screens from the server
-  async getAllScreens(): Promise<Screen[]> {
+  async getAllScreens(apiUrl?: string, baseIpAddress?: string): Promise<Screen[]> {
     try {
-      this.updateApiBaseUrl();
+      this.updateApiBaseUrl(apiUrl, baseIpAddress);
       
       const response = await fetch(`${this.apiBaseUrl}/screens`);
       
@@ -69,9 +59,9 @@ class ScreenService {
   }
   
   // Get a screen by ID
-  async getScreenById(screenId: string): Promise<Screen | null> {
+  async getScreenById(screenId: string, apiUrl?: string, baseIpAddress?: string): Promise<Screen | null> {
     try {
-      this.updateApiBaseUrl();
+      this.updateApiBaseUrl(apiUrl, baseIpAddress);
       
       const response = await fetch(`${this.apiBaseUrl}/screens/${screenId}`);
       
@@ -97,9 +87,9 @@ class ScreenService {
   }
   
   // Save a new screen to the server
-  async saveScreen(screen: Screen): Promise<Screen | null> {
+  async saveScreen(screen: Screen, apiUrl?: string, baseIpAddress?: string): Promise<Screen | null> {
     try {
-      this.updateApiBaseUrl();
+      this.updateApiBaseUrl(apiUrl, baseIpAddress);
       
       const response = await fetch(`${this.apiBaseUrl}/screens`, {
         method: 'POST',
@@ -128,9 +118,9 @@ class ScreenService {
   }
   
   // Update an existing screen
-  async updateScreen(screenId: string, data: Partial<Screen>): Promise<Screen | null> {
+  async updateScreen(screenId: string, data: Partial<Screen>, apiUrl?: string, baseIpAddress?: string): Promise<Screen | null> {
     try {
-      this.updateApiBaseUrl();
+      this.updateApiBaseUrl(apiUrl, baseIpAddress);
       
       const response = await fetch(`${this.apiBaseUrl}/screens/${screenId}`, {
         method: 'PUT',
@@ -159,9 +149,9 @@ class ScreenService {
   }
   
   // Delete a screen from the server
-  async deleteScreen(screenId: string): Promise<boolean> {
+  async deleteScreen(screenId: string, apiUrl?: string, baseIpAddress?: string): Promise<boolean> {
     try {
-      this.updateApiBaseUrl();
+      this.updateApiBaseUrl(apiUrl, baseIpAddress);
       
       const response = await fetch(`${this.apiBaseUrl}/screens/${screenId}`, {
         method: 'DELETE',

@@ -16,12 +16,15 @@ const queryClient = new QueryClient({
   },
 })
 
-// Initialiser les écrans depuis le serveur
-initializeScreens().then(() => {
-  console.log('Écrans initialisés depuis le serveur');
-}).catch(error => {
-  console.error('Erreur lors de l\'initialisation des écrans:', error);
-});
+// Deferring initialization to ensure store is available first
+setTimeout(() => {
+  // Initialiser les écrans depuis le serveur
+  initializeScreens().then(() => {
+    console.log('Écrans initialisés depuis le serveur');
+  }).catch(error => {
+    console.error('Erreur lors de l\'initialisation des écrans:', error);
+  });
+}, 0);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

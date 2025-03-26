@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -22,7 +21,6 @@ const PreviewPage = () => {
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const refreshInterval = useAppStore((state) => state.refreshInterval);
   
-  // Function to toggle fullscreen mode
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
@@ -41,7 +39,6 @@ const PreviewPage = () => {
     }
   };
 
-  // Listen for fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -55,10 +52,9 @@ const PreviewPage = () => {
     setIsRefreshing(true);
     
     try {
-      // Mettre à jour l'API URL pour screenServerService
-      screenServerService.updateApiBaseUrl();
+      const state = useAppStore.getState();
+      screenServerService.updateApiBaseUrl(state.apiUrl, state.baseIpAddress);
       
-      // Attendre un court moment pour que la mise à jour soit effectuée
       setTimeout(() => {
         setIsRefreshing(false);
       }, 1000);
@@ -79,13 +75,10 @@ const PreviewPage = () => {
   };
   
   useEffect(() => {
-    // Rafraîchir automatiquement à l'ouverture de la page
     refreshAllServers();
     
-    // Convertir l'intervalle de minutes en millisecondes
     const intervalMs = refreshInterval * 60 * 1000;
     
-    // Rafraîchir l'état des écrans selon l'intervalle configuré
     const intervalId = setInterval(refreshAllServers, intervalMs);
     
     return () => {
@@ -97,7 +90,6 @@ const PreviewPage = () => {
     navigate(-1);
   };
   
-  // Rendu de la vue en grille des écrans (surveillance caméra)
   const renderGridView = () => {
     if (screens.length === 0) {
       return (
@@ -115,7 +107,6 @@ const PreviewPage = () => {
       );
     }
     
-    // Calculer le nombre de colonnes en fonction du nombre d'écrans
     const gridCols = screens.length <= 4 
       ? 'grid-cols-2' 
       : screens.length <= 9 
@@ -203,7 +194,6 @@ const PreviewPage = () => {
         </div>
         
         <div className="flex gap-2">
-          {/* Plein écran */}
           <Button 
             variant="outline" 
             size="sm" 

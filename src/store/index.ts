@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -86,7 +87,8 @@ export const useAppStore = create<AppState>()(
       loadScreens: async () => {
         set({ isLoadingScreens: true });
         try {
-          const screens = await screenService.getAllScreens();
+          const state = get();
+          const screens = await screenService.getAllScreens(state.apiUrl, state.baseIpAddress);
           
           if (screens && screens.length > 0) {
             set({ screens });
@@ -117,7 +119,7 @@ export const useAppStore = create<AppState>()(
           };
           
           // Sauvegarder l'écran sur le serveur
-          const savedScreen = await screenService.saveScreen(newScreen);
+          const savedScreen = await screenService.saveScreen(newScreen, state.apiUrl, state.baseIpAddress);
           
           if (savedScreen) {
             // Mettre à jour l'état local uniquement après une sauvegarde réussie
@@ -140,8 +142,9 @@ export const useAppStore = create<AppState>()(
       
       updateScreen: async (id, data) => {
         try {
+          const state = get();
           // Mettre à jour l'écran sur le serveur
-          const updatedScreen = await screenService.updateScreen(id, data);
+          const updatedScreen = await screenService.updateScreen(id, data, state.apiUrl, state.baseIpAddress);
           
           if (updatedScreen) {
             // Mettre à jour l'état local uniquement après une mise à jour réussie
@@ -166,8 +169,9 @@ export const useAppStore = create<AppState>()(
       
       removeScreen: async (id) => {
         try {
+          const state = get();
           // Supprimer l'écran du serveur
-          const success = await screenService.deleteScreen(id);
+          const success = await screenService.deleteScreen(id, state.apiUrl, state.baseIpAddress);
           
           if (success) {
             // Mettre à jour l'état local uniquement après une suppression réussie
@@ -192,13 +196,19 @@ export const useAppStore = create<AppState>()(
         try {
           // Récupérer l'écran actuel
           const currentScreen = get().screens.find(screen => screen.id === screenId);
+          const state = get();
           
           if (!currentScreen) {
             throw new Error('Écran non trouvé');
           }
           
           // Mettre à jour l'écran sur le serveur
-          const updatedScreen = await screenService.updateScreen(screenId, { contentId });
+          const updatedScreen = await screenService.updateScreen(
+            screenId, 
+            { contentId }, 
+            state.apiUrl, 
+            state.baseIpAddress
+          );
           
           if (updatedScreen) {
             // Mettre à jour l'état local uniquement après une mise à jour réussie
