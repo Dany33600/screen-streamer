@@ -1,31 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { 
-  Layers,
-  Settings,
   MonitorPlay,
-  Film,
-  List,
-  PlaySquare,
   ChevronLeft,
-  ChevronRight,
-  Lock,
-  Cog
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import PinVerificationDialog from '../config/PinVerificationDialog';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import SidebarNav from './SidebarNav';
+import SidebarConfig from './SidebarConfig';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const isConfigMode = useAppStore((state) => state.isConfigMode);
-  const isPinVerified = useAppStore((state) => state.isPinVerified);
-  const toggleConfigMode = useAppStore((state) => state.toggleConfigMode);
-  const resetPinVerification = useAppStore((state) => state.resetPinVerification);
-  const menuOptions = useAppStore((state) => state.menuOptions);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,25 +30,6 @@ const Sidebar = () => {
       });
     }
   }, [isConfigMode, isOnRestrictedRoute, navigate]);
-
-  const handleConfigButtonClick = () => {
-    if (isConfigMode) {
-      toggleConfigMode();
-      resetPinVerification();
-      
-      if (isOnRestrictedRoute) {
-        navigate('/', { replace: true });
-        toast({
-          title: "Mode configuration désactivé",
-          description: "Vous avez été redirigé vers la page d'accueil",
-        });
-      }
-    } else if (!isPinVerified) {
-      setIsPinDialogOpen(true);
-    } else {
-      toggleConfigMode();
-    }
-  };
 
   return (
     <div 
@@ -93,110 +64,13 @@ const Sidebar = () => {
       </div>
 
       <div className="flex-1 py-6">
-        <nav className="space-y-1 px-2">
-          {menuOptions.dashboard && (
-            <NavItem 
-              to="/" 
-              icon={<Layers size={20} />} 
-              text="Tableau de bord" 
-              isCollapsed={isCollapsed} 
-            />
-          )}
-          
-          {menuOptions.screens && (
-            <NavItem 
-              to="/screens" 
-              icon={<MonitorPlay size={20} />} 
-              text="Écrans" 
-              isCollapsed={isCollapsed} 
-            />
-          )}
-          
-          {menuOptions.content && (
-            <NavItem 
-              to="/content" 
-              icon={<Film size={20} />} 
-              text="Contenus" 
-              isCollapsed={isCollapsed} 
-            />
-          )}
-          
-          {menuOptions.playlists && (
-            <NavItem 
-              to="/playlists" 
-              icon={<List size={20} />} 
-              text="Playlists" 
-              isCollapsed={isCollapsed} 
-            />
-          )}
-          
-          {menuOptions.preview && (
-            <NavItem 
-              to="/preview" 
-              icon={<PlaySquare size={20} />} 
-              text="Aperçu" 
-              isCollapsed={isCollapsed} 
-            />
-          )}
-          
-          {isConfigMode && (
-            <NavItem 
-              to="/config" 
-              icon={<Cog size={20} />} 
-              text="Configuration" 
-              isCollapsed={isCollapsed} 
-            />
-          )}
-        </nav>
+        <SidebarNav isCollapsed={isCollapsed} />
       </div>
 
       <div className="mt-auto border-t p-4">
-        <Button 
-          variant={isConfigMode ? "default" : "outline"}
-          onClick={handleConfigButtonClick} 
-          className={cn(
-            "w-full justify-start gap-2 transition-all", 
-            isCollapsed ? "px-2" : "px-4"
-          )}
-        >
-          {isConfigMode ? <Settings size={18} /> : <Lock size={18} />}
-          {!isCollapsed && <span>{isConfigMode ? "Mode Utilisation" : "Mode Configuration"}</span>}
-        </Button>
+        <SidebarConfig isCollapsed={isCollapsed} />
       </div>
-      
-      <PinVerificationDialog 
-        isOpen={isPinDialogOpen} 
-        onClose={() => setIsPinDialogOpen(false)} 
-      />
     </div>
-  );
-};
-
-interface NavItemProps {
-  to: string;
-  icon: React.ReactNode;
-  text: string;
-  isCollapsed: boolean;
-  highlightMode?: boolean;
-}
-
-const NavItem: React.FC<NavItemProps> = ({ to, icon, text, isCollapsed, highlightMode = false }) => {
-  return (
-    <NavLink
-      to={to}
-      className={({ isActive }) => 
-        cn(
-          "flex items-center px-3 py-2 rounded-md transition-all",
-          isActive 
-            ? "bg-primary/10 text-primary" 
-            : "text-foreground/70 hover:bg-muted hover:text-foreground",
-          isCollapsed && "justify-center"
-        )
-      }
-    >
-      {icon}
-      {!isCollapsed && <span className="ml-3">{text}</span>}
-    </NavLink>
   );
 };
 
