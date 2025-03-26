@@ -50,7 +50,7 @@ const PreviewPage = () => {
     
     try {
       const state = useAppStore.getState();
-      // Fix: Pass apiUrl as a single parameter object instead of two separate parameters
+      // Corriger l'appel pour passer un objet de configuration
       screenServerService.updateApiBaseUrl({
         apiUrl: state.apiUrl,
         baseIpAddress: state.baseIpAddress

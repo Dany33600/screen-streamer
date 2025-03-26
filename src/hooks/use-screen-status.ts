@@ -10,6 +10,7 @@ export function useScreenStatus(screen: Screen) {
   const contents = useAppStore((state) => state.contents);
   const updateScreen = useAppStore((state) => state.updateScreen);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const apiUrl = useAppStore((state) => state.apiUrl);
   
   const content = screen.contentId 
     ? contents.find(c => c.id === screen.contentId) 
@@ -24,7 +25,10 @@ export function useScreenStatus(screen: Screen) {
       console.log(`Vérification de l'état du serveur pour l'écran ${screen.name} (${screen.id})`);
       
       // S'assurer que le service utilise l'adresse IP actuelle
-      screenServerService.updateApiBaseUrl();
+      screenServerService.updateApiBaseUrl({
+        apiUrl,
+        baseIpAddress
+      });
       
       // Vérifier si le serveur est en cours d'exécution
       const isRunning = screenServerService.isServerRunning(screen.id);
@@ -88,7 +92,10 @@ export function useScreenStatus(screen: Screen) {
     console.log(`Options d'affichage:`, displayOptions);
     
     // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
-    screenServerService.updateApiBaseUrl();
+    screenServerService.updateApiBaseUrl({
+      apiUrl,
+      baseIpAddress
+    });
     
     const success = await screenServerService.startServer(screen.id, screen.port, content, displayOptions);
     
@@ -149,7 +156,10 @@ export function useScreenStatus(screen: Screen) {
     }
     
     // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
-    screenServerService.updateApiBaseUrl();
+    screenServerService.updateApiBaseUrl({
+      apiUrl,
+      baseIpAddress
+    });
     
     // Mettre à jour l'adresse IP de l'écran avec celle de la configuration
     if (screen.ipAddress !== baseIpAddress) {
@@ -186,7 +196,10 @@ export function useScreenStatus(screen: Screen) {
   useEffect(() => {
     console.log(`Vérification initiale de l'état du serveur pour l'écran ${screen.name}`);
     // Mettre à jour l'URL de l'API avec l'adresse IP correcte
-    screenServerService.updateApiBaseUrl();
+    screenServerService.updateApiBaseUrl({
+      apiUrl,
+      baseIpAddress
+    });
     checkServerStatus();
     
     // Vérifier périodiquement l'état du serveur (toutes les 10 secondes)

@@ -1,3 +1,4 @@
+
 import { Content } from '@/types';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
@@ -5,7 +6,7 @@ import { htmlGenerator } from './htmlGenerator';
 import { useAppStore } from '@/store';
 
 interface ApiUrlConfig {
-  apiUrl: string;
+  apiUrl?: string;
   baseIpAddress?: string;
 }
 
@@ -33,14 +34,16 @@ class ScreenServerRealService {
   
   constructor() {
     // Use the API URL from the app store if available, or provide a fallback approach
-    this.updateApiBaseUrl();
+    this.updateApiBaseUrl({});
     
     console.log(`Service ScreenServerReal initialisé avec l'URL API: ${this.apiBaseUrl}`);
   }
   
   // Method to update the API base URL (can be called when the API URL changes)
-  public updateApiBaseUrl(config: ApiUrlConfig): void {
-    const { apiUrl, baseIpAddress } = config;
+  public updateApiBaseUrl(config: ApiUrlConfig = {}): void {
+    const state = useAppStore.getState();
+    const { apiUrl = state.apiUrl, baseIpAddress = state.baseIpAddress } = config;
+    
     if (apiUrl) {
       // Replace 'localhost' with the base IP address if provided
       const formattedApiUrl = apiUrl.replace('localhost', baseIpAddress || 'localhost');

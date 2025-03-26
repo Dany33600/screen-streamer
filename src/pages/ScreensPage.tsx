@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore, initializeScreens } from '@/store';
@@ -71,7 +72,7 @@ const ScreensPage = () => {
     queryFn: async () => {
       if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
       
-      // Update API URL with store values - Fix: use object parameter
+      // Update API URL with store values
       screenServerService.updateApiBaseUrl({
         apiUrl,
         baseIpAddress
@@ -109,7 +110,7 @@ const ScreensPage = () => {
       setIsAddDialogOpen(false);
       toast.success(`Écran "${newScreenName}" ajouté avec succès`);
       
-      // Make sure to update the API URL after adding a screen - Fix: use object parameter
+      // Make sure to update the API URL after adding a screen
       screenServerService.updateApiBaseUrl({
         apiUrl,
         baseIpAddress
@@ -210,7 +211,7 @@ const ScreensPage = () => {
     setCurrentScreen(screen);
     setSelectedContentId(screen.contentId || 'none');
     
-    // Use store values to update API URL - Fix: use object parameter
+    // Use store values to update API URL
     const state = useAppStore.getState();
     screenServerService.updateApiBaseUrl({
       apiUrl: state.apiUrl,
@@ -226,7 +227,6 @@ const ScreensPage = () => {
   const handleRetry = () => {
     setIsRetrying(true);
     const state = useAppStore.getState();
-    // Fix: use object parameter
     screenServerService.updateApiBaseUrl({
       apiUrl: state.apiUrl,
       baseIpAddress: state.baseIpAddress

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -45,6 +44,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
 }) => {
   const assignContentToScreen = useAppStore(state => state.assignContentToScreen);
   const apiUrl = useAppStore(state => state.apiUrl);
+  const baseIpAddress = useAppStore(state => state.baseIpAddress);
   const getScreenById = (id: string) => screens.find(screen => screen.id === id);
   const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false);
   const [pendingScreenId, setPendingScreenId] = useState<string | null>(null);
@@ -55,9 +55,12 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
   // Ensure API base URL is updated when the dialog opens
   useEffect(() => {
     if (open) {
-      screenServerService.updateApiBaseUrl();
+      screenServerService.updateApiBaseUrl({
+        apiUrl,
+        baseIpAddress
+      });
     }
-  }, [open]);
+  }, [open, apiUrl, baseIpAddress]);
 
   // Récupérer la liste des contenus depuis le serveur
   const { 
@@ -71,7 +74,10 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
       if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
       
       // Make sure the API URL is updated before making the request
-      screenServerService.updateApiBaseUrl();
+      screenServerService.updateApiBaseUrl({
+        apiUrl,
+        baseIpAddress
+      });
       
       // Add a slight delay to ensure the API is ready (helps with newly created screens)
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -116,7 +122,10 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
 
   const handleRetry = () => {
     setIsRetrying(true);
-    screenServerService.updateApiBaseUrl();
+    screenServerService.updateApiBaseUrl({
+      apiUrl,
+      baseIpAddress
+    });
     refetchContents();
   };
 
