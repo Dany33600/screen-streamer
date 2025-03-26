@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -97,11 +96,7 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           console.error('Erreur lors du chargement des écrans:', error);
-          toast({
-            title: 'Erreur de chargement',
-            description: 'Impossible de charger les écrans depuis le serveur',
-            variant: 'destructive',
-          });
+          toast.error('Impossible de charger les écrans depuis le serveur');
         } finally {
           set({ isLoadingScreens: false });
         }
@@ -130,10 +125,7 @@ export const useAppStore = create<AppState>()(
               screens: [...state.screens, savedScreen],
             }));
             
-            toast({
-              title: 'Écran ajouté',
-              description: `L'écran "${name}" a été ajouté avec succès`,
-            });
+            toast.success(`L'écran "${name}" a été ajouté avec succès`);
             
             return savedScreen;
           } else {
@@ -141,11 +133,7 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           console.error('Erreur lors de l\'ajout de l\'écran:', error);
-          toast({
-            title: 'Erreur',
-            description: 'Impossible d\'ajouter l\'écran',
-            variant: 'destructive',
-          });
+          toast.error('Impossible d\'ajouter l\'écran');
           return null;
         }
       },
@@ -163,10 +151,7 @@ export const useAppStore = create<AppState>()(
               ),
             }));
             
-            toast({
-              title: 'Écran mis à jour',
-              description: `L'écran a été mis à jour avec succès`,
-            });
+            toast.success(`L'écran a été mis à jour avec succès`);
             
             return updatedScreen;
           } else {
@@ -174,11 +159,7 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           console.error('Erreur lors de la mise à jour de l\'écran:', error);
-          toast({
-            title: 'Erreur',
-            description: 'Impossible de mettre à jour l\'écran',
-            variant: 'destructive',
-          });
+          toast.error('Impossible de mettre à jour l\'écran');
           return null;
         }
       },
@@ -194,10 +175,7 @@ export const useAppStore = create<AppState>()(
               screens: state.screens.filter((screen) => screen.id !== id),
             }));
             
-            toast({
-              title: 'Écran supprimé',
-              description: 'L\'écran a été supprimé avec succès',
-            });
+            toast.success('L\'écran a été supprimé avec succès');
             
             return true;
           } else {
@@ -205,11 +183,7 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           console.error('Erreur lors de la suppression de l\'écran:', error);
-          toast({
-            title: 'Erreur',
-            description: 'Impossible de supprimer l\'écran',
-            variant: 'destructive',
-          });
+          toast.error('Impossible de supprimer l\'écran');
           return false;
         }
       },
@@ -240,11 +214,7 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error) {
           console.error('Erreur lors de l\'assignation du contenu à l\'écran:', error);
-          toast({
-            title: 'Erreur',
-            description: 'Impossible d\'assigner le contenu à l\'écran',
-            variant: 'destructive',
-          });
+          toast.error('Impossible d\'assigner le contenu à l\'écran');
           return null;
         }
       },
