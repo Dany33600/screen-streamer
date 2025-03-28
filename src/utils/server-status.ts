@@ -1,3 +1,4 @@
+
 import { Screen } from '@/types';
 import { screenServerService } from '@/services/screenServerReal';
 
@@ -51,7 +52,7 @@ export async function checkServerStatus(
 /**
  * Check server API status
  */
-export async function checkServerStatus({ ipAddress, port }: { ipAddress: string, port: number }): Promise<{ ipReachable: boolean, serverRunning: boolean }> {
+export async function checkApiServerStatus({ ipAddress, port }: { ipAddress: string, port: number }): Promise<{ ipReachable: boolean, serverRunning: boolean }> {
   try {
     console.log(`Checking API server status at ${ipAddress}:${port}`);
     

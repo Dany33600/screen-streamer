@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAppStore } from '@/store';
-import { checkServerStatus } from '@/utils/server-status';
+import { checkApiServerStatus } from '@/utils/server-status';
 import { configService } from '@/services/config/configService';
 
 interface StepServerCheckProps {
@@ -32,7 +32,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     setIpReachable(null);
     
     try {
-      const result = await checkServerStatus({ 
+      const result = await checkApiServerStatus({ 
         ipAddress: ipToUse, 
         port: apiPort 
       });
