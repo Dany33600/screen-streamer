@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/store';
 import { AlertTriangle, Save } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { DEFAULT_IP_ADDRESS, DEFAULT_BASE_PORT } from '@/config/constants';
 
@@ -16,14 +16,25 @@ export const NetworkSettings = () => {
   const basePort = useAppStore((state) => state.basePort);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiPort = useAppStore((state) => state.apiPort);
+  const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
+  const apiIpAddress = useAppStore((state) => state.apiIpAddress);
   const setBasePort = useAppStore((state) => state.setBasePort);
   const setBaseIpAddress = useAppStore((state) => state.setBaseIpAddress);
   const setApiPort = useAppStore((state) => state.setApiPort);
+  const setUseBaseIpForApi = useAppStore((state) => state.setUseBaseIpForApi);
+  const setApiIpAddress = useAppStore((state) => state.setApiIpAddress);
   
   const [portValue, setPortValue] = useState(basePort.toString());
   const [ipValue, setIpValue] = useState(baseIpAddress);
   const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
+  const [apiIpValue, setApiIpValue] = useState(useBaseIpForApi ? baseIpAddress : apiIpAddress);
   const [isSaving, setIsSaving] = useState(false);
+  
+  useEffect(() => {
+    if (useBaseIpForApi) {
+      setApiIpValue(baseIpAddress);
+    }
+  }, [baseIpAddress, useBaseIpForApi]);
   
   const handleSaveNetworkConfig = () => {
     const newPort = parseInt(portValue, 10);
@@ -49,7 +60,15 @@ export const NetworkSettings = () => {
     
     if (!ipPattern.test(ipValue)) {
       toast({
-        title: 'Veuillez entrer une adresse IP valide',
+        title: 'Veuillez entrer une adresse IP valide pour le serveur web',
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!useBaseIpForApi && !ipPattern.test(apiIpValue)) {
+      toast({
+        title: 'Veuillez entrer une adresse IP valide pour le serveur API',
         variant: "destructive",
       });
       return;
@@ -61,6 +80,13 @@ export const NetworkSettings = () => {
       setBasePort(newPort);
       setBaseIpAddress(ipValue);
       setApiPort(newApiPort);
+      
+      if (useBaseIpForApi) {
+        setApiIpAddress(ipValue);
+      } else {
+        setApiIpAddress(apiIpValue);
+      }
+      
       setIsSaving(false);
       toast({
         title: 'Configuration réseau mise à jour',
@@ -93,6 +119,39 @@ export const NetworkSettings = () => {
           Assurez-vous que ces ports sont ouverts dans votre pare-feu.
         </p>
         
+        <div className="flex items-center space-x-2 mb-2">
+          <Checkbox 
+            id="use-base-ip" 
+            checked={useBaseIpForApi}
+            onCheckedChange={(checked) => {
+              setUseBaseIpForApi(checked === true);
+              if (checked) {
+                setApiIpValue(ipValue);
+              }
+            }}
+          />
+          <Label 
+            htmlFor="use-base-ip"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            Utiliser la même adresse IP que le serveur web
+          </Label>
+        </div>
+        
+        <div className="grid gap-2">
+          <Label htmlFor="api-ip">Adresse IP du serveur API</Label>
+          <Input
+            id="api-ip"
+            placeholder={DEFAULT_IP_ADDRESS}
+            value={apiIpValue}
+            onChange={(e) => setApiIpValue(e.target.value)}
+            disabled={useBaseIpForApi}
+          />
+          <p className="text-sm text-muted-foreground">
+            L'adresse IP sur laquelle le serveur API backend fonctionnera
+          </p>
+        </div>
+        
         <div className="grid gap-2 mt-4">
           <Label htmlFor="api-port">Port du serveur API</Label>
           <Input
@@ -107,7 +166,7 @@ export const NetworkSettings = () => {
         </div>
         
         <p className="text-sm text-muted-foreground">
-          Le serveur API backend est accessible à l'adresse : <span className="font-medium">{ipValue}:{apiPortValue}</span>
+          Le serveur API backend est accessible à l'adresse : <span className="font-medium">{useBaseIpForApi ? ipValue : apiIpValue}:{apiPortValue}</span>
         </p>
       </CardContent>
     </Card>

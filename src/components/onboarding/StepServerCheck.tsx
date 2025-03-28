@@ -4,6 +4,7 @@ import { useAppStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Check, ServerCrash, Loader2, Server } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { API_PORT } from '@/config/constants';
@@ -17,13 +18,25 @@ interface StepServerCheckProps {
 const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack }) => {
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiPort = useAppStore((state) => state.apiPort);
+  const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
+  const apiIpAddress = useAppStore((state) => state.apiIpAddress);
   const setApiPort = useAppStore((state) => state.setApiPort);
+  const setUseBaseIpForApi = useAppStore((state) => state.setUseBaseIpForApi);
+  const setApiIpAddress = useAppStore((state) => state.setApiIpAddress);
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
   const hasAttemptedServerCheck = useAppStore((state) => state.hasAttemptedServerCheck);
   
   const [serverStatus, setServerStatus] = useState<'initial' | 'checking' | 'online' | 'offline'>('initial');
   const [isLoading, setIsLoading] = useState(false);
   const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
+  const [apiIpValue, setApiIpValue] = useState(useBaseIpForApi ? baseIpAddress : apiIpAddress);
+  
+  // Mettre à jour l'IP API lorsque baseIpAddress change et que useBaseIpForApi est true
+  useEffect(() => {
+    if (useBaseIpForApi) {
+      setApiIpValue(baseIpAddress);
+    }
+  }, [baseIpAddress, useBaseIpForApi]);
   
   useEffect(() => {
     console.log("StepServerCheck - État initial hasAttemptedServerCheck:", hasAttemptedServerCheck);
@@ -48,16 +61,35 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       return;
     }
     
-    // Mettre à jour le port API dans le store
+    // Vérifier si l'IP API est valide
+    const ipPattern = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (!ipPattern.test(apiIpValue)) {
+      toast({
+        title: 'Veuillez entrer une adresse IP valide pour le serveur API',
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Mettre à jour le port API et l'IP API dans le store
     setApiPort(newPort);
+    if (useBaseIpForApi) {
+      // Si l'option est activée, on utilise l'IP de base
+      setApiIpAddress(baseIpAddress);
+    } else {
+      // Sinon, on utilise l'IP saisie par l'utilisateur
+      setApiIpAddress(apiIpValue);
+    }
     
     try {
       // Marquer que nous avons tenté de vérifier le serveur - IMPORTANT pour activer le logo cliquable
       setHasAttemptedServerCheck(true);
       console.log("Vérification serveur tentée - hasAttemptedServerCheck défini à true");
       
-      // Essayer de se connecter au serveur
-      const apiUrl = `http://${baseIpAddress}:${newPort}/api/ping`;
+      // Essayer de se connecter au serveur avec l'IP appropriée
+      const serverIp = useBaseIpForApi ? baseIpAddress : apiIpValue;
+      const apiUrl = `http://${serverIp}:${newPort}/api/ping`;
       console.log(`Vérification du serveur à l'adresse: ${apiUrl}`);
       
       const response = await fetch(apiUrl, { 
@@ -106,6 +138,39 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       
       <div className="space-y-6">
         <div className="grid gap-2">
+          <div className="flex items-center space-x-2 mb-2">
+            <Checkbox 
+              id="use-base-ip" 
+              checked={useBaseIpForApi}
+              onCheckedChange={(checked) => {
+                setUseBaseIpForApi(checked === true);
+                if (checked) {
+                  setApiIpValue(baseIpAddress);
+                }
+              }}
+            />
+            <Label 
+              htmlFor="use-base-ip"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              Utiliser la même adresse IP que le serveur web ({baseIpAddress})
+            </Label>
+          </div>
+          
+          <Label htmlFor="api-ip">Adresse IP du serveur API</Label>
+          <Input
+            id="api-ip"
+            value={apiIpValue}
+            onChange={(e) => setApiIpValue(e.target.value)}
+            disabled={useBaseIpForApi}
+            placeholder={baseIpAddress}
+          />
+          <p className="text-sm text-muted-foreground">
+            Adresse IP utilisée par le serveur API backend
+          </p>
+        </div>
+
+        <div className="grid gap-2 mt-4">
           <Label htmlFor="api-port">Port du serveur API</Label>
           <Input
             id="api-port"

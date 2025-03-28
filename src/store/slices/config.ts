@@ -1,3 +1,4 @@
+
 import { 
   DEFAULT_BASE_PORT, 
   DEFAULT_IP_ADDRESS, 
@@ -18,6 +19,8 @@ export interface ConfigState {
   hasCompletedOnboarding: boolean;
   hasAttemptedServerCheck: boolean;
   apiPort: number;
+  useBaseIpForApi: boolean;
+  apiIpAddress: string;
   menuOptions: {
     dashboard: boolean;
     screens: boolean;
@@ -40,6 +43,8 @@ export interface ConfigState {
   setHasCompletedOnboarding: (value: boolean) => void;
   setHasAttemptedServerCheck: (value: boolean) => void;
   setApiPort: (port: number) => void;
+  setUseBaseIpForApi: (value: boolean) => void;
+  setApiIpAddress: (ipAddress: string) => void;
 }
 
 export const createConfigSlice = (
@@ -57,6 +62,8 @@ export const createConfigSlice = (
   hasCompletedOnboarding: false, // Par défaut, l'onboarding n'a pas été complété
   hasAttemptedServerCheck: false, // Par défaut, aucune tentative de vérification du serveur n'a été effectuée
   apiPort: API_PORT, // Port API par défaut
+  useBaseIpForApi: true, // Par défaut, utilise la même IP que le serveur web
+  apiIpAddress: DEFAULT_IP_ADDRESS, // Par défaut, même IP que baseIpAddress
   
   // Default menu options - all enabled by default
   menuOptions: {
@@ -145,5 +152,27 @@ export const createConfigSlice = (
   setApiPort: (port) => set((state) => ({ 
     ...state, 
     apiPort: port 
+  })),
+  
+  setUseBaseIpForApi: (value) => set((state) => {
+    // Si on active l'option, on synchronise l'IP API avec l'IP de base
+    if (value) {
+      return { 
+        ...state, 
+        useBaseIpForApi: value,
+        apiIpAddress: state.baseIpAddress
+      };
+    }
+    return { 
+      ...state, 
+      useBaseIpForApi: value 
+    };
+  }),
+  
+  setApiIpAddress: (ipAddress) => set((state) => ({ 
+    ...state, 
+    apiIpAddress: ipAddress,
+    // Si l'utilisateur modifie manuellement l'IP API, désactiver l'option d'utiliser l'IP de base
+    useBaseIpForApi: false
   })),
 });
