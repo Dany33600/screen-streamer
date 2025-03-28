@@ -28,13 +28,12 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
       <div className="w-full max-w-3xl px-4 py-8 space-y-8">
         <div className="flex flex-col items-center space-y-4 mb-8">
           <div 
-            className={`flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2 ${
-              step === 6 ? 'cursor-pointer' : ''
-            }`}
+            className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2"
             onClick={handleLogoClick}
             role={step === 6 ? "button" : "presentation"}
             tabIndex={step === 6 ? 0 : -1}
             aria-label="Logo ScreenCast"
+            style={{ cursor: 'default' }}
           >
             <MonitorPlay className="h-8 w-8 text-primary" />
           </div>
