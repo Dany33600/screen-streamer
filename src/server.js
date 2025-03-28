@@ -4,7 +4,7 @@ import { createApiServer } from './server/screenServer.js';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { API_PORT } from './config/constants.js';
+import { API_PORT } from './config/constants.ts';
 
 // Recréer l'équivalent de __dirname pour les modules ES
 const __filename = fileURLToPath(import.meta.url);
@@ -35,7 +35,7 @@ console.log('-'.repeat(50));
 console.log('IMPORTANT: Pour utiliser cette API:');
 console.log('1. Assurez-vous que ce serveur est accessible depuis le navigateur');
 console.log('2. Configurez l\'URL de l\'API dans les paramètres de l\'application');
-console.log('3. URL de l\'API à utiliser: http://<adresse_ip>:${API_PORT}');
+console.log(`3. URL de l\'API à utiliser: http://<adresse_ip>:${API_PORT}`);
 console.log('Points de terminaison disponibles:');
 console.log('  GET /api/status - État du serveur et liste des serveurs en cours d\'exécution');
 console.log('  GET /api/ping - Vérification que le serveur API est en cours d\'exécution');
