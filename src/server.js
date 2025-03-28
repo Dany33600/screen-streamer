@@ -1,9 +1,10 @@
+
 // Script de démarrage du serveur Express pour les écrans
 import { createApiServer } from './server/screenServer.js';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { API_PORT } from './config/constants.js';
+import { API_PORT, DEFAULT_IP_ADDRESS } from './config/constants.js';
 
 // Recréer l'équivalent de __dirname pour les modules ES
 const __filename = fileURLToPath(import.meta.url);
@@ -17,6 +18,7 @@ console.log('='.repeat(50));
 console.log('Screen Streamer API Server');
 console.log('='.repeat(50));
 console.log(`Le serveur API est démarré sur le port ${API_PORT}`);
+console.log(`Adresse IP configurée: ${DEFAULT_IP_ADDRESS}`);
 console.log('Adresses IP disponibles sur ce serveur:');
 
 // Afficher toutes les adresses IP du système
