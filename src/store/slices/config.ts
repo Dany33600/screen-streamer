@@ -9,6 +9,7 @@ export interface ConfigState {
   refreshInterval: number;
   isDarkMode: boolean;
   hasCompletedOnboarding: boolean;
+  hasAttemptedServerCheck: boolean;
   menuOptions: {
     dashboard: boolean;
     screens: boolean;
@@ -29,6 +30,7 @@ export interface ConfigState {
   toggleMenuOption: (option: keyof ConfigState['menuOptions'], value: boolean) => void;
   toggleDarkMode: () => void;
   setHasCompletedOnboarding: (value: boolean) => void;
+  setHasAttemptedServerCheck: (value: boolean) => void;
 }
 
 export const createConfigSlice = (
@@ -44,6 +46,7 @@ export const createConfigSlice = (
   refreshInterval: 1, // Default to 1 minute
   isDarkMode: false, // Thème clair par défaut
   hasCompletedOnboarding: false, // Par défaut, l'onboarding n'a pas été complété
+  hasAttemptedServerCheck: false, // Par défaut, aucune tentative de vérification du serveur n'a été effectuée
   
   // Default menu options - all enabled by default
   menuOptions: {
@@ -122,5 +125,10 @@ export const createConfigSlice = (
   setHasCompletedOnboarding: (value) => set((state) => ({
     ...state,
     hasCompletedOnboarding: value
+  })),
+  
+  setHasAttemptedServerCheck: (value) => set((state) => ({
+    ...state,
+    hasAttemptedServerCheck: value
   })),
 });

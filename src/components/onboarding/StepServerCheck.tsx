@@ -15,6 +15,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const [isChecking, setIsChecking] = useState(false);
   const [serverStatus, setServerStatus] = useState<'unchecked' | 'online' | 'offline'>('unchecked');
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
   
   const checkServerStatus = async () => {
     setIsChecking(true);
@@ -40,6 +41,8 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       setServerStatus('offline');
     } finally {
       setIsChecking(false);
+      // Marquer qu'une tentative de vérification a été effectuée
+      setHasAttemptedServerCheck(true);
     }
   };
   
@@ -100,6 +103,12 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
                   ? "Impossible de se connecter au serveur. Vérifiez qu'il est bien démarré."
                   : "Cliquez sur le bouton pour vérifier l'état du serveur"}
             </p>
+            
+            {serverStatus === 'offline' && (
+              <p className="text-sm mt-2 text-muted-foreground italic">
+                Astuce : Vous pouvez cliquer sur le logo de l'application en haut pour accéder au dashboard sans serveur.
+              </p>
+            )}
           </div>
         </div>
       </div>
