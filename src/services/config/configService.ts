@@ -52,6 +52,9 @@ class ConfigService extends ApiService {
   
   // Charger la configuration à partir du backend
   public async loadConfig(): Promise<AppConfig> {
+    // Ensure API URL is configured with latest settings
+    this.updateApiBaseUrl();
+    
     try {
       if (!this.isLoaded) {
         console.log('Chargement de la configuration depuis le backend...');
@@ -81,6 +84,9 @@ class ConfigService extends ApiService {
   
   // Sauvegarder la configuration sur le backend
   public async saveConfig(config: AppConfig): Promise<boolean> {
+    // Ensure API URL is configured with latest settings
+    this.updateApiBaseUrl();
+    
     try {
       console.log('Sauvegarde de la configuration sur le backend:', config);
       const response = await this.handleApiRequest<{success: boolean}>(

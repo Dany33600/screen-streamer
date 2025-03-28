@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { Screen } from '@/types';
-import { useAppStore } from '@/store';
 import { checkServerStatus } from '@/utils/server-status';
 import { toast } from '@/hooks/use-toast';
 
@@ -16,9 +15,12 @@ export interface ServerCheckResult {
  */
 export function useServerStatusCheck(screen?: Screen) {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const updateScreen = useAppStore((state) => state.updateScreen);
-  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
-  const apiPort = useAppStore((state) => state.apiPort);
+  
+  // Get store functions lazily to avoid circular dependencies
+  const getStoreState = () => {
+    const { useAppStore } = require('@/store');
+    return useAppStore.getState();
+  };
   
   /**
    * Function to verify server status
@@ -28,6 +30,8 @@ export function useServerStatusCheck(screen?: Screen) {
     
     try {
       setIsCheckingStatus(true);
+      
+      const { baseIpAddress, updateScreen } = getStoreState();
       
       // Use the extracted utility function
       const isRunning = await checkServerStatus(
@@ -59,12 +63,14 @@ export function useServerStatusCheck(screen?: Screen) {
     setIsCheckingStatus(true);
     
     try {
+      const { baseIpAddress, apiPort } = getStoreState();
+      
       console.log('Checking server connection to API...');
       const ipAddressToCheck = baseIpAddress;
       const portToCheck = apiPort;
       
       // First check if the IP is reachable
-      const ipReachable = await isIpReachable(ipAddressToCheck);
+      const ipReachable = await isIpReachable(ipAddressToCheck, portToCheck);
       
       // If IP is reachable, check if the API server is running
       let serverRunning = false;
@@ -90,14 +96,14 @@ export function useServerStatusCheck(screen?: Screen) {
   /**
    * Helper function to check if an IP is reachable
    */
-  const isIpReachable = async (ip: string): Promise<boolean> => {
+  const isIpReachable = async (ip: string, port: number): Promise<boolean> => {
     try {
       // We use a simple ping endpoint to check if the IP is reachable
       // In a real scenario, you'd use an actual ping operation
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
       
-      const response = await fetch(`http://${ip}:${apiPort}/ping`, {
+      const response = await fetch(`http://${ip}:${port}/ping`, {
         method: 'GET',
         signal: controller.signal,
       });
