@@ -3,20 +3,28 @@ import { useState } from 'react';
 import { Screen } from '@/types';
 import { useAppStore } from '@/store';
 import { checkServerStatus } from '@/utils/server-status';
+import { toast } from '@/hooks/use-toast';
+
+// Define the return type for server check
+export interface ServerCheckResult {
+  ipReachable: boolean;
+  serverRunning: boolean;
+}
 
 /**
  * Hook for checking server status of a screen
  */
-export function useServerStatusCheck(screen: Screen) {
+export function useServerStatusCheck(screen?: Screen) {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const updateScreen = useAppStore((state) => state.updateScreen);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
   
   /**
    * Function to verify server status
    */
   const verifyServerStatus = async (isCurrentlyOnline: boolean, contentId?: string): Promise<boolean | undefined> => {
-    if (isCheckingStatus) return; // Prevent simultaneous checks
+    if (isCheckingStatus || !screen) return; // Prevent simultaneous checks or if no screen
     
     try {
       setIsCheckingStatus(true);
@@ -44,8 +52,88 @@ export function useServerStatusCheck(screen: Screen) {
     }
   };
   
+  /**
+   * Function to check API connection
+   */
+  const checkServerConnection = async (): Promise<ServerCheckResult> => {
+    setIsCheckingStatus(true);
+    
+    try {
+      console.log('Checking server connection to API...');
+      const ipAddressToCheck = baseIpAddress;
+      const portToCheck = apiPort;
+      
+      // First check if the IP is reachable
+      const ipReachable = await isIpReachable(ipAddressToCheck);
+      
+      // If IP is reachable, check if the API server is running
+      let serverRunning = false;
+      if (ipReachable) {
+        serverRunning = await isApiServerRunning(ipAddressToCheck, portToCheck);
+      }
+      
+      return {
+        ipReachable,
+        serverRunning
+      };
+    } catch (error) {
+      console.error("Error checking server connection:", error);
+      return {
+        ipReachable: false,
+        serverRunning: false
+      };
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
+  
+  /**
+   * Helper function to check if an IP is reachable
+   */
+  const isIpReachable = async (ip: string): Promise<boolean> => {
+    try {
+      // We use a simple ping endpoint to check if the IP is reachable
+      // In a real scenario, you'd use an actual ping operation
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(`http://${ip}:${apiPort}/ping`, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch (error) {
+      console.error(`Error checking if IP ${ip} is reachable:`, error);
+      return false;
+    }
+  };
+  
+  /**
+   * Helper function to check if the API server is running
+   */
+  const isApiServerRunning = async (ip: string, port: number): Promise<boolean> => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(`http://${ip}:${port}/api/health`, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch (error) {
+      console.error(`Error checking if API server is running on ${ip}:${port}:`, error);
+      return false;
+    }
+  };
+  
   return {
     isCheckingStatus,
-    checkServerStatus: verifyServerStatus
+    checkServerStatus: verifyServerStatus,
+    checkServerConnection
   };
 }
