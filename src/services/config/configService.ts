@@ -41,6 +41,13 @@ class ConfigService extends ApiService {
   
   private constructor() {
     super();
+    // Configurer l'URL de l'API avec les valeurs par défaut
+    this.updateApiBaseUrl({
+      baseIpAddress: defaultConfig.baseIpAddress,
+      apiPort: defaultConfig.apiPort,
+      apiIpAddress: defaultConfig.apiIpAddress,
+      useBaseIpForApi: true
+    });
   }
   
   public static getInstance(): ConfigService {
@@ -55,6 +62,15 @@ class ConfigService extends ApiService {
     try {
       if (!this.isLoaded) {
         console.log('Chargement de la configuration depuis le backend...');
+        
+        // S'assurer que l'URL de l'API est configurée
+        this.updateApiBaseUrl({
+          baseIpAddress: defaultConfig.baseIpAddress,
+          apiPort: defaultConfig.apiPort,
+          apiIpAddress: defaultConfig.apiIpAddress,
+          useBaseIpForApi: true
+        });
+        
         const response = await this.handleApiRequest<{success: boolean, config: AppConfig}>(
           `${this.apiBaseUrl}/config`,
           { method: 'GET' }

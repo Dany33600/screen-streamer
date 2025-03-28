@@ -21,8 +21,8 @@ const queryClient = new QueryClient({
 const initializeApp = async () => {
   try {
     // Charger la configuration depuis le backend
-    await configService.loadConfig();
-    console.log('Configuration chargée depuis le serveur');
+    const config = await configService.loadConfig();
+    console.log('Configuration chargée:', config);
     
     // Initialiser les écrans depuis le serveur
     await initializeScreens().catch(error => {
@@ -35,13 +35,14 @@ const initializeApp = async () => {
   }
 };
 
-// Lancer l'initialisation de l'application
-initializeApp();
-
+// Rendu initial de l'application
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>
-  </React.StrictMode>,
-)
+  </React.StrictMode>
+);
+
+// Lancer l'initialisation de l'application après le rendu initial
+initializeApp();

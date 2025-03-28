@@ -1,5 +1,4 @@
 
-import { useAppStore } from '@/store';
 import { toast } from 'sonner';
 
 interface ApiUrlConfig {
@@ -13,29 +12,44 @@ export class ApiService {
   protected apiBaseUrl: string = '';
   
   constructor() {
-    this.updateApiBaseUrl({});
+    // Initialisation avec une URL vide, sera mise à jour avant utilisation
+    this.apiBaseUrl = '';
   }
   
   public updateApiBaseUrl(config: ApiUrlConfig = {}): void {
-    const state = useAppStore.getState();
-    const { 
-      baseIpAddress = state.baseIpAddress,
-      apiPort = state.apiPort,
-      apiIpAddress = state.apiIpAddress,
-      useBaseIpForApi = state.useBaseIpForApi
-    } = config;
-    
-    // Determine the correct IP address to use
-    const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
-    
-    // Construct the API URL
-    this.apiBaseUrl = `http://${ipToUse}:${apiPort}/api`;
-    
-    console.log(`API URL configured: ${this.apiBaseUrl}`);
+    try {
+      // Importer dynamiquement le store pour éviter la dépendance circulaire
+      const { useAppStore } = require('@/store');
+      const state = useAppStore.getState();
+      
+      const { 
+        baseIpAddress = state.baseIpAddress || '127.0.0.1',
+        apiPort = state.apiPort || 5070,
+        apiIpAddress = state.apiIpAddress || '127.0.0.1',
+        useBaseIpForApi = state.useBaseIpForApi !== undefined ? state.useBaseIpForApi : true
+      } = config;
+      
+      // Determine the correct IP address to use
+      const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
+      
+      // Construct the API URL
+      this.apiBaseUrl = `http://${ipToUse}:${apiPort}/api`;
+      
+      console.log(`API URL configured: ${this.apiBaseUrl}`);
+    } catch (error) {
+      console.error('Error updating API URL:', error);
+      // Fallback to a default URL if there's an error
+      this.apiBaseUrl = 'http://127.0.0.1:5070/api';
+    }
   }
   
   protected async handleApiRequest<T>(url: string, options: RequestInit): Promise<T> {
     try {
+      // Assurez-vous que l'URL de l'API est définie avant d'effectuer des requêtes
+      if (!this.apiBaseUrl) {
+        this.updateApiBaseUrl();
+      }
+      
       console.log(`API Request to: ${url}`, options);
       const response = await fetch(url, options);
       
