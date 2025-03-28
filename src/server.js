@@ -4,7 +4,7 @@ import { createApiServer } from './server/screenServer.js';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { API_PORT } from './config/constants.ts';
+import { API_PORT } from './config/constants.js';
 
 // Recréer l'équivalent de __dirname pour les modules ES
 const __filename = fileURLToPath(import.meta.url);
