@@ -42,6 +42,7 @@ class ConfigService extends ApiService {
   
   private constructor() {
     super();
+    console.log('ConfigService: Initialisation avec les valeurs par défaut', this.config);
     // Configurer l'URL de l'API avec les valeurs par défaut
     this.updateApiBaseUrl({
       baseIpAddress: defaultConfig.baseIpAddress,
@@ -61,31 +62,31 @@ class ConfigService extends ApiService {
   // Charger la configuration à partir du backend
   public async loadConfig(): Promise<AppConfig> {
     try {
-      if (!this.isLoaded) {
-        console.log('Chargement de la configuration depuis le backend...');
-        
-        // S'assurer que l'URL de l'API est configurée
-        this.updateApiBaseUrl({
-          baseIpAddress: defaultConfig.baseIpAddress,
-          apiPort: defaultConfig.apiPort,
-          apiIpAddress: defaultConfig.apiIpAddress,
-          useBaseIpForApi: true
-        });
-        
-        const configUrl = `${this.apiBaseUrl}/config`;
-        console.log(`URL de chargement de la configuration: ${configUrl}`);
-        
+      console.log('ConfigService: Début du chargement de la configuration, isLoaded=', this.isLoaded);
+      
+      // S'assurer que l'URL de l'API est configurée avec les paramètres actuels
+      this.updateApiBaseUrl({
+        baseIpAddress: this.config.baseIpAddress, 
+        apiPort: this.config.apiPort,
+        apiIpAddress: this.config.apiIpAddress,
+        useBaseIpForApi: true
+      });
+      
+      const configUrl = `${this.apiBaseUrl}/config`;
+      console.log(`ConfigService: URL de chargement de la configuration: ${configUrl}`);
+      
+      try {
         const response = await this.handleApiRequest<{success: boolean, config: AppConfig}>(
           configUrl,
           { method: 'GET' }
         );
         
         if (response.success && response.config) {
-          console.log('Configuration chargée avec succès:', response.config);
+          console.log('ConfigService: Configuration chargée avec succès:', response.config);
           this.config = response.config;
           this.isLoaded = true;
           
-          // Mise à jour de l'URL de l'API avec les valeurs chargées
+          // Mettre à jour l'URL de l'API avec les valeurs chargées
           this.updateApiBaseUrl({
             baseIpAddress: this.config.baseIpAddress,
             apiPort: this.config.apiPort,
@@ -94,44 +95,75 @@ class ConfigService extends ApiService {
           });
           
           // Mettre à jour le store Zustand avec la nouvelle configuration
-          const state = useAppStore.getState();
-          if (state.setBaseIpAddress) {
-            state.setBaseIpAddress(this.config.baseIpAddress);
-          }
-          if (state.setApiPort) {
-            state.setApiPort(this.config.apiPort);
-          }
-          if (state.setApiIpAddress) {
-            state.setApiIpAddress(this.config.apiIpAddress);
-          }
-        } else {
-          console.warn('Échec du chargement de la configuration, utilisation des valeurs par défaut');
+          this.updateStoreWithConfig();
+          
+          return this.config;
         }
+      } catch (error) {
+        console.error('ConfigService: Erreur lors de la requête API:', error);
+        // En cas d'échec de l'API, utiliser les valeurs par défaut ou existantes
       }
+      
+      // Si aucune configuration n'a été chargée, utiliser les valeurs actuelles
+      console.log('ConfigService: Utilisation des valeurs par défaut/existantes', this.config);
+      
+      // Mise à jour du store même si on utilise les valeurs par défaut
+      this.updateStoreWithConfig();
       
       return this.config;
     } catch (error) {
-      console.error('Erreur lors du chargement de la configuration:', error);
+      console.error('ConfigService: Erreur lors du chargement de la configuration:', error);
       toast.error('Erreur de configuration', {
         description: 'Impossible de charger la configuration, utilisation des valeurs par défaut'
       });
+      
+      // Mise à jour du store en cas d'erreur
+      this.updateStoreWithConfig();
+      
       return this.config;
+    }
+  }
+  
+  // Mettre à jour le store Zustand avec la configuration actuelle
+  private updateStoreWithConfig(): void {
+    try {
+      const state = useAppStore.getState();
+      
+      // Mettre à jour toutes les valeurs dans le store
+      if (state.setBasePort) state.setBasePort(this.config.basePort);
+      if (state.setBaseIpAddress) state.setBaseIpAddress(this.config.baseIpAddress);
+      if (state.setConfigPin) state.setConfigPin(this.config.configPin);
+      if (state.setRefreshInterval) state.setRefreshInterval(this.config.refreshInterval);
+      if (state.setApiPort) state.setApiPort(this.config.apiPort);
+      if (state.setApiIpAddress) state.setApiIpAddress(this.config.apiIpAddress);
+      
+      // Forcer l'utilisation de l'adresse IP de l'API si elle est différente de l'adresse IP de base
+      if (state.setUseBaseIpForApi) {
+        const shouldUseBaseIp = this.config.baseIpAddress === this.config.apiIpAddress;
+        state.setUseBaseIpForApi(shouldUseBaseIp);
+      }
+      
+      console.log('ConfigService: Store Zustand mis à jour avec la configuration', this.config);
+    } catch (error) {
+      console.error('ConfigService: Erreur lors de la mise à jour du store:', error);
     }
   }
   
   // Sauvegarder la configuration sur le backend
   public async saveConfig(config: AppConfig): Promise<boolean> {
     try {
-      console.log('Sauvegarde de la configuration sur le backend:', config);
+      console.log('ConfigService: Sauvegarde de la configuration sur le backend:', config);
+      
+      // Mettre à jour la configuration locale
+      this.config = { ...config };
       
       // Mettre à jour l'URL de l'API avec la configuration actuelle
       const useBaseIpForApi = true; // We're assuming backend and frontend are on same IP
       const ipToUse = useBaseIpForApi ? config.baseIpAddress : config.apiIpAddress;
       const apiUrl = `http://${ipToUse}:${config.apiPort}/api`;
       
-      console.log(`URL de l'API pour la sauvegarde: ${apiUrl}/config`);
+      console.log(`ConfigService: URL de l'API pour la sauvegarde: ${apiUrl}/config`);
       
-      // Fixed: removed duplicate "/api" in the URL
       const response = await this.handleApiRequest<{success: boolean}>(
         `${apiUrl}/config`,
         { 
@@ -142,8 +174,7 @@ class ConfigService extends ApiService {
       );
       
       if (response.success) {
-        console.log('Configuration sauvegardée avec succès');
-        this.config = config;
+        console.log('ConfigService: Configuration sauvegardée avec succès');
         
         // Mise à jour de l'URL de l'API après la sauvegarde
         this.updateApiBaseUrl({
@@ -153,13 +184,16 @@ class ConfigService extends ApiService {
           useBaseIpForApi: true
         });
         
+        // Mettre à jour le store Zustand
+        this.updateStoreWithConfig();
+        
         return true;
       } else {
-        console.warn('Échec de la sauvegarde de la configuration');
+        console.warn('ConfigService: Échec de la sauvegarde de la configuration');
         return false;
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde de la configuration:', error);
+      console.error('ConfigService: Erreur lors de la sauvegarde de la configuration:', error);
       toast.error('Erreur de configuration', {
         description: 'Impossible de sauvegarder la configuration'
       });

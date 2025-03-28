@@ -6,10 +6,10 @@
 export const API_PORT = 5070;
 
 // Adresse IP par défaut pour le serveur
-export const DEFAULT_IP_ADDRESS = '192.168.0.14';
+export const DEFAULT_IP_ADDRESS = '127.0.0.1';
 
 // Adresse IP par défaut pour le serveur API
-export const DEFAULT_API_IP_ADDRESS = '192.168.0.14';
+export const DEFAULT_API_IP_ADDRESS = '127.0.0.1';
 
 // Port de base par défaut pour les écrans
 export const DEFAULT_BASE_PORT = 5550;
@@ -22,4 +22,4 @@ export const DEFAULT_REFRESH_INTERVAL = 1;
 
 // Constante pour forcer le redémarrage de l'onboarding
 // Mettre à true pour forcer le redémarrage de l'onboarding
-export const FORCE_ONBOARDING = true; // Désactivé par défaut, activé dans la configuration JSON si nécessaire
+export const FORCE_ONBOARDING = false; // Désactivé par défaut, activé dans la configuration JSON si nécessaire

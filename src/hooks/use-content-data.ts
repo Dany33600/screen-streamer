@@ -4,17 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { useAppStore } from '@/store';
 import { Content } from '@/types';
 import { toast } from 'sonner';
+import { configService } from '@/services/config/configService';
 
 export const useContentData = () => {
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
   const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
-  const apiUrl = useAppStore((state) => state.apiUrl);
-
+  
   // Fonction pour obtenir l'URL de l'API formatée correctement
   const getFormattedApiUrl = () => {
-    // Utiliser directement l'URL préformatée du store
+    const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
+    const apiUrl = `http://${ipToUse}:${apiPort}/api`;
+    console.log(`useContentData: URL de l'API générée: ${apiUrl}`);
     return apiUrl;
   };
 
@@ -25,12 +27,20 @@ export const useContentData = () => {
     error, 
     refetch: refetchContents 
   } = useQuery({
-    queryKey: ['contents', apiUrl], // Ajouter apiUrl comme dépendance pour le refetch automatique
+    queryKey: ['contents', baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi], // Dépendances pour le refetch automatique
     queryFn: async () => {
       const formattedApiUrl = getFormattedApiUrl();
       console.log(`Récupération des contenus depuis: ${formattedApiUrl}/content`);
       
       try {
+        // Mettre à jour l'URL de l'API dans configService pour s'assurer qu'elle est à jour
+        configService.updateApiBaseUrl({
+          baseIpAddress,
+          apiPort,
+          apiIpAddress,
+          useBaseIpForApi
+        });
+        
         const response = await fetch(`${formattedApiUrl}/content`);
         
         if (!response.ok) {
@@ -49,6 +59,16 @@ export const useContentData = () => {
     },
     refetchOnWindowFocus: false,
   });
+
+  // S'assurer que la configuration de l'API est à jour quand les paramètres changent
+  useEffect(() => {
+    configService.updateApiBaseUrl({
+      baseIpAddress,
+      apiPort,
+      apiIpAddress,
+      useBaseIpForApi
+    });
+  }, [baseIpAddress, apiPort, apiIpAddress, useBaseIpForApi]);
 
   return {
     serverContents: serverContents || [],

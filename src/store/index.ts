@@ -25,7 +25,7 @@ export type AppState = ScreensState & ContentsState & PlaylistsState & ConfigSta
 // Create the store with all slices
 export const useAppStore = create<AppState>()(
   persist(
-    (set, get) => ({
+    (get, set) => ({
       ...createScreensSlice(get, set),
       ...createContentsSlice(get, set),
       ...createPlaylistsSlice(get, set),
@@ -44,22 +44,21 @@ export const useAppStore = create<AppState>()(
 );
 
 // Fonction pour initialiser l'URL de l'API dans l'ensemble de l'application
-const initializeApiUrl = () => {
+export const initializeApiUrl = () => {
   const state = useAppStore.getState();
   const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
   const port = state.apiPort;
   
-  // Mettre à jour l'URL de l'API dans le store
   console.log(`Initializing API URL with IP: ${ipToUse} and port: ${port}`);
+  return `http://${ipToUse}:${port}/api`;
 };
 
 // Load screens from the server when the app starts
 // This function should be called at app initialization
 export const initializeScreens = async () => {
   console.log('Initializing screens from server...');
-  
-  // S'assurer que l'URL de l'API est initialisée
-  initializeApiUrl();
+  const apiUrl = initializeApiUrl();
+  console.log(`Using API URL: ${apiUrl}`);
   
   try {
     await useAppStore.getState().loadScreens();

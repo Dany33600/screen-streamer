@@ -37,14 +37,22 @@ const App = () => {
   useEffect(() => {
     // Charger la configuration
     const loadConfiguration = async () => {
-      const config = await configService.loadConfig();
-      
-      // Appliquer le PIN de configuration
-      setConfigPin(config.configPin);
-      
-      // Force onboarding si nécessaire
-      if (config.forceOnboarding) {
-        setHasCompletedOnboarding(false);
+      console.log('App: Chargement de la configuration...');
+      try {
+        const config = await configService.loadConfig();
+        console.log('App: Configuration chargée:', config);
+        
+        // Appliquer le PIN de configuration
+        if (setConfigPin) {
+          setConfigPin(config.configPin);
+        }
+        
+        // Force onboarding si nécessaire
+        if (config.forceOnboarding && setHasCompletedOnboarding) {
+          setHasCompletedOnboarding(false);
+        }
+      } catch (error) {
+        console.error('App: Erreur lors du chargement de la configuration:', error);
       }
     };
     
@@ -52,7 +60,7 @@ const App = () => {
     
     // Charger le PIN depuis .env file si disponible
     const envPin = import.meta.env.VITE_CONFIG_PIN;
-    if (envPin) {
+    if (envPin && setConfigPin) {
       setConfigPin(envPin);
     }
   }, [setConfigPin, setHasCompletedOnboarding]);

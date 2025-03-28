@@ -24,6 +24,14 @@ const initializeApp = async () => {
     const config = await configService.loadConfig();
     console.log('Configuration chargée:', config);
     
+    // Mettre à jour l'URL de l'API dans configService
+    configService.updateApiBaseUrl({
+      baseIpAddress: config.baseIpAddress,
+      apiPort: config.apiPort,
+      apiIpAddress: config.apiIpAddress,
+      useBaseIpForApi: true
+    });
+    
     // Initialiser les écrans depuis le serveur
     await initializeScreens().catch(error => {
       console.error('Erreur lors de l\'initialisation des écrans:', error);

@@ -35,9 +35,9 @@ export class ApiService {
       // Construct the API URL without duplicating /api
       this.apiBaseUrl = `http://${ipToUse}:${apiPort}/api`;
       
-      console.log(`API URL configured: ${this.apiBaseUrl}`);
+      console.log(`ApiService: API URL configured: ${this.apiBaseUrl}`);
     } catch (error) {
-      console.error('Error updating API URL:', error);
+      console.error('ApiService: Error updating API URL:', error);
       // Fallback to a default URL if there's an error
       this.apiBaseUrl = 'http://127.0.0.1:5070/api';
     }
@@ -54,7 +54,7 @@ export class ApiService {
         this.updateApiBaseUrl();
       }
       
-      console.log(`API Request to: ${url}`, options);
+      console.log(`ApiService: API Request to: ${url}`, options);
       const response = await fetch(url, options);
       
       if (!response.ok) {
@@ -71,10 +71,10 @@ export class ApiService {
       }
       
       const data = await response.json() as T;
-      console.log(`API Response from ${url}:`, data);
+      console.log(`ApiService: API Response from ${url}:`, data);
       return data;
     } catch (error) {
-      console.error(`API Error during request to ${url}:`, error);
+      console.error(`ApiService: API Error during request to ${url}:`, error);
       throw error;
     }
   }

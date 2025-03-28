@@ -1,6 +1,6 @@
-
 import { Screen } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { initializeApiUrl } from '..';
 
 export interface ScreensState {
   screens: Screen[];
@@ -28,20 +28,13 @@ export const createScreensSlice = (
         isLoadingScreens: true 
       }));
       
-      // Make API call to load screens
-      const apiUrl = get().apiUrl;
-      
-      if (!apiUrl) {
-        console.warn("Aucune URL d'API configurée, impossible de charger les écrans");
-        set((state) => ({ 
-          ...state, 
-          isLoadingScreens: false 
-        }));
-        return [];
-      }
+      // Build the API URL directly with current state values
+      const state = get();
+      const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
+      const apiUrl = `http://${ipToUse}:${state.apiPort}/api`;
       
       console.log(`Chargement des écrans depuis: ${apiUrl}/screens`);
-      // Fix: Use the correct endpoint without duplication
+      
       const response = await fetch(`${apiUrl}/screens`);
       
       if (!response.ok) {
@@ -98,22 +91,24 @@ export const createScreensSlice = (
     };
     
     try {
-      // Make API call to save the screen
-      const apiUrl = get().apiUrl;
+      // Build the API URL directly with current state values
+      const state = get();
+      const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
+      const apiUrl = `http://${ipToUse}:${state.apiPort}/api`;
       
-      if (apiUrl) {
-        // Fix: Use the correct endpoint without duplication
-        const response = await fetch(`${apiUrl}/screens`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ screen: newScreen }),
-        });
-        
-        if (!response.ok) {
-          console.error(`Error creating screen: ${response.statusText}`);
-        }
+      console.log(`Adding screen to: ${apiUrl}/screens`);
+      
+      // Make API call to save the screen
+      const response = await fetch(`${apiUrl}/screens`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ screen: newScreen }),
+      });
+      
+      if (!response.ok) {
+        console.error(`Error creating screen: ${response.statusText}`);
       }
       
       // Update the local state
