@@ -25,7 +25,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
     }
   };
   
-  // Détermine si le logo est cliquable
+  // Détermine si le logo est cliquable - s'assurer qu'on est bien sur la dernière étape ET que la vérification a été tentée
   const isLogoClickable = step === 6 && hasAttemptedServerCheck;
   
   return (
@@ -36,8 +36,8 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
             className={`flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2 ${
               isLogoClickable ? 'cursor-pointer hover:bg-primary/20 transition-colors' : ''
             }`}
-            onClick={handleLogoClick}
-            title={isLogoClickable ? "Cliquez pour accéder au dashboard sans serveur" : ""}
+            onClick={isLogoClickable ? handleLogoClick : undefined}
+            title={isLogoClickable ? "Cliquez pour accéder au dashboard sans serveur" : "Logo ScreenCast"}
           >
             <MonitorPlay className="h-8 w-8 text-primary" />
           </div>
