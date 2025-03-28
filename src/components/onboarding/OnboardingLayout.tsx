@@ -25,27 +25,27 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-background">
-      <div className="w-full max-w-3xl px-4 py-8 space-y-8">
-        <div className="flex flex-col items-center space-y-4 mb-8">
+      <div className="w-full max-w-3xl px-4 py-6 space-y-6">
+        <div className="flex flex-col items-center space-y-3 mb-4">
           <div 
-            className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2"
+            className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10"
             onClick={handleLogoClick}
             role={step === 6 ? "button" : "presentation"}
             tabIndex={step === 6 ? 0 : -1}
             aria-label="Logo ScreenCast"
             style={{ cursor: 'default' }}
           >
-            <MonitorPlay className="h-8 w-8 text-primary" />
+            <MonitorPlay className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-center">
+          <h1 className="text-2xl font-bold text-center">
             Configuration de ScreenCast
           </h1>
-          <p className="text-muted-foreground text-center max-w-md">
+          <p className="text-muted-foreground text-center text-sm max-w-md">
             Configurons votre application pour diffuser du contenu sur vos écrans.
           </p>
         </div>
         
-        <div className="w-full bg-card rounded-lg border shadow-sm p-6">
+        <div className="w-full bg-card rounded-lg border shadow-sm p-5">
           {children}
         </div>
         
@@ -53,11 +53,11 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
           <div className="text-sm text-muted-foreground">
             Étape {step} sur {totalSteps}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div 
                 key={i} 
-                className={`h-2 w-10 rounded-full ${i < step ? 'bg-primary' : 'bg-muted'}`}
+                className={`h-1.5 w-8 rounded-full ${i < step ? 'bg-primary' : 'bg-muted'}`}
               />
             ))}
           </div>
