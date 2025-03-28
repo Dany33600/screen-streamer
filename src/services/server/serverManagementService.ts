@@ -110,6 +110,33 @@ export class ServerManagementService extends ApiService {
       return false;
     }
   }
+
+  /**
+   * Récupère l'adresse IP du serveur Node.js
+   */
+  public async getServerIpAddress(): Promise<string | null> {
+    try {
+      // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
+      this.updateApiBaseUrl();
+      
+      // Envoyer une requête au serveur pour récupérer son adresse IP
+      const apiUrl = `${this.apiBaseUrl}/network/ip`;
+      
+      const response = await fetch(apiUrl);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.ipAddress) {
+          return data.ipAddress;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Erreur lors de la récupération de l'adresse IP du serveur:", error);
+      return null;
+    }
+  }
 }
 
 export const serverManagementService = new ServerManagementService();
