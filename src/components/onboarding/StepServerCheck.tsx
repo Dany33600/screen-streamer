@@ -16,6 +16,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const [serverStatus, setServerStatus] = useState<'unchecked' | 'online' | 'offline'>('unchecked');
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
+  const hasAttemptedServerCheck = useAppStore((state) => state.hasAttemptedServerCheck);
   
   const checkServerStatus = async () => {
     setIsChecking(true);

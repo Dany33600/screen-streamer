@@ -25,16 +25,19 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
     }
   };
   
+  // Détermine si le logo est cliquable
+  const isLogoClickable = step === 6 && hasAttemptedServerCheck;
+  
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-background">
       <div className="w-full max-w-3xl px-4 py-8 space-y-8">
         <div className="flex flex-col items-center space-y-4 mb-8">
           <div 
             className={`flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2 ${
-              step === 6 && hasAttemptedServerCheck ? 'cursor-pointer hover:bg-primary/20 transition-colors' : ''
+              isLogoClickable ? 'cursor-pointer hover:bg-primary/20 transition-colors' : ''
             }`}
             onClick={handleLogoClick}
-            title={step === 6 && hasAttemptedServerCheck ? "Cliquez pour accéder au dashboard sans serveur" : ""}
+            title={isLogoClickable ? "Cliquez pour accéder au dashboard sans serveur" : ""}
           >
             <MonitorPlay className="h-8 w-8 text-primary" />
           </div>
