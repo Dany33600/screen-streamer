@@ -33,6 +33,12 @@ const StepAdminConfig: React.FC<StepAdminConfigProps> = ({ onNext, onBack }) => 
     onNext();
   };
   
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Ne garder que les chiffres dans la valeur entrée
+    const numbersOnly = e.target.value.replace(/[^0-9]/g, '');
+    setPinValue(numbersOnly);
+  };
+  
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -51,7 +57,9 @@ const StepAdminConfig: React.FC<StepAdminConfigProps> = ({ onNext, onBack }) => 
               type={showPin ? "text" : "password"}
               placeholder="Entrez votre code PIN"
               value={pinValue}
-              onChange={(e) => setPinValue(e.target.value)}
+              onChange={handlePinChange}
+              inputMode="numeric"
+              pattern="[0-9]*"
             />
             <Button
               type="button"
