@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { createServer } from 'http';
 import path from 'path';
@@ -9,7 +8,7 @@ import { dirname } from 'path';
 
 // Get current file path and directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
 // Map to track running servers
 const runningServers = new Map();

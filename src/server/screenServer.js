@@ -3,9 +3,15 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { initializeStorageDirectories, UPLOADS_DIR, getLocalIpAddresses, uploadFile } from './utils/fileStorage.js';
 import apiRoutes from './routes/apiRoutes.js';
 import { startServer, stopServer, updateServer } from './services/serverManager.js';
+
+// Recréer l'équivalent de __dirname pour les modules ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Initialize storage directories
 initializeStorageDirectories();
