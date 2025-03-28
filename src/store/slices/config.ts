@@ -28,8 +28,25 @@ export interface ConfigState {
     playlists: boolean;
     preview: boolean;
   };
-  
   apiUrl: string;
+}
+
+export interface ConfigActions {
+  setBasePort: (port: number) => void;
+  setBaseIpAddress: (ipAddress: string) => void;
+  toggleConfigMode: () => void;
+  setConfigPin: (pin: string) => void;
+  verifyPin: (pin: string) => boolean;
+  resetPinVerification: () => void;
+  setRefreshInterval: (minutes: number) => void;
+  toggleMenuOption: (option: string, value: boolean) => void;
+  toggleDarkMode: () => void;
+  setHasCompletedOnboarding: (value: boolean) => void;
+  setHasAttemptedServerCheck: (value: boolean) => void;
+  setApiPort: (port: number) => void;
+  setUseBaseIpForApi: (value: boolean) => void;
+  setApiIpAddress: (ipAddress: string) => void;
+  saveConfig: () => Promise<boolean>;
 }
 
 export const createConfigSlice = (

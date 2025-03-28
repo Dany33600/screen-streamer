@@ -15,11 +15,12 @@ import {
 } from './slices/playlists';
 import { 
   createConfigSlice, 
-  ConfigState 
+  ConfigState,
+  ConfigActions
 } from './slices/config';
 
-// Combine all slices
-export type AppState = ScreensState & ContentsState & PlaylistsState & ConfigState;
+// Combine all slices with their respective actions
+export type AppState = ScreensState & ContentsState & PlaylistsState & ConfigState & ConfigActions;
 
 // Create the store with all slices
 export const useAppStore = create<AppState>()(

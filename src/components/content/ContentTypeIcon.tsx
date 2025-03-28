@@ -13,6 +13,7 @@ import { ContentType } from '@/types';
 interface ContentTypeIconProps {
   type: ContentType;
   size?: number;
+  className?: string; // Add className prop
 }
 
 export const getTypeLabel = (type: ContentType): string => {
@@ -32,20 +33,20 @@ export const getTypeLabel = (type: ContentType): string => {
   }
 };
 
-const ContentTypeIcon: React.FC<ContentTypeIconProps> = ({ type, size = 24 }) => {
+const ContentTypeIcon: React.FC<ContentTypeIconProps> = ({ type, size = 24, className }) => {
   switch (type) {
     case 'image':
-      return <Image size={size} />;
+      return <Image size={size} className={className} />;
     case 'video':
-      return <FileVideo size={size} />;
+      return <FileVideo size={size} className={className} />;
     case 'powerpoint':
-      return <Presentation size={size} />;
+      return <Presentation size={size} className={className} />;
     case 'pdf':
-      return <FileText size={size} />;
+      return <FileText size={size} className={className} />;
     case 'html':
-      return <Code size={size} />;
+      return <Code size={size} className={className} />;
     default:
-      return <File size={size} />;
+      return <File size={size} className={className} />;
   }
 };
 
