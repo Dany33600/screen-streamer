@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -22,7 +23,9 @@ const ScreensPage = () => {
   
   // Get configuration mode from store
   const isConfigMode = useAppStore((state) => state.isConfigMode);
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   
   // Custom hooks for data and operations

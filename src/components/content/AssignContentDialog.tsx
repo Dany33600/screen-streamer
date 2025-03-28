@@ -37,8 +37,11 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
   screens
 }) => {
   const assignContentToScreen = useAppStore(state => state.assignContentToScreen);
-  const apiUrl = useAppStore(state => state.apiUrl);
   const baseIpAddress = useAppStore(state => state.baseIpAddress);
+  const apiIpAddress = useAppStore(state => state.apiIpAddress);
+  const apiPort = useAppStore(state => state.apiPort);
+  const useBaseIpForApi = useAppStore(state => state.useBaseIpForApi);
+  
   const getScreenById = (id: string) => screens.find(screen => screen.id === id);
   const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false);
   const [pendingScreenId, setPendingScreenId] = useState<string | null>(null);
@@ -202,7 +205,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
   };
 
   const noScreens = screens.length === 0;
-  const serverNotConfigured = !apiUrl || apiUrl === '';
+  const serverNotConfigured = !baseIpAddress || !apiPort;
 
   return (
     <>

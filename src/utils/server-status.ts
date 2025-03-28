@@ -8,7 +8,6 @@ import { screenServerService } from '@/services/screenServerReal';
 export async function checkServerStatus(
   screen: Screen, 
   isCurrentlyOnline: boolean, 
-  apiUrl: string, 
   baseIpAddress: string,
   contentId?: string
 ): Promise<boolean> {

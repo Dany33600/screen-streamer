@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAppStore } from '@/store';
 import { screenServerService } from '@/services/screenServerReal';
@@ -12,8 +13,10 @@ export function useScreenOperations() {
   const assignContentToScreen = useAppStore((state) => state.assignContentToScreen);
   const isLoadingScreens = useAppStore((state) => state.isLoadingScreens);
   const loadScreens = useAppStore((state) => state.loadScreens);
-  const apiUrl = useAppStore((state) => state.apiUrl);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
+  const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   
   const [isRetrying, setIsRetrying] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<Screen | null>(null);
@@ -26,8 +29,10 @@ export function useScreenOperations() {
       
       // Make sure to update the API URL after adding a screen
       screenServerService.updateApiBaseUrl({
-        apiUrl,
-        baseIpAddress
+        baseIpAddress,
+        apiIpAddress,
+        apiPort,
+        useBaseIpForApi
       });
       return screen;
     }
