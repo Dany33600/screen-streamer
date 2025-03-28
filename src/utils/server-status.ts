@@ -1,4 +1,3 @@
-
 import { Screen } from '@/types';
 import { screenServerService } from '@/services/screenServerReal';
 
@@ -47,4 +46,40 @@ export async function checkServerStatus(
   }
   
   return isCurrentlyOnline;
+}
+
+/**
+ * Check server API status
+ */
+export async function checkServerStatus({ ipAddress, port }: { ipAddress: string, port: number }): Promise<{ ipReachable: boolean, serverRunning: boolean }> {
+  try {
+    console.log(`Checking API server status at ${ipAddress}:${port}`);
+    
+    // Try to fetch the API status endpoint
+    const response = await fetch(`http://${ipAddress}:${port}/api/status`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      // Short timeout to quickly determine if the server is responsive
+      signal: AbortSignal.timeout(3000)
+    });
+    
+    if (response.ok) {
+      console.log('API server is running and accessible');
+      return { ipReachable: true, serverRunning: true };
+    } else {
+      console.log(`API server responded with status ${response.status}`);
+      return { ipReachable: true, serverRunning: false };
+    }
+  } catch (error) {
+    console.error('Error checking API server status:', error);
+    
+    // Determine if it's a network error or the server is just not running
+    if (error instanceof TypeError && (error.message.includes('NetworkError') || error.message.includes('Failed to fetch'))) {
+      // Network error - could be that the IP is unreachable
+      return { ipReachable: false, serverRunning: false };
+    }
+    
+    // Other errors - likely the server is reachable but not running or responding properly
+    return { ipReachable: true, serverRunning: false };
+  }
 }

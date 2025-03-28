@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useServerStatusCheck } from '@/hooks/use-server-status-check';
-import { configService } from '@/services/config/configService';
 import { useAppStore } from '@/store';
+import { checkServerStatus } from '@/utils/server-status';
+import { configService } from '@/services/config/configService';
 
 interface StepServerCheckProps {
   onComplete: () => void;
@@ -19,8 +19,12 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
   const saveConfig = useAppStore((state) => state.saveConfig);
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
+  const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   
-  const { checkServerStatus } = useServerStatusCheck();
+  const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
   
   const handleCheckServer = async () => {
     setIsChecking(true);
@@ -28,7 +32,10 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     setIpReachable(null);
     
     try {
-      const result = await checkServerStatus();
+      const result = await checkServerStatus({ 
+        ipAddress: ipToUse, 
+        port: apiPort 
+      });
       
       setIpReachable(result.ipReachable);
       setCheckPassed(result.serverRunning);
@@ -105,6 +112,9 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         <div className="p-6 border rounded-lg flex flex-col items-center justify-center space-y-4 bg-card/50">
           {checkPassed === null ? (
             <div className="text-center py-4">
+              <p className="mb-4">
+                Adresse du serveur API: <strong>{ipToUse}:{apiPort}</strong>
+              </p>
               <p className="mb-4">Cliquez sur le bouton ci-dessous pour vérifier la connexion au serveur.</p>
               <Button 
                 onClick={handleCheckServer}
@@ -134,9 +144,9 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
               <XCircle className="h-16 w-16 text-red-500 mx-auto" />
               <h3 className="text-xl font-semibold text-red-500">Échec de la connexion</h3>
               {ipReachable === false ? (
-                <p>L'adresse IP n'est pas accessible sur le réseau.</p>
+                <p>L'adresse IP <strong>{ipToUse}</strong> n'est pas accessible sur le réseau.</p>
               ) : (
-                <p>L'API du serveur n'est pas accessible.</p>
+                <p>L'API du serveur sur <strong>{ipToUse}:{apiPort}</strong> n'est pas accessible.</p>
               )}
               <div className="space-y-2">
                 <Button onClick={handleCheckServer} variant="outline" className="gap-2">
