@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAppStore } from '@/store';
 import { AlertTriangle, Save } from 'lucide-react';
@@ -12,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 
 // API port value from server.js
-const API_PORT = process.env.API_PORT || 5000;
+const API_PORT = 5000; // Default to 5000 since we can't access process.env in client code
 
 export const NetworkSettings = () => {
   const basePort = useAppStore((state) => state.basePort);
