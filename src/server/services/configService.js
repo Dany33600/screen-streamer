@@ -35,7 +35,17 @@ export function getConfigData() {
       return JSON.parse(data);
     }
     
-    return null;
+    // Retourner un objet de configuration par défaut si le fichier n'existe pas
+    return {
+      basePort: 5550,
+      baseIpAddress: '127.0.0.1',
+      configPin: '0000',
+      refreshInterval: 5,
+      apiPort: 5070,
+      apiIpAddress: '127.0.0.1',
+      useBaseIpForApi: true,
+      forceOnboarding: false
+    };
   } catch (error) {
     console.error('Erreur lors du chargement de la configuration:', error);
     return null;

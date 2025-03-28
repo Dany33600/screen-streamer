@@ -271,7 +271,6 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
           <ArrowLeft size={16} /> Retour
         </Button>
         
-        {/* Montrer le bouton Terminer uniquement si la connexion a réussi */}
         {checkPassed && (
           <Button 
             onClick={handleComplete}

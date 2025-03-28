@@ -2,25 +2,17 @@
 import { ApiService } from '../api/apiService';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store';
-import { 
-  DEFAULT_BASE_PORT, 
-  DEFAULT_IP_ADDRESS, 
-  DEFAULT_PIN, 
-  DEFAULT_REFRESH_INTERVAL,
-  DEFAULT_API_IP_ADDRESS,
-  API_PORT,
-  FORCE_ONBOARDING
-} from '@/config/constants';
 
 // Configuration par défaut à utiliser si le backend n'est pas accessible
 const defaultConfig = {
-  basePort: DEFAULT_BASE_PORT,
-  baseIpAddress: DEFAULT_IP_ADDRESS,
-  configPin: DEFAULT_PIN,
-  refreshInterval: DEFAULT_REFRESH_INTERVAL,
-  apiPort: API_PORT,
-  apiIpAddress: DEFAULT_API_IP_ADDRESS,
-  forceOnboarding: FORCE_ONBOARDING
+  basePort: 5550,
+  baseIpAddress: '127.0.0.1',
+  configPin: '0000',
+  refreshInterval: 5,
+  apiPort: 5070,
+  apiIpAddress: '127.0.0.1',
+  useBaseIpForApi: true,
+  forceOnboarding: false
 };
 
 // Interface pour la configuration
@@ -31,6 +23,7 @@ export interface AppConfig {
   refreshInterval: number;
   apiPort: number;
   apiIpAddress: string;
+  useBaseIpForApi: boolean;
   forceOnboarding: boolean;
 }
 
@@ -48,7 +41,7 @@ class ConfigService extends ApiService {
       baseIpAddress: defaultConfig.baseIpAddress,
       apiPort: defaultConfig.apiPort,
       apiIpAddress: defaultConfig.apiIpAddress,
-      useBaseIpForApi: true
+      useBaseIpForApi: defaultConfig.useBaseIpForApi
     });
   }
   
@@ -69,7 +62,7 @@ class ConfigService extends ApiService {
         baseIpAddress: this.config.baseIpAddress, 
         apiPort: this.config.apiPort,
         apiIpAddress: this.config.apiIpAddress,
-        useBaseIpForApi: true
+        useBaseIpForApi: this.config.useBaseIpForApi
       });
       
       const configUrl = `${this.apiBaseUrl}/config`;
@@ -91,7 +84,7 @@ class ConfigService extends ApiService {
             baseIpAddress: this.config.baseIpAddress,
             apiPort: this.config.apiPort,
             apiIpAddress: this.config.apiIpAddress,
-            useBaseIpForApi: true
+            useBaseIpForApi: this.config.useBaseIpForApi
           });
           
           // Mettre à jour le store Zustand avec la nouvelle configuration
@@ -139,7 +132,7 @@ class ConfigService extends ApiService {
       
       // Forcer l'utilisation de l'adresse IP de l'API si elle est différente de l'adresse IP de base
       if (state.setUseBaseIpForApi) {
-        const shouldUseBaseIp = this.config.baseIpAddress === this.config.apiIpAddress;
+        const shouldUseBaseIp = this.config.useBaseIpForApi;
         state.setUseBaseIpForApi(shouldUseBaseIp);
       }
       
@@ -158,7 +151,7 @@ class ConfigService extends ApiService {
       this.config = { ...config };
       
       // Mettre à jour l'URL de l'API avec la configuration actuelle
-      const useBaseIpForApi = true; // We're assuming backend and frontend are on same IP
+      const useBaseIpForApi = config.useBaseIpForApi;
       const ipToUse = useBaseIpForApi ? config.baseIpAddress : config.apiIpAddress;
       const apiUrl = `http://${ipToUse}:${config.apiPort}/api`;
       
@@ -181,7 +174,7 @@ class ConfigService extends ApiService {
           baseIpAddress: config.baseIpAddress,
           apiPort: config.apiPort,
           apiIpAddress: config.apiIpAddress,
-          useBaseIpForApi: true
+          useBaseIpForApi: config.useBaseIpForApi
         });
         
         // Mettre à jour le store Zustand
@@ -209,6 +202,18 @@ class ConfigService extends ApiService {
   // Vérifier si la configuration a été chargée
   public isConfigLoaded(): boolean {
     return this.isLoaded;
+  }
+  
+  // Met à jour l'URL de base de l'API
+  public updateApiBaseUrl({ baseIpAddress, apiPort, apiIpAddress, useBaseIpForApi }: {
+    baseIpAddress: string;
+    apiPort: number;
+    apiIpAddress: string;
+    useBaseIpForApi: boolean;
+  }): void {
+    const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
+    this.apiBaseUrl = `http://${ipToUse}:${apiPort}/api`;
+    console.log(`ConfigService: URL de l'API mise à jour: ${this.apiBaseUrl}`);
   }
 }
 

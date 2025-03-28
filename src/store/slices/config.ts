@@ -1,14 +1,17 @@
-import { 
-  DEFAULT_BASE_PORT, 
-  DEFAULT_IP_ADDRESS, 
-  DEFAULT_PIN, 
-  DEFAULT_REFRESH_INTERVAL,
-  API_PORT,
-  DEFAULT_API_IP_ADDRESS
-} from '@/config/constants';
-import { configService } from '@/services/config/configService';
+
 import { StateCreator } from 'zustand';
 import { AppState } from '../index';
+import { configService } from '@/services/config/configService';
+
+// Valeurs par défaut basiques si tout échoue
+const DEFAULT_CONFIG = {
+  basePort: 5550,
+  baseIpAddress: '127.0.0.1',
+  configPin: '0000',
+  refreshInterval: 5,
+  apiPort: 5070,
+  apiIpAddress: '127.0.0.1'
+};
 
 export interface ConfigState {
   basePort: number;
@@ -59,28 +62,28 @@ export const createConfigSlice: StateCreator<
   [],
   ConfigSlice
 > = (set, get) => {
-  const buildApiUrl = (ipAddress: string, port: number) => `http://${ipAddress}:${port}/api`;
-  
+  // Récupérer la configuration initiale
   const config = configService.getConfig();
   
   return {
-    basePort: config.basePort || DEFAULT_BASE_PORT,
-    baseIpAddress: config.baseIpAddress || DEFAULT_IP_ADDRESS,
+    // État initial avec les valeurs de la configuration
+    basePort: config.basePort || DEFAULT_CONFIG.basePort,
+    baseIpAddress: config.baseIpAddress || DEFAULT_CONFIG.baseIpAddress,
     isConfigMode: false,
-    configPin: config.configPin || DEFAULT_PIN,
+    configPin: config.configPin || DEFAULT_CONFIG.configPin,
     isPinVerified: false,
-    refreshInterval: config.refreshInterval || DEFAULT_REFRESH_INTERVAL,
+    refreshInterval: config.refreshInterval || DEFAULT_CONFIG.refreshInterval,
     isDarkMode: false,
     hasCompletedOnboarding: false,
     hasAttemptedServerCheck: false,
-    apiPort: config.apiPort || API_PORT,
-    useBaseIpForApi: true,
-    apiIpAddress: config.apiIpAddress || DEFAULT_API_IP_ADDRESS,
+    apiPort: config.apiPort || DEFAULT_CONFIG.apiPort,
+    useBaseIpForApi: config.useBaseIpForApi !== undefined ? config.useBaseIpForApi : true,
+    apiIpAddress: config.apiIpAddress || DEFAULT_CONFIG.apiIpAddress,
     
     getApiUrl: () => {
       const state = get();
       const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
-      return buildApiUrl(ipToUse, state.apiPort);
+      return `http://${ipToUse}:${state.apiPort}/api`;
     },
     
     menuOptions: {
@@ -196,6 +199,7 @@ export const createConfigSlice: StateCreator<
     saveConfig: async () => {
       const state = get();
       
+      // Mettre à jour l'URL de l'API dans le service de configuration
       configService.updateApiBaseUrl({
         baseIpAddress: state.baseIpAddress,
         apiPort: state.apiPort,
@@ -203,6 +207,7 @@ export const createConfigSlice: StateCreator<
         useBaseIpForApi: state.useBaseIpForApi
       });
       
+      // Préparer l'objet de configuration à sauvegarder
       const configToSave = {
         basePort: state.basePort,
         baseIpAddress: state.baseIpAddress,
@@ -210,9 +215,11 @@ export const createConfigSlice: StateCreator<
         refreshInterval: state.refreshInterval,
         apiPort: state.apiPort,
         apiIpAddress: state.apiIpAddress,
+        useBaseIpForApi: state.useBaseIpForApi,
         forceOnboarding: false
       };
       
+      // Sauvegarder la configuration via le service
       return await configService.saveConfig(configToSave);
     },
   };
