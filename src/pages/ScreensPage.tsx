@@ -27,6 +27,7 @@ const ScreensPage = () => {
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
   const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
+  const apiUrl = useAppStore((state) => state.apiUrl);
   
   // Custom hooks for data and operations
   const {
@@ -50,13 +51,21 @@ const ScreensPage = () => {
     refetchContents
   } = useContentData();
   
-  // Charger les écrans au montage du composant
+  // Charger les écrans au montage du composant et lorsque l'URL de l'API change
   useEffect(() => {
+    // Mettre à jour l'URL de l'API dans le service avant de charger les écrans
+    screenServerService.updateApiBaseUrl({
+      baseIpAddress: baseIpAddress,
+      apiIpAddress: apiIpAddress,
+      apiPort: apiPort,
+      useBaseIpForApi: useBaseIpForApi
+    });
+    
     // Initialiser les écrans depuis le serveur au chargement de la page
     loadScreens().catch(error => {
       console.error('Erreur lors du chargement initial des écrans:', error);
     });
-  }, [loadScreens]);
+  }, [loadScreens, baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi, apiUrl]);
   
   // Event handlers for dialog actions
   const onAddScreen = async (screenName: string) => {
@@ -83,12 +92,11 @@ const ScreensPage = () => {
     setSelectedContentId(screen.contentId || 'none');
     
     // Use store values to update API URL
-    const state = useAppStore.getState();
     screenServerService.updateApiBaseUrl({
-      baseIpAddress: state.baseIpAddress,
-      apiIpAddress: state.apiIpAddress,
-      apiPort: state.apiPort,
-      useBaseIpForApi: state.useBaseIpForApi
+      baseIpAddress: baseIpAddress,
+      apiIpAddress: apiIpAddress,
+      apiPort: apiPort,
+      useBaseIpForApi: useBaseIpForApi
     });
     
     // Refresh content data before opening the dialog

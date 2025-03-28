@@ -43,6 +43,10 @@ export class ApiService {
     }
   }
   
+  public getApiBaseUrl(): string {
+    return this.apiBaseUrl;
+  }
+  
   protected async handleApiRequest<T>(url: string, options: RequestInit): Promise<T> {
     try {
       // Assurez-vous que l'URL de l'API est définie avant d'effectuer des requêtes

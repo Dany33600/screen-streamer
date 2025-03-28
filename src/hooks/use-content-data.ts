@@ -1,64 +1,59 @@
 
 import { useState, useEffect } from 'react';
-import { useAppStore } from '@/store';
 import { useQuery } from '@tanstack/react-query';
+import { useAppStore } from '@/store';
 import { Content } from '@/types';
-import { screenServerService } from '@/services/screenServerReal';
+import { toast } from 'sonner';
 
-export function useContentData() {
+export const useContentData = () => {
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
   const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
-  const [serverContents, setServerContents] = useState<Content[]>([]);
-  
-  // Get the appropriate IP address based on configuration
-  const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
-  const apiUrl = `http://${ipToUse}:${apiPort}/api`;
-  
-  // Récupérer la liste des contenus depuis le serveur
+  const apiUrl = useAppStore((state) => state.apiUrl);
+
+  // Fonction pour obtenir l'URL de l'API formatée correctement
+  const getFormattedApiUrl = () => {
+    // Utiliser directement l'URL préformatée du store
+    return apiUrl;
+  };
+
+  // Requête pour récupérer les contenus
   const { 
-    data: serverContentData, 
-    isLoading: isLoadingContents, 
-    error: contentsError,
-    refetch: refetchContents
+    data: serverContents, 
+    isLoading, 
+    error, 
+    refetch: refetchContents 
   } = useQuery({
-    queryKey: ['contents', apiUrl, ipToUse, apiPort],
+    queryKey: ['contents', apiUrl], // Ajouter apiUrl comme dépendance pour le refetch automatique
     queryFn: async () => {
-      if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
+      const formattedApiUrl = getFormattedApiUrl();
+      console.log(`Récupération des contenus depuis: ${formattedApiUrl}/content`);
       
-      // Update API URL with store values
-      screenServerService.updateApiBaseUrl({
-        baseIpAddress,
-        apiIpAddress,
-        apiPort,
-        useBaseIpForApi
-      });
-      
-      // Fix: Remove duplicate 'api' in the URL
-      const response = await fetch(`${apiUrl}/content`);
-      if (!response.ok) {
-        throw new Error(`Erreur lors de la récupération des contenus: ${response.statusText}`);
+      try {
+        const response = await fetch(`${formattedApiUrl}/content`);
+        
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.contentList || [];
+      } catch (error) {
+        console.error('Erreur lors de la récupération des contenus:', error);
+        toast.error('Erreur', { 
+          description: 'Impossible de charger les contenus depuis le serveur'
+        });
+        return [];
       }
-      
-      const data = await response.json();
-      return data.success ? data.contentList : [];
     },
-    enabled: !!apiUrl,
-    retry: 2,
+    refetchOnWindowFocus: false,
   });
 
-  // Mettre à jour les contenus du serveur quand les données sont chargées
-  useEffect(() => {
-    if (serverContentData) {
-      setServerContents(serverContentData);
-    }
-  }, [serverContentData]);
-
   return {
-    serverContents,
-    isLoadingContents,
-    contentsError,
+    serverContents: serverContents || [],
+    isLoading,
+    error,
     refetchContents
   };
-}
+};

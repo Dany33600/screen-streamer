@@ -72,9 +72,11 @@ class ConfigService extends ApiService {
           useBaseIpForApi: true
         });
         
-        // Fixed: removed duplicate "/api" in the URL
+        const configUrl = `${this.apiBaseUrl}/config`;
+        console.log(`URL de chargement de la configuration: ${configUrl}`);
+        
         const response = await this.handleApiRequest<{success: boolean, config: AppConfig}>(
-          `${this.apiBaseUrl}/config`,
+          configUrl,
           { method: 'GET' }
         );
         
@@ -90,6 +92,18 @@ class ConfigService extends ApiService {
             apiIpAddress: this.config.apiIpAddress,
             useBaseIpForApi: true
           });
+          
+          // Mettre à jour le store Zustand avec la nouvelle configuration
+          const state = useAppStore.getState();
+          if (state.setBaseIpAddress) {
+            state.setBaseIpAddress(this.config.baseIpAddress);
+          }
+          if (state.setApiPort) {
+            state.setApiPort(this.config.apiPort);
+          }
+          if (state.setApiIpAddress) {
+            state.setApiIpAddress(this.config.apiIpAddress);
+          }
         } else {
           console.warn('Échec du chargement de la configuration, utilisation des valeurs par défaut');
         }

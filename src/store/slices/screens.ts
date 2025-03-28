@@ -1,3 +1,4 @@
+
 import { Screen } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,6 +40,7 @@ export const createScreensSlice = (
         return [];
       }
       
+      console.log(`Chargement des écrans depuis: ${apiUrl}/screens`);
       // Fix: Use the correct endpoint without duplication
       const response = await fetch(`${apiUrl}/screens`);
       
@@ -49,6 +51,7 @@ export const createScreensSlice = (
       const data = await response.json();
       
       if (data.success) {
+        console.log(`Écrans chargés avec succès:`, data.screens);
         set((state) => ({ 
           ...state, 
           screens: data.screens || [] 
