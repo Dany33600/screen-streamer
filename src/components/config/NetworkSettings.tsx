@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAppStore } from '@/store';
 import { AlertTriangle, Save } from 'lucide-react';
@@ -9,6 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
+
+// API port value from server.js
+const API_PORT = process.env.API_PORT || 5000;
 
 export const NetworkSettings = () => {
   const basePort = useAppStore((state) => state.basePort);
@@ -74,12 +78,12 @@ export const NetworkSettings = () => {
         </div>
         
         <p className="text-sm text-muted-foreground">
-          Ce serveur démarrera sur le port 5000 par défaut et permettra à vos écrans d'être accessibles via leurs ports respectifs.
+          Ce serveur démarrera sur le port {API_PORT} par défaut et permettra à vos écrans d'être accessibles via leurs ports respectifs.
           Assurez-vous que ces ports sont ouverts dans votre pare-feu.
         </p>
         
         <p className="text-sm text-muted-foreground">
-          Le serveur API backend est accessible à l'adresse : <span className="font-medium">{ipValue}:5000</span>
+          Le serveur API backend est accessible à l'adresse : <span className="font-medium">{ipValue}:{API_PORT}</span>
         </p>
       </CardContent>
     </Card>
