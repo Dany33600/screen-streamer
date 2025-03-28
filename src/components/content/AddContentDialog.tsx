@@ -1,7 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,355 +7,277 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContentType } from '@/types';
-import { FileUp, X, Loader2, AlertTriangle, Link as LinkIcon } from 'lucide-react';
-import { toast } from 'sonner';
+import { FileUp, Link as LinkIcon, AlertTriangle, Film, Image as ImageIcon, FileText, Presentation } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useContentUpload } from '@/hooks/use-content-upload';
 import { useAppStore } from '@/store';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
+import { DialogAlerts } from './DialogAlerts';
 
 interface AddContentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const AddContentDialog: React.FC<AddContentDialogProps> = ({ 
-  open, 
-  onOpenChange 
-}) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedFileURL, setSelectedFileURL] = useState<string>('');
-  const [contentName, setContentName] = useState('');
-  const [contentType, setContentType] = useState<ContentType>('image');
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange }) => {
+  const addContent = useAppStore((state) => state.addContent);
+  const getApiUrl = useAppStore((state) => state.getApiUrl);
+  
+  const [activeTab, setActiveTab] = useState<string>("upload");
+  const [name, setName] = useState<string>("");
+  const [contentType, setContentType] = useState<ContentType>("image");
+  const [url, setUrl] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  
   const { uploadContent, isLoading } = useContentUpload();
-  const addContent = useAppStore(state => state.addContent);
-  const apiUrl = useAppStore(state => state.apiUrl);
-  const baseIpAddress = useAppStore(state => state.baseIpAddress);
   
-  const [activeTab, setActiveTab] = useState<'file' | 'link'>('file');
-  const [googleSlidesUrl, setGoogleSlidesUrl] = useState<string>('');
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null);
     
-    const file = files[0];
-    const url = URL.createObjectURL(file);
-    setSelectedFile(file);
-    setSelectedFileURL(url);
-    setContentName(file.name);
-    setUploadError(null);
-    
-    const extension = file.name.split('.').pop()?.toLowerCase() || '';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) {
-      setContentType('image');
-    } else if (['mp4', 'webm', 'ogg', 'mov'].includes(extension)) {
-      setContentType('video');
-    } else if (['ppt', 'pptx'].includes(extension)) {
-      setContentType('powerpoint');
-    } else if (extension === 'pdf') {
-      setContentType('pdf');
-    } else if (['html', 'htm'].includes(extension)) {
-      setContentType('html');
-    }
-  };
-  
-  const resetContentForm = () => {
-    setSelectedFile(null);
-    setSelectedFileURL('');
-    setContentName('');
-    setContentType('image');
-    setUploadError(null);
-    setGoogleSlidesUrl('');
-    setActiveTab('file');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  
-  const handleAddContent = async () => {
-    if (activeTab === 'file') {
-      if (!selectedFile) {
-        toast.error("Veuillez sélectionner un fichier");
+    if (event.target.files && event.target.files.length > 0) {
+      const selectedFile = event.target.files[0];
+      
+      // Validate file size (max 50MB)
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        setFileError("Le fichier est trop volumineux (taille maximale: 50MB)");
         return;
       }
       
-      if (contentName.trim() === '') {
-        toast.error("Le nom du contenu ne peut pas être vide");
-        return;
+      setFile(selectedFile);
+      if (!name) {
+        setName(selectedFile.name);
       }
       
-      try {
-        setUploadError(null);
-        console.log("Starting upload process with API URL:", apiUrl);
-        
-        const result = await uploadContent(selectedFile, contentType);
-        
-        if (!result.success || !result.url) {
-          setUploadError(`Erreur lors de l'upload: ${result.error}`);
-          toast.error(`Échec de l'upload: ${result.error}`);
+      // Auto-detect content type
+      if (selectedFile.type.startsWith("image/")) {
+        setContentType("image");
+      } else if (selectedFile.type.startsWith("video/")) {
+        setContentType("video");
+      } else if (selectedFile.type.includes("pdf")) {
+        setContentType("pdf");
+      } else if (selectedFile.type.includes("presentation") || 
+                selectedFile.type.includes("powerpoint")) {
+        setContentType("powerpoint");
+      } else {
+        setContentType("html"); // Default fallback
+      }
+    }
+  };
+  
+  const resetForm = () => {
+    setName("");
+    setContentType("image");
+    setUrl("");
+    setFile(null);
+    setFileError(null);
+    setActiveTab("upload");
+  };
+  
+  const handleSubmit = async () => {
+    try {
+      if (activeTab === "upload") {
+        if (!file) {
+          setFileError("Veuillez sélectionner un fichier");
           return;
         }
         
-        addContent(selectedFile, contentType, result.url, result.contentId);
+        const result = await uploadContent(file, contentType);
         
-        resetContentForm();
+        if (result.success && result.url) {
+          // Add content with the uploaded file's URL
+          addContent(name || file.name, contentType, result.url);
+          resetForm();
+          onOpenChange(false);
+        }
+      } else if (activeTab === "url") {
+        if (!url) {
+          toast.error("L'URL est requise");
+          return;
+        }
+        
+        if (!name) {
+          setName(`Contenu externe (${new Date().toLocaleDateString()})`);
+        }
+        
+        // Add content with the external URL
+        addContent(name, contentType, url);
+        resetForm();
         onOpenChange(false);
-        toast.success(`Contenu "${contentName}" ajouté avec succès`);
-      } catch (error) {
-        console.error('Erreur lors de l\'ajout du contenu:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue';
-        setUploadError(errorMessage);
-        toast.error('Une erreur est survenue lors de l\'ajout du contenu');
       }
-    } else {
-      if (!googleSlidesUrl) {
-        toast.error("Veuillez entrer une URL Google Slides");
-        return;
-      }
-      
-      if (!isValidGoogleSlidesUrl(googleSlidesUrl)) {
-        toast.error("L'URL ne semble pas être une URL Google Slides valide");
-        return;
-      }
-      
-      if (contentName.trim() === '') {
-        toast.error("Le nom du contenu ne peut pas être vide");
-        return;
-      }
-      
-      try {
-        setUploadError(null);
-        
-        const embeddableUrl = convertToEmbeddableGoogleSlidesUrl(googleSlidesUrl);
-        
-        const contentId = uuidv4();
-        
-        const newContent = {
-          name: contentName,
-          thumbnail: undefined
-        };
-        
-        addContent(null, 'google-slides', embeddableUrl, contentId, newContent);
-        
-        resetContentForm();
-        onOpenChange(false);
-        toast.success(`Présentation "${contentName}" ajoutée avec succès`);
-      } catch (error) {
-        console.error('Erreur lors de l\'ajout de la présentation Google Slides:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue';
-        setUploadError(errorMessage);
-        toast.error('Une erreur est survenue lors de l\'ajout de la présentation');
-      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du contenu:", error);
+      toast.error("Erreur lors de l'ajout du contenu");
     }
   };
-
-  const getDisplayApiUrl = () => {
-    if (!apiUrl) return "Non configurée";
-    return apiUrl.replace('localhost', baseIpAddress);
-  };
-
-  const isValidGoogleSlidesUrl = (url: string): boolean => {
-    return url.includes('docs.google.com/presentation') || 
-           url.includes('drive.google.com') || 
-           url.includes('slides.google.com');
-  };
-
-  const convertToEmbeddableGoogleSlidesUrl = (url: string): string => {
-    let embeddableUrl = url;
-    
-    if (url.includes('docs.google.com/presentation/d/')) {
-      const matches = url.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/);
-      if (matches && matches[1]) {
-        const presentationId = matches[1];
-        embeddableUrl = `https://docs.google.com/presentation/d/${presentationId}/embed?start=false&loop=true&delayms=3000`;
-      }
-    }
-    
-    return embeddableUrl;
-  };
-
+  
+  // Check if API is configured
+  const apiConfigured = Boolean(getApiUrl());
+  
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      if (!newOpen) resetContentForm();
-      onOpenChange(newOpen);
-    }}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Importer un contenu</DialogTitle>
+          <DialogTitle>Ajouter du contenu</DialogTitle>
           <DialogDescription>
-            Ajoutez un fichier ou un lien à diffuser sur vos écrans
+            Ajoutez un nouveau contenu à votre bibliothèque.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-2">
-          {uploadError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              <AlertDescription>{uploadError}</AlertDescription>
-            </Alert>
-          )}
-          
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'file' | 'link')} className="w-full">
-            <TabsList className="grid grid-cols-2 mb-4">
-              <TabsTrigger value="file">Fichier</TabsTrigger>
-              <TabsTrigger value="link">Lien</TabsTrigger>
+        {!apiConfigured ? (
+          <DialogAlerts />
+        ) : (
+          <Tabs defaultValue="upload" className="space-y-4" onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="upload" className="gap-2">
+                <FileUp size={16} />
+                Upload
+              </TabsTrigger>
+              <TabsTrigger value="url" className="gap-2">
+                <LinkIcon size={16} />
+                URL
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="file" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="file">Fichier</Label>
-                <div className="flex items-center gap-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="gap-2"
-                  >
-                    <FileUp size={16} />
-                    {selectedFile ? 'Changer de fichier' : 'Sélectionner un fichier'}
-                  </Button>
-                  {selectedFile && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="truncate max-w-[200px]">{selectedFile.name}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
-                        onClick={() => {
-                          setSelectedFile(null);
-                          setSelectedFileURL('');
-                          setUploadError(null);
-                          if (fileInputRef.current) fileInputRef.current.value = '';
-                        }}
-                      >
-                        <X size={14} />
-                      </Button>
-                    </div>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    accept="image/*,video/*,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/html"
-                  />
-                </div>
-              </div>
-              
-              {selectedFileURL && contentType === 'image' && (
-                <div className="mt-4 h-40 bg-muted rounded-md flex items-center justify-center overflow-hidden">
-                  <img src={selectedFileURL} alt="Preview" className="max-h-full object-contain" />
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="name">Nom</Label>
+            <TabsContent value="upload" className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Nom du contenu</Label>
                 <Input
                   id="name"
-                  placeholder="Nom du contenu"
-                  value={contentName}
-                  onChange={(e) => setContentName(e.target.value)}
+                  placeholder="Nom du fichier"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="type">Type de contenu</Label>
-                <Select value={contentType} onValueChange={(value: ContentType) => setContentType(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="image">Image</SelectItem>
-                    <SelectItem value="video">Vidéo</SelectItem>
-                    <SelectItem value="powerpoint">PowerPoint</SelectItem>
-                    <SelectItem value="pdf">PDF</SelectItem>
-                    <SelectItem value="html">HTML</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-2">
+                <Label htmlFor="file">Fichier</Label>
+                <Input
+                  type="file"
+                  id="file"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <Button variant="outline" asChild>
+                  <Label htmlFor="file" className="cursor-pointer gap-2">
+                    <FileUp className="h-4 w-4" />
+                    Sélectionner un fichier
+                  </Label>
+                </Button>
+                {file && (
+                  <div className="text-sm text-muted-foreground">
+                    Fichier sélectionné: {file.name} ({Math.ceil(file.size / 1024)} KB)
+                  </div>
+                )}
+                {fileError && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    <AlertDescription>{fileError}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              
+              <div className="grid gap-2">
+                <Label>Type de contenu</Label>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant={contentType === "image" ? "default" : "outline"}
+                    onClick={() => setContentType("image")}
+                    className="gap-2"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    Image
+                  </Button>
+                  <Button
+                    variant={contentType === "video" ? "default" : "outline"}
+                    onClick={() => setContentType("video")}
+                    className="gap-2"
+                  >
+                    <Film className="h-4 w-4" />
+                    Vidéo
+                  </Button>
+                  <Button
+                    variant={contentType === "html" ? "default" : "outline"}
+                    onClick={() => setContentType("html")}
+                    className="gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    HTML
+                  </Button>
+                  <Button
+                    variant={contentType === "powerpoint" ? "default" : "outline"}
+                    onClick={() => setContentType("powerpoint")}
+                    className="gap-2"
+                  >
+                    <Presentation className="h-4 w-4" />
+                    PowerPoint
+                  </Button>
+                </div>
               </div>
             </TabsContent>
             
-            <TabsContent value="link" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="slides-url">URL Google Slides</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="slides-url"
-                    placeholder="https://docs.google.com/presentation/d/..."
-                    value={googleSlidesUrl}
-                    onChange={(e) => setGoogleSlidesUrl(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={googleSlidesUrl ? "visible" : "invisible"}
-                    onClick={() => setGoogleSlidesUrl('')}
-                  >
-                    <X size={14} />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Entrez l'URL d'une présentation Google Slides partagée (accessible au moins en lecture)
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="name">Nom</Label>
+            <TabsContent value="url" className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name-url">Nom du contenu</Label>
                 <Input
-                  id="link-name"
-                  placeholder="Nom de la présentation"
-                  value={contentName}
-                  onChange={(e) => setContentName(e.target.value)}
+                  id="name-url"
+                  placeholder="Nom du contenu"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
               
-              <Alert className="mt-4">
-                <LinkIcon className="h-4 w-4 mr-2" />
-                <AlertDescription>
-                  Assurez-vous que la présentation soit partagée publiquement ou accessible à toute personne ayant le lien.
-                </AlertDescription>
-              </Alert>
+              <div className="grid gap-2">
+                <Label htmlFor="url">URL</Label>
+                <Input
+                  id="url"
+                  placeholder="URL du contenu"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label>Type de contenu</Label>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant={contentType === "image" ? "default" : "outline"}
+                    onClick={() => setContentType("image")}
+                    className="gap-2"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    Image
+                  </Button>
+                  <Button
+                    variant={contentType === "video" ? "default" : "outline"}
+                    onClick={() => setContentType("video")}
+                    className="gap-2"
+                  >
+                    <Film className="h-4 w-4" />
+                    Vidéo
+                  </Button>
+                  <Button
+                    variant={contentType === "html" ? "default" : "outline"}
+                    onClick={() => setContentType("html")}
+                    className="gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    HTML
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
-          
-          <div className="text-sm text-muted-foreground mt-2">
-            API URL: {getDisplayApiUrl()}
-          </div>
-        </div>
+        )}
+        
         <DialogFooter>
-          <Button variant="outline" onClick={() => {
-            resetContentForm();
-            onOpenChange(false);
-          }}>
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleAddContent} 
-            disabled={(activeTab === 'file' && !selectedFile) || 
-                     (activeTab === 'link' && !googleSlidesUrl) || 
-                     isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 size={16} className="mr-2 animate-spin" />
-                Importation en cours...
-              </>
-            ) : (
-              'Importer'
-            )}
+          <Button type="submit" onClick={handleSubmit} disabled={isLoading}>
+            {isLoading ? "Chargement..." : "Ajouter"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -26,8 +26,8 @@ const ContentList: React.FC<ContentListProps> = ({
   isLoading = false,
   error
 }) => {
-  const apiUrl = useAppStore(state => state.apiUrl);
-  const serverConfigured = apiUrl && apiUrl.trim() !== '';
+  const getApiUrl = useAppStore(state => state.getApiUrl);
+  const serverConfigured = Boolean(getApiUrl());
 
   if (!serverConfigured) {
     return (

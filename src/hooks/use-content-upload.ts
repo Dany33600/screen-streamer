@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAppStore } from '@/store';
 import { ContentType } from '@/types';
@@ -12,7 +13,7 @@ interface UploadResult {
 
 export const useContentUpload = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const apiUrl = useAppStore(state => state.apiUrl);
+  const getApiUrl = useAppStore(state => state.getApiUrl);
   const baseIpAddress = useAppStore(state => state.baseIpAddress);
   const apiIpAddress = useAppStore(state => state.apiIpAddress);
   const useBaseIpForApi = useAppStore(state => state.useBaseIpForApi);
@@ -24,6 +25,7 @@ export const useContentUpload = () => {
     setIsLoading(true);
 
     try {
+      const apiUrl = getApiUrl();
       if (!apiUrl) {
         throw new Error("L'URL de l'API n'est pas configurée");
       }

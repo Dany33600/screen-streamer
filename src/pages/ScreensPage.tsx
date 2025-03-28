@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -27,7 +26,7 @@ const ScreensPage = () => {
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
   const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
-  const apiUrl = useAppStore((state) => state.apiUrl);
+  const getApiUrl = useAppStore((state) => state.getApiUrl);
   
   // Custom hooks for data and operations
   const {
@@ -65,7 +64,7 @@ const ScreensPage = () => {
     loadScreens().catch(error => {
       console.error('Erreur lors du chargement initial des écrans:', error);
     });
-  }, [loadScreens, baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi, apiUrl]);
+  }, [loadScreens, baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi, getApiUrl]);
   
   // Event handlers for dialog actions
   const onAddScreen = async (screenName: string) => {

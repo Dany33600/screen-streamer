@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -14,7 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 const ContentPage = () => {
   const screens = useAppStore((state) => state.screens);
   const removeContent = useAppStore((state) => state.removeContent);
-  const apiUrl = useAppStore((state) => state.apiUrl);
+  const getApiUrl = useAppStore((state) => state.getApiUrl);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const queryClient = useQueryClient();
   
@@ -34,7 +33,7 @@ const ContentPage = () => {
   
   // Préparer l'URL de l'API
   const getFormattedApiUrl = () => {
-    let baseUrl = apiUrl;
+    let baseUrl = getApiUrl();
     if (baseUrl.endsWith('/')) {
       baseUrl = baseUrl.slice(0, -1);
     }
