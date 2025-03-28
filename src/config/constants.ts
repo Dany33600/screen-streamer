@@ -1,5 +1,6 @@
 
-// Configuration partagée entre le client et le serveur
+// Configuration par défaut partagée entre le client et le serveur
+// Ces valeurs seront utilisées uniquement si le fichier de configuration JSON n'est pas disponible
 
 // Port sur lequel le serveur API sera accessible
 export const API_PORT = 5070;
@@ -21,6 +22,4 @@ export const DEFAULT_REFRESH_INTERVAL = 1;
 
 // Constante pour forcer le redémarrage de l'onboarding
 // Mettre à true pour forcer le redémarrage de l'onboarding
-export const FORCE_ONBOARDING = true;
-
-// Autres constantes globales peuvent être ajoutées ici
+export const FORCE_ONBOARDING = false; // Désactivé par défaut, activé dans la configuration JSON si nécessaire

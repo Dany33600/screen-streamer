@@ -36,6 +36,7 @@ export class ApiService {
   
   protected async handleApiRequest<T>(url: string, options: RequestInit): Promise<T> {
     try {
+      console.log(`API Request to: ${url}`, options);
       const response = await fetch(url, options);
       
       if (!response.ok) {
@@ -51,7 +52,9 @@ export class ApiService {
         throw new Error(errorMessage);
       }
       
-      return await response.json() as T;
+      const data = await response.json() as T;
+      console.log(`API Response from ${url}:`, data);
+      return data;
     } catch (error) {
       console.error(`API Error during request to ${url}:`, error);
       throw error;

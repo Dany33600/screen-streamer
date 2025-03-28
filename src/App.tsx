@@ -14,7 +14,7 @@ import ConfigPage from "./pages/ConfigPage";
 import PreviewPage from "./pages/PreviewPage";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./components/onboarding/Onboarding";
-import { FORCE_ONBOARDING } from "./config/constants";
+import { configService } from "./services/config/configService";
 
 const queryClient = new QueryClient();
 
@@ -35,15 +35,25 @@ const App = () => {
   const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
   
   useEffect(() => {
-    // Load the PIN from .env file using Vite's environment variable format
+    // Charger la configuration
+    const loadConfiguration = async () => {
+      const config = await configService.loadConfig();
+      
+      // Appliquer le PIN de configuration
+      setConfigPin(config.configPin);
+      
+      // Force onboarding si nécessaire
+      if (config.forceOnboarding) {
+        setHasCompletedOnboarding(false);
+      }
+    };
+    
+    loadConfiguration();
+    
+    // Charger le PIN depuis .env file si disponible
     const envPin = import.meta.env.VITE_CONFIG_PIN;
     if (envPin) {
       setConfigPin(envPin);
-    }
-    
-    // Force onboarding if needed (from constants)
-    if (FORCE_ONBOARDING) {
-      setHasCompletedOnboarding(false);
     }
   }, [setConfigPin, setHasCompletedOnboarding]);
 

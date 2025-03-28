@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { DEFAULT_PIN } from '@/config/constants';
+import { configService } from '@/services/config/configService';
 
 interface StepAdminConfigProps {
   onNext: () => void;

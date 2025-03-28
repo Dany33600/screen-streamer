@@ -5,6 +5,7 @@ import App from './App.tsx'
 import './index.css'
 import { initializeScreens } from './store'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { configService } from './services/config/configService.ts'
 
 // Initialiser le client de requête
 const queryClient = new QueryClient({
@@ -16,15 +17,26 @@ const queryClient = new QueryClient({
   },
 })
 
-// Deferring initialization to ensure store is available first
-setTimeout(() => {
-  // Initialiser les écrans depuis le serveur
-  initializeScreens().then(() => {
+// Fonction d'initialisation de l'application
+const initializeApp = async () => {
+  try {
+    // Charger la configuration depuis le backend
+    await configService.loadConfig();
+    console.log('Configuration chargée depuis le serveur');
+    
+    // Initialiser les écrans depuis le serveur
+    await initializeScreens().catch(error => {
+      console.error('Erreur lors de l\'initialisation des écrans:', error);
+    });
+    
     console.log('Écrans initialisés depuis le serveur');
-  }).catch(error => {
-    console.error('Erreur lors de l\'initialisation des écrans:', error);
-  });
-}, 0);
+  } catch (error) {
+    console.error('Erreur lors de l\'initialisation de l\'application:', error);
+  }
+};
+
+// Lancer l'initialisation de l'application
+initializeApp();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

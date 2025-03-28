@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Maximize, Minimize, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { screenServerService } from '@/services/screenServerReal';
 import { useAppStore } from '@/store';
+import { configService } from '@/services/config/configService';
 
 interface PreviewControlsProps {
   isRefreshing: boolean;
@@ -38,7 +39,17 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
     
     try {
       const state = useAppStore.getState();
+      
+      // Mettre à jour l'URL de l'API
       screenServerService.updateApiBaseUrl({
+        baseIpAddress: state.baseIpAddress,
+        apiIpAddress: state.apiIpAddress,
+        apiPort: state.apiPort,
+        useBaseIpForApi: state.useBaseIpForApi
+      });
+      
+      // S'assurer que le service de config est à jour
+      configService.updateApiBaseUrl({
         baseIpAddress: state.baseIpAddress,
         apiIpAddress: state.apiIpAddress,
         apiPort: state.apiPort,

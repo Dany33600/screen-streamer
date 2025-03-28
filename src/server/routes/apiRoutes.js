@@ -1,8 +1,10 @@
+
 import express from 'express';
 import { saveContentData, getContentData, listAllContent, deleteContent, contentExists } from '../services/contentService.js';
 import { startServer, stopServer, updateServer, getRunningServers } from '../services/serverManager.js';
 import { createUploadMiddleware, getFirstIpAddress } from '../utils/fileStorage.js';
 import { getAllScreens, getScreenById, saveScreen, updateScreen, deleteScreen } from '../services/screenService.js';
+import { getConfigData, saveConfigData } from '../services/configService.js';
 
 const router = express.Router();
 const upload = createUploadMiddleware();
@@ -15,6 +17,57 @@ router.get('/status', (req, res) => {
     status: 'ok', 
     servers: serverStatus
   });
+});
+
+// Configuration endpoints
+router.get('/config', (req, res) => {
+  try {
+    console.log('Récupération de la configuration via API GET');
+    const config = getConfigData();
+    
+    if (config) {
+      res.json({ success: true, config });
+    } else {
+      console.log('Configuration non trouvée, renvoie par défaut');
+      res.json({ 
+        success: true,
+        config: {
+          basePort: 5550,
+          baseIpAddress: getFirstIpAddress(),
+          configPin: '1234',
+          refreshInterval: 1,
+          apiPort: 5070,
+          apiIpAddress: getFirstIpAddress(),
+          forceOnboarding: false
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Erreur dans /api/config (GET):", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/config', (req, res) => {
+  try {
+    const { config } = req.body;
+    
+    if (!config) {
+      return res.status(400).json({ success: false, message: 'Données de configuration requises' });
+    }
+    
+    console.log('Sauvegarde de la configuration via API POST:', config);
+    const success = saveConfigData(config);
+    
+    if (success) {
+      res.json({ success: true, message: 'Configuration sauvegardée avec succès' });
+    } else {
+      res.status(500).json({ success: false, message: 'Échec de la sauvegarde de la configuration' });
+    }
+  } catch (error) {
+    console.error("Erreur dans /api/config (POST):", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // File upload endpoint

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { DEFAULT_IP_ADDRESS, DEFAULT_BASE_PORT } from '@/config/constants';
+import { configService } from '@/services/config/configService';
 
 interface StepNetworkConfigProps {
   onNext: () => void;
@@ -62,7 +62,7 @@ const StepNetworkConfig: React.FC<StepNetworkConfigProps> = ({ onNext, onBack })
           <Label htmlFor="ip-address">Adresse IP du serveur</Label>
           <Input
             id="ip-address"
-            placeholder={DEFAULT_IP_ADDRESS}
+            placeholder="192.168.0.14"
             value={ipValue}
             onChange={(e) => setIpValue(e.target.value)}
           />
@@ -75,7 +75,7 @@ const StepNetworkConfig: React.FC<StepNetworkConfigProps> = ({ onNext, onBack })
           <Label htmlFor="base-port">Port de base</Label>
           <Input
             id="base-port"
-            placeholder={DEFAULT_BASE_PORT.toString()}
+            placeholder="5550"
             value={portValue}
             onChange={(e) => setPortValue(e.target.value)}
           />

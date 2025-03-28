@@ -1,3 +1,4 @@
+
 import { 
   DEFAULT_BASE_PORT, 
   DEFAULT_IP_ADDRESS, 
@@ -6,6 +7,7 @@ import {
   API_PORT,
   DEFAULT_API_IP_ADDRESS
 } from '@/config/constants';
+import { configService } from '@/services/config/configService';
 
 export interface ConfigState {
   basePort: number;
@@ -46,6 +48,7 @@ export interface ConfigState {
   setApiPort: (port: number) => void;
   setUseBaseIpForApi: (value: boolean) => void;
   setApiIpAddress: (ipAddress: string) => void;
+  saveConfig: () => Promise<boolean>;
 }
 
 export const createConfigSlice = (
@@ -55,19 +58,22 @@ export const createConfigSlice = (
   // Fonction pour construire l'URL de l'API
   const buildApiUrl = (ipAddress: string, port: number) => `http://${ipAddress}:${port}/api`;
   
+  // Récupérer les valeurs de configuration du service
+  const config = configService.getConfig();
+  
   return {
-    basePort: DEFAULT_BASE_PORT,
-    baseIpAddress: DEFAULT_IP_ADDRESS,
+    basePort: config.basePort,
+    baseIpAddress: config.baseIpAddress,
     isConfigMode: false,
-    configPin: DEFAULT_PIN,
+    configPin: config.configPin,
     isPinVerified: false,
-    refreshInterval: DEFAULT_REFRESH_INTERVAL,
+    refreshInterval: config.refreshInterval,
     isDarkMode: false,
     hasCompletedOnboarding: false,
     hasAttemptedServerCheck: false,
-    apiPort: API_PORT,
+    apiPort: config.apiPort,
     useBaseIpForApi: true,
-    apiIpAddress: DEFAULT_API_IP_ADDRESS,
+    apiIpAddress: config.apiIpAddress,
     
     // Computed property
     get apiUrl() {
@@ -192,5 +198,21 @@ export const createConfigSlice = (
         useBaseIpForApi: false
       };
     }),
+    
+    // Nouvelle fonction pour sauvegarder la configuration
+    saveConfig: async () => {
+      const state = get();
+      const configToSave = {
+        basePort: state.basePort,
+        baseIpAddress: state.baseIpAddress,
+        configPin: state.configPin,
+        refreshInterval: state.refreshInterval,
+        apiPort: state.apiPort,
+        apiIpAddress: state.apiIpAddress,
+        forceOnboarding: false // On désactive forceOnboarding une fois la configuration sauvegardée
+      };
+      
+      return await configService.saveConfig(configToSave);
+    },
   };
 };
