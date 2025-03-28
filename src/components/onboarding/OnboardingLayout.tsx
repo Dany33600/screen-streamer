@@ -1,5 +1,5 @@
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { MonitorPlay } from 'lucide-react';
 import { useAppStore } from '@/store';
 
@@ -20,13 +20,28 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   // Cette fonction permet de bypasser l'onboarding quand on clique sur le logo
   // mais seulement si on a déjà tenté de vérifier la connexion au serveur au moins une fois
   const handleLogoClick = () => {
-    if (step === 6 && hasAttemptedServerCheck) {
+    console.log("Logo cliqué - Vérification conditions:", {
+      step,
+      hasAttemptedServerCheck,
+      condition: step === 6 && hasAttemptedServerCheck === true
+    });
+    
+    if (step === 6 && hasAttemptedServerCheck === true) {
       setHasCompletedOnboarding(true);
     }
   };
   
   // Détermine si le logo est cliquable - s'assurer qu'on est bien sur la dernière étape ET que la vérification a été tentée
-  const isLogoClickable = step === 6 && hasAttemptedServerCheck;
+  const isLogoClickable = step === 6 && hasAttemptedServerCheck === true;
+  
+  useEffect(() => {
+    console.log("OnboardingLayout - État actuel:", {
+      step,
+      totalSteps,
+      hasAttemptedServerCheck,
+      isLogoClickable
+    });
+  }, [step, totalSteps, hasAttemptedServerCheck, isLogoClickable]);
   
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-background">

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,14 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const [isLoading, setIsLoading] = useState(false);
   const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
   
-  console.log("État actuel hasAttemptedServerCheck:", hasAttemptedServerCheck);
+  useEffect(() => {
+    console.log("StepServerCheck - État initial hasAttemptedServerCheck:", hasAttemptedServerCheck);
+    
+    // Assurons-nous que cet état est correctement initialisé au montage du composant
+    return () => {
+      console.log("StepServerCheck - Démontage du composant");
+    };
+  }, [hasAttemptedServerCheck]);
   
   const checkServerStatus = async () => {
     setIsLoading(true);
@@ -45,9 +52,9 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     setApiPort(newPort);
     
     try {
-      // Marquer que nous avons tenté de vérifier le serveur
+      // Marquer que nous avons tenté de vérifier le serveur - IMPORTANT pour activer le logo cliquable
       setHasAttemptedServerCheck(true);
-      console.log("Marquage hasAttemptedServerCheck à true");
+      console.log("Vérification serveur tentée - hasAttemptedServerCheck défini à true");
       
       // Essayer de se connecter au serveur
       const apiUrl = `http://${baseIpAddress}:${newPort}/api/ping`;
