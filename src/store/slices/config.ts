@@ -1,10 +1,10 @@
+
 import { 
   DEFAULT_BASE_PORT, 
   DEFAULT_IP_ADDRESS, 
   DEFAULT_PIN, 
   DEFAULT_REFRESH_INTERVAL,
   API_PORT,
-  DEFAULT_API_URL,
   DEFAULT_API_IP_ADDRESS
 } from '@/config/constants';
 
@@ -55,7 +55,7 @@ export const createConfigSlice = (
   basePort: DEFAULT_BASE_PORT,
   baseIpAddress: DEFAULT_IP_ADDRESS,
   isConfigMode: false,
-  apiUrl: DEFAULT_API_URL, // Utilisation de la constante par défaut
+  apiUrl: `http://${DEFAULT_API_IP_ADDRESS}:${API_PORT}/api`, // Construction directe de l'URL
   configPin: DEFAULT_PIN, // Utilisation de la constante par défaut
   isPinVerified: false,
   refreshInterval: DEFAULT_REFRESH_INTERVAL, // Utilisation de la constante par défaut
@@ -152,7 +152,7 @@ export const createConfigSlice = (
   
   setApiPort: (port) => set((state) => {
     // Mettre à jour le port API et reconstruire l'URL API
-    const newApiUrl = state.apiUrl.replace(`:${state.apiPort}/`, `:${port}/`);
+    const newApiUrl = `http://${state.apiIpAddress}:${port}/api`;
     return { 
       ...state, 
       apiPort: port,
