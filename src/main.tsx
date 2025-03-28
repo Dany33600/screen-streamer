@@ -3,6 +3,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { initializeScreens } from './store'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { configService } from './services/config/configService.ts'
 
@@ -19,9 +20,6 @@ const queryClient = new QueryClient({
 // Fonction d'initialisation de l'application
 const initializeApp = async () => {
   try {
-    // Import store dynamically to avoid circular dependencies
-    const { initializeScreens } = await import('./store');
-    
     // Charger la configuration depuis le backend
     await configService.loadConfig();
     console.log('Configuration chargée depuis le serveur');

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useServerStatusCheck, ServerCheckResult } from '@/hooks/use-server-status-check';
+import { useServerStatusCheck } from '@/hooks/use-server-status-check';
 import { configService } from '@/services/config/configService';
 import { useAppStore } from '@/store';
 
@@ -20,7 +20,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
   const saveConfig = useAppStore((state) => state.saveConfig);
   
-  const { isCheckingStatus, checkServerConnection } = useServerStatusCheck();
+  const { checkServerStatus } = useServerStatusCheck();
   
   const handleCheckServer = async () => {
     setIsChecking(true);
@@ -28,7 +28,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     setIpReachable(null);
     
     try {
-      const result: ServerCheckResult = await checkServerConnection();
+      const result = await checkServerStatus();
       
       setIpReachable(result.ipReachable);
       setCheckPassed(result.serverRunning);
