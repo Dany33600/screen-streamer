@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { DEFAULT_PIN } from '@/config/constants';
 
 interface StepAdminConfigProps {
   onNext: () => void;
@@ -17,21 +18,12 @@ const StepAdminConfig: React.FC<StepAdminConfigProps> = ({ onNext, onBack }) => 
   const configPin = useAppStore((state) => state.configPin);
   
   const [pinValue, setPinValue] = useState(configPin);
-  const [confirmPinValue, setConfirmPinValue] = useState(configPin);
   const [showPin, setShowPin] = useState(false);
   
   const handleNext = () => {
     if (!pinValue.trim()) {
       toast({
         title: 'Veuillez entrer un code PIN',
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (pinValue !== confirmPinValue) {
-      toast({
-        title: 'Les codes PIN ne correspondent pas',
         variant: "destructive",
       });
       return;
@@ -74,28 +66,6 @@ const StepAdminConfig: React.FC<StepAdminConfigProps> = ({ onNext, onBack }) => 
           <p className="text-sm text-muted-foreground">
             Ce code sera demandé pour accéder au mode configuration
           </p>
-        </div>
-        
-        <div className="grid gap-2">
-          <Label htmlFor="confirm-pin">Confirmez le code PIN</Label>
-          <div className="relative">
-            <Input
-              id="confirm-pin"
-              type={showPin ? "text" : "password"}
-              placeholder="Confirmez votre code PIN"
-              value={confirmPinValue}
-              onChange={(e) => setConfirmPinValue(e.target.value)}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 h-full"
-              onClick={() => setShowPin(!showPin)}
-            >
-              {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
-            </Button>
-          </div>
         </div>
       </div>
       

@@ -1,4 +1,11 @@
 
+import { 
+  DEFAULT_BASE_PORT, 
+  DEFAULT_IP_ADDRESS, 
+  DEFAULT_PIN, 
+  DEFAULT_REFRESH_INTERVAL 
+} from '@/config/constants';
+
 export interface ConfigState {
   basePort: number;
   baseIpAddress: string;
@@ -37,13 +44,13 @@ export const createConfigSlice = (
   get: () => any, 
   set: (fn: (state: any) => any) => void
 ) => ({
-  basePort: 5550,
-  baseIpAddress: '192.168.0.14',
+  basePort: DEFAULT_BASE_PORT,
+  baseIpAddress: DEFAULT_IP_ADDRESS,
   isConfigMode: false,
   apiUrl: 'http://localhost:5000',
-  configPin: '1234', // Default PIN
+  configPin: DEFAULT_PIN, // Utilisation de la constante par défaut
   isPinVerified: false,
-  refreshInterval: 1, // Default to 1 minute
+  refreshInterval: DEFAULT_REFRESH_INTERVAL, // Utilisation de la constante par défaut
   isDarkMode: false, // Thème clair par défaut
   hasCompletedOnboarding: false, // Par défaut, l'onboarding n'a pas été complété
   hasAttemptedServerCheck: false, // Par défaut, aucune tentative de vérification du serveur n'a été effectuée

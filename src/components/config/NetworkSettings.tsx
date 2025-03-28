@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAppStore } from '@/store';
 import { AlertTriangle, Save } from 'lucide-react';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { API_PORT } from '@/config/constants';
+import { API_PORT, DEFAULT_IP_ADDRESS, DEFAULT_BASE_PORT } from '@/config/constants';
 
 export const NetworkSettings = () => {
   const basePort = useAppStore((state) => state.basePort);
@@ -100,7 +101,7 @@ export const NetworkSettings = () => {
             <Label htmlFor="ip-address">Adresse IP du serveur</Label>
             <Input
               id="ip-address"
-              placeholder="192.168.0.1"
+              placeholder={DEFAULT_IP_ADDRESS}
               value={ipValue}
               onChange={(e) => setIpValue(e.target.value)}
             />
@@ -113,7 +114,7 @@ export const NetworkSettings = () => {
             <Label htmlFor="base-port">Port de base</Label>
             <Input
               id="base-port"
-              placeholder="5550"
+              placeholder={DEFAULT_BASE_PORT.toString()}
               value={portValue}
               onChange={(e) => setPortValue(e.target.value)}
             />

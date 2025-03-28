@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, ArrowRight, Clock } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
+import { DEFAULT_REFRESH_INTERVAL } from '@/config/constants';
 
 interface StepScreenConfigProps {
   onNext: () => void;
