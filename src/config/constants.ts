@@ -7,6 +7,12 @@ export const API_PORT = 5070;
 // Adresse IP par défaut pour le serveur
 export const DEFAULT_IP_ADDRESS = '192.168.0.14';
 
+// Adresse IP par défaut pour le serveur API
+export const DEFAULT_API_IP_ADDRESS = '192.168.0.14';
+
+// URL par défaut pour l'API
+export const DEFAULT_API_URL = `http://${DEFAULT_API_IP_ADDRESS}:${API_PORT}/api`;
+
 // Port de base par défaut pour les écrans
 export const DEFAULT_BASE_PORT = 5550;
 

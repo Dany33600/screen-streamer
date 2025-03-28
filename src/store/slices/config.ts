@@ -1,10 +1,11 @@
-
 import { 
   DEFAULT_BASE_PORT, 
   DEFAULT_IP_ADDRESS, 
   DEFAULT_PIN, 
   DEFAULT_REFRESH_INTERVAL,
-  API_PORT
+  API_PORT,
+  DEFAULT_API_URL,
+  DEFAULT_API_IP_ADDRESS
 } from '@/config/constants';
 
 export interface ConfigState {
@@ -54,7 +55,7 @@ export const createConfigSlice = (
   basePort: DEFAULT_BASE_PORT,
   baseIpAddress: DEFAULT_IP_ADDRESS,
   isConfigMode: false,
-  apiUrl: 'http://localhost:5000',
+  apiUrl: DEFAULT_API_URL, // Utilisation de la constante par défaut
   configPin: DEFAULT_PIN, // Utilisation de la constante par défaut
   isPinVerified: false,
   refreshInterval: DEFAULT_REFRESH_INTERVAL, // Utilisation de la constante par défaut
@@ -63,7 +64,7 @@ export const createConfigSlice = (
   hasAttemptedServerCheck: false, // Par défaut, aucune tentative de vérification du serveur n'a été effectuée
   apiPort: API_PORT, // Port API par défaut
   useBaseIpForApi: true, // Par défaut, utilise la même IP que le serveur web
-  apiIpAddress: DEFAULT_IP_ADDRESS, // Par défaut, même IP que baseIpAddress
+  apiIpAddress: DEFAULT_API_IP_ADDRESS, // Par défaut, valeur de la constante
   
   // Default menu options - all enabled by default
   menuOptions: {
@@ -149,18 +150,26 @@ export const createConfigSlice = (
     hasAttemptedServerCheck: value
   })),
   
-  setApiPort: (port) => set((state) => ({ 
-    ...state, 
-    apiPort: port 
-  })),
+  setApiPort: (port) => set((state) => {
+    // Mettre à jour le port API et reconstruire l'URL API
+    const newApiUrl = state.apiUrl.replace(`:${state.apiPort}/`, `:${port}/`);
+    return { 
+      ...state, 
+      apiPort: port,
+      apiUrl: newApiUrl
+    };
+  }),
   
   setUseBaseIpForApi: (value) => set((state) => {
     // Si on active l'option, on synchronise l'IP API avec l'IP de base
     if (value) {
+      // Mettre à jour l'URL API avec la nouvelle IP
+      const newApiUrl = `http://${state.baseIpAddress}:${state.apiPort}/api`;
       return { 
         ...state, 
         useBaseIpForApi: value,
-        apiIpAddress: state.baseIpAddress
+        apiIpAddress: state.baseIpAddress,
+        apiUrl: newApiUrl
       };
     }
     return { 
@@ -169,10 +178,15 @@ export const createConfigSlice = (
     };
   }),
   
-  setApiIpAddress: (ipAddress) => set((state) => ({ 
-    ...state, 
-    apiIpAddress: ipAddress,
-    // Si l'utilisateur modifie manuellement l'IP API, désactiver l'option d'utiliser l'IP de base
-    useBaseIpForApi: false
-  })),
+  setApiIpAddress: (ipAddress) => set((state) => {
+    // Mettre à jour l'URL API avec la nouvelle IP
+    const newApiUrl = `http://${ipAddress}:${state.apiPort}/api`;
+    return { 
+      ...state, 
+      apiIpAddress: ipAddress,
+      // Si l'utilisateur modifie manuellement l'IP API, désactiver l'option d'utiliser l'IP de base
+      useBaseIpForApi: false,
+      apiUrl: newApiUrl
+    };
+  }),
 });
