@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAppStore } from '@/store';
 import { AlertTriangle, Save } from 'lucide-react';
@@ -80,7 +79,7 @@ export const NetworkSettings = () => {
         </p>
         
         <p className="text-sm text-muted-foreground">
-          Les écrans seront accessibles à l'adresse : <span className="font-medium">{ipValue}:[PORT]</span>
+          Le serveur API backend est accessible à l'adresse : <span className="font-medium">{ipValue}:5000</span>
         </p>
       </CardContent>
     </Card>
