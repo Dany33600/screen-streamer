@@ -7,6 +7,7 @@ import { initializeScreens } from './store'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { configService } from './services/config/configService.ts'
 import { useAppStore } from './store'
+import { toast } from 'sonner'
 
 // Initialiser le client de requête
 const queryClient = new QueryClient({
@@ -48,11 +49,17 @@ const initializeApp = async () => {
     console.log('Initialisation des écrans...');
     await initializeScreens().catch(error => {
       console.error('Erreur lors de l\'initialisation des écrans:', error);
+      toast.error('Erreur lors de l\'initialisation des écrans', {
+        description: 'Vérifiez la connexion au serveur et les paramètres réseau'
+      });
     });
     
     console.log('Écrans initialisés depuis le serveur');
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de l\'application:', error);
+    toast.error('Erreur lors de l\'initialisation de l\'application', {
+      description: 'Une erreur est survenue pendant le chargement de la configuration'
+    });
   }
 };
 

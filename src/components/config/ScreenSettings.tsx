@@ -16,6 +16,8 @@ export const ScreenSettings = () => {
   const [refreshIntervalValue, setRefreshIntervalValue] = useState(refreshInterval);
   
   const handleSaveScreenSettings = () => {
+    // Mettre à jour l'intervalle de rafraîchissement
+    // Cette action déclenchera la sauvegarde automatique de la configuration
     setRefreshInterval(refreshIntervalValue);
     
     toast({

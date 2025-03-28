@@ -65,6 +65,21 @@ export const createConfigSlice: StateCreator<
   // Récupérer la configuration initiale
   const config = configService.getConfig();
   
+  // Fonction utilitaire pour sauvegarder la configuration après chaque modification
+  const saveConfigAfterUpdate = async () => {
+    const state = get();
+    
+    // Sauvegarder la configuration via le service
+    try {
+      await get().saveConfig();
+      console.log('Configuration sauvegardée automatiquement après modification');
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde automatique de la configuration:', error);
+      return false;
+    }
+  };
+  
   return {
     // État initial avec les valeurs de la configuration
     basePort: config.basePort || DEFAULT_CONFIG.basePort,
@@ -94,23 +109,29 @@ export const createConfigSlice: StateCreator<
       preview: true,
     },
     
-    setBasePort: (port) => set((state) => ({ 
-      ...state, 
-      basePort: port 
-    })),
-    
-    setBaseIpAddress: (ipAddress) => set((state) => {
-      const newState = { 
+    setBasePort: (port) => {
+      set((state) => ({ 
         ...state, 
-        baseIpAddress: ipAddress
-      };
-      
-      if (state.useBaseIpForApi) {
-        newState.apiIpAddress = ipAddress;
-      }
-      
-      return newState;
-    }),
+        basePort: port 
+      }));
+      saveConfigAfterUpdate();
+    },
+    
+    setBaseIpAddress: (ipAddress) => {
+      set((state) => {
+        const newState = { 
+          ...state, 
+          baseIpAddress: ipAddress
+        };
+        
+        if (state.useBaseIpForApi) {
+          newState.apiIpAddress = ipAddress;
+        }
+        
+        return newState;
+      });
+      saveConfigAfterUpdate();
+    },
     
     toggleConfigMode: () => set((state) => {
       if (state.isConfigMode) {
@@ -122,10 +143,13 @@ export const createConfigSlice: StateCreator<
       return state;
     }),
     
-    setConfigPin: (pin) => set((state) => ({ 
-      ...state, 
-      configPin: pin 
-    })),
+    setConfigPin: (pin) => {
+      set((state) => ({ 
+        ...state, 
+        configPin: pin 
+      }));
+      saveConfigAfterUpdate();
+    },
     
     verifyPin: (pin) => {
       const state = get();
@@ -141,18 +165,24 @@ export const createConfigSlice: StateCreator<
       isPinVerified: false 
     })),
     
-    setRefreshInterval: (minutes) => set((state) => ({ 
-      ...state, 
-      refreshInterval: Math.min(Math.max(minutes, 1), 60) 
-    })),
+    setRefreshInterval: (minutes) => {
+      set((state) => ({ 
+        ...state, 
+        refreshInterval: Math.min(Math.max(minutes, 1), 60) 
+      }));
+      saveConfigAfterUpdate();
+    },
     
-    toggleMenuOption: (option, value) => set((state) => ({
-      ...state,
-      menuOptions: {
-        ...state.menuOptions,
-        [option]: value,
-      },
-    })),
+    toggleMenuOption: (option, value) => {
+      set((state) => ({
+        ...state,
+        menuOptions: {
+          ...state.menuOptions,
+          [option]: value,
+        },
+      }));
+      saveConfigAfterUpdate();
+    },
     
     toggleDarkMode: () => set((state) => ({
       ...state,
@@ -169,32 +199,41 @@ export const createConfigSlice: StateCreator<
       hasAttemptedServerCheck: value
     })),
     
-    setApiPort: (port) => set((state) => ({ 
-      ...state, 
-      apiPort: port
-    })),
+    setApiPort: (port) => {
+      set((state) => ({ 
+        ...state, 
+        apiPort: port
+      }));
+      saveConfigAfterUpdate();
+    },
     
-    setUseBaseIpForApi: (value) => set((state) => {
-      if (value) {
+    setUseBaseIpForApi: (value) => {
+      set((state) => {
+        if (value) {
+          return { 
+            ...state, 
+            useBaseIpForApi: value,
+            apiIpAddress: state.baseIpAddress
+          };
+        }
         return { 
           ...state, 
-          useBaseIpForApi: value,
-          apiIpAddress: state.baseIpAddress
+          useBaseIpForApi: value 
         };
-      }
-      return { 
-        ...state, 
-        useBaseIpForApi: value 
-      };
-    }),
+      });
+      saveConfigAfterUpdate();
+    },
     
-    setApiIpAddress: (ipAddress) => set((state) => {
-      return { 
-        ...state, 
-        apiIpAddress: ipAddress,
-        useBaseIpForApi: false
-      };
-    }),
+    setApiIpAddress: (ipAddress) => {
+      set((state) => {
+        return { 
+          ...state, 
+          apiIpAddress: ipAddress,
+          useBaseIpForApi: false
+        };
+      });
+      saveConfigAfterUpdate();
+    },
     
     saveConfig: async () => {
       const state = get();
