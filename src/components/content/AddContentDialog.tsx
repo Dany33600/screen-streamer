@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
@@ -125,7 +126,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
         </DialogHeader>
         
         {!apiConfigured ? (
-          <DialogAlerts />
+          <DialogAlerts serverNotConfigured={!apiConfigured} />
         ) : (
           <Tabs defaultValue="upload" className="space-y-4" onValueChange={setActiveTab}>
             <TabsList>

@@ -4,13 +4,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
 interface DialogAlertsProps {
-  serverNotConfigured: boolean;
-  noScreens: boolean;
+  serverNotConfigured?: boolean;
+  noScreens?: boolean;
 }
 
 const DialogAlerts: React.FC<DialogAlertsProps> = ({
-  serverNotConfigured,
-  noScreens
+  serverNotConfigured = false,
+  noScreens = false
 }) => {
   return (
     <>
