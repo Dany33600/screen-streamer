@@ -16,8 +16,9 @@ export async function checkServerStatus(
   
   // Ensure the service uses the current IP address
   screenServerService.updateApiBaseUrl({
-    apiUrl,
-    baseIpAddress
+    baseIpAddress,
+    apiIpAddress: baseIpAddress,
+    useBaseIpForApi: true
   });
   
   // Check if the server is running internally

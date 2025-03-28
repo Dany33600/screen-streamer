@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAppStore } from '@/store';
 import { screenServerService } from '@/services/screenServerReal';
@@ -121,8 +120,10 @@ export function useScreenOperations() {
     setIsRetrying(true);
     const state = useAppStore.getState();
     screenServerService.updateApiBaseUrl({
-      apiUrl: state.apiUrl,
-      baseIpAddress: state.baseIpAddress
+      baseIpAddress: state.baseIpAddress,
+      apiIpAddress: state.apiIpAddress,
+      apiPort: state.apiPort,
+      useBaseIpForApi: state.useBaseIpForApi
     });
     loadScreens().finally(() => setIsRetrying(false));
   };

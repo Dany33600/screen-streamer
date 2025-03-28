@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -16,6 +17,7 @@ const PreviewPage = () => {
   const refreshInterval = useAppStore((state) => state.refreshInterval);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   
   useEffect(() => {
@@ -33,9 +35,9 @@ const PreviewPage = () => {
     try {
       const state = useAppStore.getState();
       screenServerService.updateApiBaseUrl({
-        apiUrl: state.apiUrl,
         baseIpAddress: state.baseIpAddress,
         apiIpAddress: state.apiIpAddress,
+        apiPort: state.apiPort,
         useBaseIpForApi: state.useBaseIpForApi
       });
       

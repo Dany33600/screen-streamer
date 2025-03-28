@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Maximize, Minimize, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,9 +39,9 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
     try {
       const state = useAppStore.getState();
       screenServerService.updateApiBaseUrl({
-        apiUrl: state.apiUrl,
         baseIpAddress: state.baseIpAddress,
         apiIpAddress: state.apiIpAddress,
+        apiPort: state.apiPort,
         useBaseIpForApi: state.useBaseIpForApi
       });
       

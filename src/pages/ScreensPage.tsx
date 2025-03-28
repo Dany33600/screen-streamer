@@ -82,9 +82,9 @@ const ScreensPage = () => {
     // Use store values to update API URL
     const state = useAppStore.getState();
     screenServerService.updateApiBaseUrl({
-      apiUrl: state.apiUrl,
       baseIpAddress: state.baseIpAddress,
       apiIpAddress: state.apiIpAddress,
+      apiPort: state.apiPort,
       useBaseIpForApi: state.useBaseIpForApi
     });
     

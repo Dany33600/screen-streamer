@@ -50,11 +50,13 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
   useEffect(() => {
     if (open) {
       screenServerService.updateApiBaseUrl({
-        apiUrl,
-        baseIpAddress
+        baseIpAddress,
+        apiIpAddress,
+        apiPort,
+        useBaseIpForApi
       });
     }
-  }, [open, apiUrl, baseIpAddress]);
+  }, [open, baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi]);
 
   // Récupérer la liste des contenus depuis le serveur
   const { 
@@ -63,20 +65,26 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
     error: contentsError,
     refetch: refetchContents 
   } = useQuery({
-    queryKey: ['contents', apiUrl, open],
+    queryKey: ['contents', baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi, open],
     queryFn: async () => {
-      if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
+      if (!baseIpAddress || !apiPort) throw new Error("L'API n'est pas configurée");
       
       // Make sure the API URL is updated before making the request
       screenServerService.updateApiBaseUrl({
-        apiUrl,
-        baseIpAddress
+        baseIpAddress,
+        apiIpAddress,
+        apiPort,
+        useBaseIpForApi
       });
       
       // Add a slight delay to ensure the API is ready (helps with newly created screens)
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const response = await fetch(`${apiUrl}/api/content`);
+      // Construct the API URL
+      const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
+      const url = `http://${ipToUse}:${apiPort}/api/api/content`;
+      
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Erreur lors de la récupération des contenus: ${response.statusText}`);
       }
@@ -84,7 +92,7 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
       const data = await response.json();
       return data.success ? data.contentList : [];
     },
-    enabled: !!apiUrl && open,
+    enabled: !!(baseIpAddress && apiPort && open),
     retry: 1,
   });
 
@@ -117,8 +125,10 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
   const handleRetry = () => {
     setIsRetrying(true);
     screenServerService.updateApiBaseUrl({
-      apiUrl,
-      baseIpAddress
+      baseIpAddress,
+      apiIpAddress,
+      apiPort,
+      useBaseIpForApi
     });
     refetchContents();
   };
