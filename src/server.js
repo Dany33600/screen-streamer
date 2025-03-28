@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Port sur lequel le serveur API sera accessible
-const API_PORT = process.env.API_PORT || 5000;
+const API_PORT = process.env.API_PORT || 5070;
 
 // Créer et démarrer le serveur API
 const server = createApiServer(API_PORT, __dirname);
