@@ -44,6 +44,9 @@ export class ApiService {
   }
   
   public getApiBaseUrl(): string {
+    if (!this.apiBaseUrl) {
+      this.updateApiBaseUrl();
+    }
     return this.apiBaseUrl;
   }
   

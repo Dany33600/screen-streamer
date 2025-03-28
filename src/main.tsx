@@ -6,6 +6,7 @@ import './index.css'
 import { initializeScreens } from './store'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { configService } from './services/config/configService.ts'
+import { useAppStore } from './store'
 
 // Initialiser le client de requête
 const queryClient = new QueryClient({
@@ -32,7 +33,17 @@ const initializeApp = async () => {
       useBaseIpForApi: true
     });
     
+    // Mettre à jour le store avec les valeurs de configuration
+    const store = useAppStore.getState();
+    store.setBaseIpAddress(config.baseIpAddress);
+    store.setBasePort(config.basePort);
+    store.setApiPort(config.apiPort);
+    store.setApiIpAddress(config.apiIpAddress);
+    store.setConfigPin(config.configPin);
+    store.setRefreshInterval(config.refreshInterval);
+    
     // Initialiser les écrans depuis le serveur
+    console.log('Initialisation des écrans...');
     await initializeScreens().catch(error => {
       console.error('Erreur lors de l\'initialisation des écrans:', error);
     });

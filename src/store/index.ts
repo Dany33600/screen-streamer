@@ -25,7 +25,7 @@ export type AppState = ScreensState & ContentsState & PlaylistsState & ConfigSta
 // Create the store with all slices
 export const useAppStore = create<AppState>()(
   persist(
-    (get, set) => ({
+    (set, get) => ({
       ...createScreensSlice(get, set),
       ...createContentsSlice(get, set),
       ...createPlaylistsSlice(get, set),

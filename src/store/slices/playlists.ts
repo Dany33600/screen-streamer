@@ -1,6 +1,7 @@
 
 import { Playlist } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { StateCreator } from 'zustand';
 
 export interface PlaylistsState {
   playlists: Playlist[];
@@ -11,13 +12,10 @@ export interface PlaylistsState {
   removePlaylist: (id: string) => void;
 }
 
-export const createPlaylistsSlice = (
-  get: () => any, 
-  set: (fn: (state: any) => any) => void
-) => ({
+export const createPlaylistsSlice: StateCreator<PlaylistsState> = (set) => ({
   playlists: [],
   
-  addPlaylist: (name, contentIds) => set((state: any) => ({
+  addPlaylist: (name, contentIds) => set((state) => ({
     playlists: [
       ...state.playlists,
       {
@@ -29,13 +27,13 @@ export const createPlaylistsSlice = (
     ],
   })),
   
-  updatePlaylist: (id, data) => set((state: any) => ({
+  updatePlaylist: (id, data) => set((state) => ({
     playlists: state.playlists.map((playlist: Playlist) =>
       playlist.id === id ? { ...playlist, ...data } : playlist
     ),
   })),
   
-  removePlaylist: (id) => set((state: any) => ({
+  removePlaylist: (id) => set((state) => ({
     playlists: state.playlists.filter((playlist: Playlist) => playlist.id !== id),
   })),
 });

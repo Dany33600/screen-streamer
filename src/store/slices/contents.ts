@@ -1,6 +1,7 @@
 
 import { Content, ContentType } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { StateCreator } from 'zustand';
 
 export interface ContentsState {
   contents: Content[];
@@ -11,13 +12,10 @@ export interface ContentsState {
   removeContent: (id: string) => void;
 }
 
-export const createContentsSlice = (
-  get: () => any, 
-  set: (fn: (state: any) => any) => void
-) => ({
+export const createContentsSlice: StateCreator<ContentsState> = (set) => ({
   contents: [],
   
-  addContent: (file, type, url, contentId, content) => set((state: any) => {
+  addContent: (file, type, url, contentId, content) => set((state) => {
     // Utiliser le contentId fourni par le serveur ou générer un nouvel ID
     const id = contentId || (file ? `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}` : uuidv4());
     
@@ -37,13 +35,13 @@ export const createContentsSlice = (
     };
   }),
   
-  updateContent: (id, data) => set((state: any) => ({
+  updateContent: (id, data) => set((state) => ({
     contents: state.contents.map((content: Content) =>
       content.id === id ? { ...content, ...data } : content
     ),
   })),
   
-  removeContent: (id) => set((state: any) => ({
+  removeContent: (id) => set((state) => ({
     contents: state.contents.filter((content: Content) => content.id !== id),
     screens: state.screens.map((screen: any) =>
       screen.contentId === id ? { ...screen, contentId: undefined } : screen

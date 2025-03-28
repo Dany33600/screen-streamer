@@ -1,6 +1,7 @@
+
 import { Screen } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
-import { initializeApiUrl } from '..';
+import { StateCreator } from 'zustand';
 
 export interface ScreensState {
   screens: Screen[];
@@ -14,19 +15,13 @@ export interface ScreensState {
   loadScreens: () => Promise<Screen[]>;
 }
 
-export const createScreensSlice = (
-  get: () => any, 
-  set: (fn: (state: any) => any) => void
-) => ({
+export const createScreensSlice: StateCreator<ScreensState> = (set, get) => ({
   screens: [],
   isLoadingScreens: false,
   
   loadScreens: async () => {
     try {
-      set((state) => ({ 
-        ...state,
-        isLoadingScreens: true 
-      }));
+      set({ isLoadingScreens: true });
       
       // Build the API URL directly with current state values
       const state = get();
@@ -45,10 +40,7 @@ export const createScreensSlice = (
       
       if (data.success) {
         console.log(`Écrans chargés avec succès:`, data.screens);
-        set((state) => ({ 
-          ...state, 
-          screens: data.screens || [] 
-        }));
+        set({ screens: data.screens || [] });
         return data.screens || [];
       }
       
@@ -57,10 +49,7 @@ export const createScreensSlice = (
       console.error('Error loading screens:', error);
       return [];
     } finally {
-      set((state) => ({ 
-        ...state, 
-        isLoadingScreens: false 
-      }));
+      set({ isLoadingScreens: false });
     }
   },
   
@@ -131,11 +120,16 @@ export const createScreensSlice = (
   
   updateScreen: async (id, data) => {
     try {
-      // Update the screen on the API
-      const apiUrl = get().apiUrl;
+      // Get the current state
+      const state = get();
       
+      // Build the API URL directly
+      const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
+      const apiUrl = `http://${ipToUse}:${state.apiPort}/api`;
+      
+      // Update the screen on the API
       if (apiUrl) {
-        // Fix: Use the correct endpoint without duplication
+        console.log(`Updating screen at: ${apiUrl}/screens/${id}`);
         await fetch(`${apiUrl}/screens/${id}`, {
           method: 'PUT',
           headers: {
@@ -154,7 +148,7 @@ export const createScreensSlice = (
       }));
       
       // Return the updated screen
-      return get().screens.find((screen) => screen.id === id);
+      return get().screens.find((screen) => screen.id === id) as Screen;
     } catch (error) {
       console.error('Error updating screen:', error);
       // Still update the local state
@@ -165,17 +159,22 @@ export const createScreensSlice = (
         ),
       }));
       
-      return get().screens.find((screen) => screen.id === id);
+      return get().screens.find((screen) => screen.id === id) as Screen;
     }
   },
   
   removeScreen: async (id) => {
     try {
-      // Delete the screen on the API
-      const apiUrl = get().apiUrl;
+      // Get the current state
+      const state = get();
       
+      // Build the API URL directly
+      const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
+      const apiUrl = `http://${ipToUse}:${state.apiPort}/api`;
+      
+      // Delete the screen on the API
       if (apiUrl) {
-        // Fix: Use the correct endpoint without duplication
+        console.log(`Deleting screen at: ${apiUrl}/screens/${id}`);
         await fetch(`${apiUrl}/screens/${id}`, {
           method: 'DELETE',
         });
