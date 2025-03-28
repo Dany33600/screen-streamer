@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAppStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const setApiPort = useAppStore((state) => state.setApiPort);
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
   
-  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('offline');
   const [isLoading, setIsLoading] = useState(false);
   const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
   
@@ -83,15 +83,6 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       setIsLoading(false);
     }
   };
-  
-  useEffect(() => {
-    // Vérifier le serveur au chargement, mais avec un court délai
-    const timer = setTimeout(() => {
-      checkServerStatus();
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
   return (
     <div className="space-y-6">
