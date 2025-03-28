@@ -6,14 +6,15 @@ import { Content } from '@/types';
 import { screenServerService } from '@/services/screenServerReal';
 
 export function useContentData() {
-  const apiUrl = useAppStore((state) => state.apiUrl);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   const [serverContents, setServerContents] = useState<Content[]>([]);
   
   // Get the appropriate IP address based on configuration
   const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
+  const apiUrl = `http://${ipToUse}:${apiPort}/api`;
   
   // Récupérer la liste des contenus depuis le serveur
   const { 
@@ -22,15 +23,15 @@ export function useContentData() {
     error: contentsError,
     refetch: refetchContents
   } = useQuery({
-    queryKey: ['contents', apiUrl, ipToUse],
+    queryKey: ['contents', apiUrl, ipToUse, apiPort],
     queryFn: async () => {
       if (!apiUrl) throw new Error("L'URL de l'API n'est pas configurée");
       
       // Update API URL with store values
       screenServerService.updateApiBaseUrl({
-        apiUrl,
         baseIpAddress,
         apiIpAddress,
+        apiPort,
         useBaseIpForApi
       });
       

@@ -5,8 +5,8 @@ import { toast } from '@/hooks/use-toast';
 
 export function useServerOperations(screenId: string, port: number, ipAddress: string, screenName: string) {
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
-  const apiUrl = useAppStore((state) => state.apiUrl);
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   const updateScreen = useAppStore((state) => state.updateScreen);
   
@@ -35,9 +35,9 @@ export function useServerOperations(screenId: string, port: number, ipAddress: s
     
     // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
     screenServerService.updateApiBaseUrl({
-      apiUrl,
       baseIpAddress,
       apiIpAddress,
+      apiPort,
       useBaseIpForApi
     });
     
@@ -99,9 +99,9 @@ export function useServerOperations(screenId: string, port: number, ipAddress: s
     
     // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
     screenServerService.updateApiBaseUrl({
-      apiUrl,
       baseIpAddress,
       apiIpAddress,
+      apiPort,
       useBaseIpForApi
     });
     
