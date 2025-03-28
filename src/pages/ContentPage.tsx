@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -45,9 +46,9 @@ const ContentPage = () => {
     queryKey: ['contents'],
     queryFn: async () => {
       const formattedApiUrl = getFormattedApiUrl();
-      console.log(`Récupération des contenus depuis: ${formattedApiUrl}/api/content`);
+      console.log(`Récupération des contenus depuis: ${formattedApiUrl}/content`);
       
-      const response = await fetch(`${formattedApiUrl}/api/content`);
+      const response = await fetch(`${formattedApiUrl}/content`);
       if (!response.ok) {
         throw new Error(`Erreur HTTP ${response.status}`);
       }
@@ -78,10 +79,10 @@ const ContentPage = () => {
       console.log(`Suppression du contenu avec ID exact: "${id}"`);
       
       const formattedApiUrl = getFormattedApiUrl();
-      console.log(`URL complète pour la suppression: ${formattedApiUrl}/api/content/${encodeURIComponent(id)}`);
+      console.log(`URL complète pour la suppression: ${formattedApiUrl}/content/${encodeURIComponent(id)}`);
       
       // Appel à l'API pour supprimer le contenu
-      const response = await fetch(`${formattedApiUrl}/api/content/${encodeURIComponent(id)}`, {
+      const response = await fetch(`${formattedApiUrl}/content/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
