@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useAppStore } from '@/store';
 import { checkApiServerStatus } from '@/utils/server-status';
@@ -24,9 +27,51 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   
-  const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
+  const setApiPort = useAppStore((state) => state.setApiPort);
+  const setUseBaseIpForApi = useAppStore((state) => state.setUseBaseIpForApi);
+  const setApiIpAddress = useAppStore((state) => state.setApiIpAddress);
+  
+  const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
+  const [apiIpValue, setApiIpValue] = useState(useBaseIpForApi ? baseIpAddress : apiIpAddress);
+  const [useBaseIpValue, setUseBaseIpValue] = useState(useBaseIpForApi);
+  
+  useEffect(() => {
+    if (useBaseIpValue) {
+      setApiIpValue(baseIpAddress);
+    }
+  }, [baseIpAddress, useBaseIpValue]);
+  
+  const ipToUse = useBaseIpValue ? baseIpAddress : apiIpValue;
   
   const handleCheckServer = async () => {
+    // Validate inputs first
+    const newApiPort = parseInt(apiPortValue, 10);
+    if (isNaN(newApiPort) || newApiPort < 1 || newApiPort > 65535) {
+      toast({
+        title: 'Veuillez entrer un numéro de port API valide (1-65535)',
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!useBaseIpValue) {
+      const ipPattern = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+      if (!ipPattern.test(apiIpValue)) {
+        toast({
+          title: 'Veuillez entrer une adresse IP API valide',
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Save the API configuration
+    setApiPort(newApiPort);
+    setUseBaseIpForApi(useBaseIpValue);
+    if (!useBaseIpValue) {
+      setApiIpAddress(apiIpValue);
+    }
+    
     setIsChecking(true);
     setCheckPassed(null);
     setIpReachable(null);
@@ -34,7 +79,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     try {
       const result = await checkApiServerStatus({ 
         ipAddress: ipToUse, 
-        port: apiPort 
+        port: newApiPort 
       });
       
       setIpReachable(result.ipReachable);
@@ -109,11 +154,62 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       </div>
       
       <div className="space-y-6">
+        <div className="border-b pb-4">
+          <h3 className="font-medium mb-3">Configuration du serveur API</h3>
+          
+          <div className="flex items-center space-x-2 mb-4">
+            <Checkbox 
+              id="use-base-ip" 
+              checked={useBaseIpValue}
+              onCheckedChange={(checked) => {
+                const isChecked = checked === true;
+                setUseBaseIpValue(isChecked);
+                if (isChecked) {
+                  setApiIpValue(baseIpAddress);
+                }
+              }}
+            />
+            <Label 
+              htmlFor="use-base-ip"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              Utiliser la même adresse IP que le serveur web
+            </Label>
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="api-ip-address">Adresse IP du serveur API</Label>
+            <Input
+              id="api-ip-address"
+              placeholder="192.168.0.14"
+              value={useBaseIpValue ? baseIpAddress : apiIpValue}
+              onChange={(e) => setApiIpValue(e.target.value)}
+              disabled={useBaseIpValue}
+            />
+            <p className="text-sm text-muted-foreground">
+              L'adresse IP du serveur API backend
+            </p>
+          </div>
+          
+          <div className="grid gap-2 mt-3">
+            <Label htmlFor="api-port">Port du serveur API</Label>
+            <Input
+              id="api-port"
+              placeholder="5070"
+              value={apiPortValue}
+              onChange={(e) => setApiPortValue(e.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">
+              Le port sur lequel le serveur API backend fonctionnera
+            </p>
+          </div>
+        </div>
+        
         <div className="p-6 border rounded-lg flex flex-col items-center justify-center space-y-4 bg-card/50">
           {checkPassed === null ? (
             <div className="text-center py-4">
               <p className="mb-4">
-                Adresse du serveur API: <strong>{ipToUse}:{apiPort}</strong>
+                Adresse du serveur API: <strong>{ipToUse}:{apiPortValue}</strong>
               </p>
               <p className="mb-4">Cliquez sur le bouton ci-dessous pour vérifier la connexion au serveur.</p>
               <Button 
@@ -146,7 +242,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
               {ipReachable === false ? (
                 <p>L'adresse IP <strong>{ipToUse}</strong> n'est pas accessible sur le réseau.</p>
               ) : (
-                <p>L'API du serveur sur <strong>{ipToUse}:{apiPort}</strong> n'est pas accessible.</p>
+                <p>L'API du serveur sur <strong>{ipToUse}:{apiPortValue}</strong> n'est pas accessible.</p>
               )}
               <div className="space-y-2">
                 <Button onClick={handleCheckServer} variant="outline" className="gap-2">
