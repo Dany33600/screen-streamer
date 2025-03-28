@@ -83,9 +83,9 @@ const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
       // Add a slight delay to ensure the API is ready (helps with newly created screens)
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Construct the API URL
+      // Construct the API URL without duplicating /api
       const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
-      const url = `http://${ipToUse}:${apiPort}/api/api/content`;
+      const url = `http://${ipToUse}:${apiPort}/api/content`;
       
       const response = await fetch(url);
       if (!response.ok) {

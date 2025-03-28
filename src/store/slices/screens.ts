@@ -1,4 +1,3 @@
-
 import { Screen } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -40,7 +39,8 @@ export const createScreensSlice = (
         return [];
       }
       
-      const response = await fetch(`${apiUrl}/api/screens`);
+      // Fix: Use the correct endpoint without duplication
+      const response = await fetch(`${apiUrl}/screens`);
       
       if (!response.ok) {
         throw new Error(`Error loading screens: ${response.statusText}`);
@@ -99,7 +99,8 @@ export const createScreensSlice = (
       const apiUrl = get().apiUrl;
       
       if (apiUrl) {
-        const response = await fetch(`${apiUrl}/api/screens`, {
+        // Fix: Use the correct endpoint without duplication
+        const response = await fetch(`${apiUrl}/screens`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -136,7 +137,8 @@ export const createScreensSlice = (
       const apiUrl = get().apiUrl;
       
       if (apiUrl) {
-        await fetch(`${apiUrl}/api/screens/${id}`, {
+        // Fix: Use the correct endpoint without duplication
+        await fetch(`${apiUrl}/screens/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -175,7 +177,8 @@ export const createScreensSlice = (
       const apiUrl = get().apiUrl;
       
       if (apiUrl) {
-        await fetch(`${apiUrl}/api/screens/${id}`, {
+        // Fix: Use the correct endpoint without duplication
+        await fetch(`${apiUrl}/screens/${id}`, {
           method: 'DELETE',
         });
       }

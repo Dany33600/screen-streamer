@@ -32,7 +32,7 @@ export class ApiService {
       // Determine the correct IP address to use
       const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
       
-      // Construct the API URL
+      // Construct the API URL without duplicating /api
       this.apiBaseUrl = `http://${ipToUse}:${apiPort}/api`;
       
       console.log(`API URL configured: ${this.apiBaseUrl}`);

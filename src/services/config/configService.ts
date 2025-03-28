@@ -71,6 +71,7 @@ class ConfigService extends ApiService {
           useBaseIpForApi: true
         });
         
+        // Fixed: removed duplicate "/api" in the URL
         const response = await this.handleApiRequest<{success: boolean, config: AppConfig}>(
           `${this.apiBaseUrl}/config`,
           { method: 'GET' }
@@ -115,6 +116,7 @@ class ConfigService extends ApiService {
       
       console.log(`URL de l'API pour la sauvegarde: ${apiUrl}/config`);
       
+      // Fixed: removed duplicate "/api" in the URL
       const response = await this.handleApiRequest<{success: boolean}>(
         `${apiUrl}/config`,
         { 
