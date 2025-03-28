@@ -57,9 +57,9 @@ export const NetworkSettings = () => {
   const renderServerInformation = () => (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle>Information sur le serveur web</CardTitle>
+        <CardTitle>Serveur API backend</CardTitle>
         <CardDescription>
-          Configuration du serveur web pour les écrans
+          Configuration du serveur backend pour les écrans
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -79,19 +79,9 @@ export const NetworkSettings = () => {
           Assurez-vous que ces ports sont ouverts dans votre pare-feu.
         </p>
         
-        <div className="grid gap-2">
-          <Label>Adresse IP actuelle</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              value={ipValue}
-              onChange={(e) => setIpValue(e.target.value)}
-              className="bg-muted"
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Les écrans seront accessibles à l'adresse : <span className="font-medium">{ipValue}:[PORT]</span>
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Les écrans seront accessibles à l'adresse : <span className="font-medium">{ipValue}:[PORT]</span>
+        </p>
       </CardContent>
     </Card>
   );
