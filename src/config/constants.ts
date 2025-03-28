@@ -21,6 +21,6 @@ export const DEFAULT_REFRESH_INTERVAL = 1;
 
 // Constante pour forcer le redémarrage de l'onboarding
 // Mettre à true pour forcer le redémarrage de l'onboarding
-export const FORCE_ONBOARDING = true;
+export const FORCE_ONBOARDING = false;
 
 // Autres constantes globales peuvent être ajoutées ici

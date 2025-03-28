@@ -35,7 +35,7 @@ const App = () => {
   const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
   
   useEffect(() => {
-    // Load the PIN from .env file if available
+    // Load the PIN from .env file using Vite's environment variable format
     const envPin = import.meta.env.VITE_CONFIG_PIN;
     if (envPin) {
       setConfigPin(envPin);
