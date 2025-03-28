@@ -35,12 +35,13 @@ const initializeApp = async () => {
     
     // Mettre à jour le store avec les valeurs de configuration
     const store = useAppStore.getState();
-    store.setBaseIpAddress(config.baseIpAddress);
-    store.setBasePort(config.basePort);
-    store.setApiPort(config.apiPort);
-    store.setApiIpAddress(config.apiIpAddress);
-    store.setConfigPin(config.configPin);
-    store.setRefreshInterval(config.refreshInterval);
+    
+    if (store.setBaseIpAddress) store.setBaseIpAddress(config.baseIpAddress);
+    if (store.setBasePort) store.setBasePort(config.basePort);
+    if (store.setApiPort) store.setApiPort(config.apiPort);
+    if (store.setApiIpAddress) store.setApiIpAddress(config.apiIpAddress);
+    if (store.setConfigPin) store.setConfigPin(config.configPin);
+    if (store.setRefreshInterval) store.setRefreshInterval(config.refreshInterval);
     
     // Initialiser les écrans depuis le serveur
     console.log('Initialisation des écrans...');

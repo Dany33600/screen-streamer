@@ -2,6 +2,7 @@
 import { Playlist } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { StateCreator } from 'zustand';
+import { AppState } from '../index';
 
 export interface PlaylistsState {
   playlists: Playlist[];
@@ -12,7 +13,12 @@ export interface PlaylistsState {
   removePlaylist: (id: string) => void;
 }
 
-export const createPlaylistsSlice: StateCreator<PlaylistsState> = (set) => ({
+export const createPlaylistsSlice: StateCreator<
+  AppState,
+  [],
+  [],
+  PlaylistsState
+> = (set) => ({
   playlists: [],
   
   addPlaylist: (name, contentIds) => set((state) => ({

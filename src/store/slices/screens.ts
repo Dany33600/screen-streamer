@@ -2,6 +2,7 @@
 import { Screen } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { StateCreator } from 'zustand';
+import { AppState } from '../index';
 
 export interface ScreensState {
   screens: Screen[];
@@ -15,7 +16,12 @@ export interface ScreensState {
   loadScreens: () => Promise<Screen[]>;
 }
 
-export const createScreensSlice: StateCreator<ScreensState> = (set, get) => ({
+export const createScreensSlice: StateCreator<
+  AppState,
+  [],
+  [],
+  ScreensState
+> = (set, get) => ({
   screens: [],
   isLoadingScreens: false,
   
@@ -23,7 +29,7 @@ export const createScreensSlice: StateCreator<ScreensState> = (set, get) => ({
     try {
       set({ isLoadingScreens: true });
       
-      // Build the API URL directly with current state values
+      // Access the config properties from the AppState
       const state = get();
       const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
       const apiUrl = `http://${ipToUse}:${state.apiPort}/api`;
@@ -54,9 +60,10 @@ export const createScreensSlice: StateCreator<ScreensState> = (set, get) => ({
   },
   
   addScreen: async (name) => {
-    // Get the next available port from config slice
-    const basePort = get().basePort || 5550;
-    const screens = get().screens;
+    // Access the config properties from the AppState
+    const state = get();
+    const basePort = state.basePort || 5550;
+    const screens = state.screens;
     
     // Find the highest port currently in use and add 1 for the new screen
     const highestPort = screens.reduce(
@@ -67,7 +74,7 @@ export const createScreensSlice: StateCreator<ScreensState> = (set, get) => ({
     const newPort = highestPort + 1;
     
     // Use the configured base IP address
-    const baseIpAddress = get().baseIpAddress || '127.0.0.1';
+    const baseIpAddress = state.baseIpAddress || '127.0.0.1';
     
     // Create a new screen object
     const newScreen: Screen = {
@@ -80,7 +87,7 @@ export const createScreensSlice: StateCreator<ScreensState> = (set, get) => ({
     };
     
     try {
-      // Build the API URL directly with current state values
+      // Access the config properties from the AppState
       const state = get();
       const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
       const apiUrl = `http://${ipToUse}:${state.apiPort}/api`;
@@ -120,7 +127,7 @@ export const createScreensSlice: StateCreator<ScreensState> = (set, get) => ({
   
   updateScreen: async (id, data) => {
     try {
-      // Get the current state
+      // Access the config properties from the AppState
       const state = get();
       
       // Build the API URL directly
@@ -165,7 +172,7 @@ export const createScreensSlice: StateCreator<ScreensState> = (set, get) => ({
   
   removeScreen: async (id) => {
     try {
-      // Get the current state
+      // Access the config properties from the AppState
       const state = get();
       
       // Build the API URL directly

@@ -9,6 +9,7 @@ import {
 } from '@/config/constants';
 import { configService } from '@/services/config/configService';
 import { StateCreator } from 'zustand';
+import { AppState } from '../index';
 
 export interface ConfigState {
   basePort: number;
@@ -53,7 +54,12 @@ export interface ConfigActions {
 
 export type ConfigSlice = ConfigState & ConfigActions;
 
-export const createConfigSlice: StateCreator<ConfigSlice> = (set, get) => {
+export const createConfigSlice: StateCreator<
+  AppState,
+  [],
+  [],
+  ConfigSlice
+> = (set, get) => {
   const buildApiUrl = (ipAddress: string, port: number) => `http://${ipAddress}:${port}/api`;
   
   const config = configService.getConfig();

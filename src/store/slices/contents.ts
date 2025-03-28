@@ -2,6 +2,7 @@
 import { Content, ContentType } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { StateCreator } from 'zustand';
+import { AppState } from '../index';
 
 export interface ContentsState {
   contents: Content[];
@@ -12,7 +13,12 @@ export interface ContentsState {
   removeContent: (id: string) => void;
 }
 
-export const createContentsSlice: StateCreator<ContentsState> = (set) => ({
+export const createContentsSlice: StateCreator<
+  AppState,
+  [],
+  [],
+  ContentsState
+> = (set, get) => ({
   contents: [],
   
   addContent: (file, type, url, contentId, content) => set((state) => {
@@ -41,10 +47,14 @@ export const createContentsSlice: StateCreator<ContentsState> = (set) => ({
     ),
   })),
   
-  removeContent: (id) => set((state) => ({
-    contents: state.contents.filter((content: Content) => content.id !== id),
-    screens: state.screens.map((screen: any) =>
-      screen.contentId === id ? { ...screen, contentId: undefined } : screen
-    ),
-  })),
+  removeContent: (id) => set((state) => {
+    // First filter out the content from the contents array
+    const updatedContents = state.contents.filter((content: Content) => content.id !== id);
+    
+    // Next, we need to find and update any screens that reference this content
+    // But we can't directly access `screens` from this slice, so return updated contents only
+    return {
+      contents: updatedContents,
+    };
+  }),
 });

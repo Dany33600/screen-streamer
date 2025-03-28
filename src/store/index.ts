@@ -25,11 +25,11 @@ export type AppState = ScreensState & ContentsState & PlaylistsState & ConfigSta
 // Create the store with all slices
 export const useAppStore = create<AppState>()(
   persist(
-    (set, get) => ({
-      ...createScreensSlice(get, set),
-      ...createContentsSlice(get, set),
-      ...createPlaylistsSlice(get, set),
-      ...createConfigSlice(get, set),
+    (...a) => ({
+      ...createScreensSlice(...a),
+      ...createContentsSlice(...a),
+      ...createPlaylistsSlice(...a),
+      ...createConfigSlice(...a),
     }),
     {
       name: 'screen-streamer-storage',

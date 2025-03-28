@@ -8,6 +8,26 @@ export interface ContentTypeIconProps {
   className?: string; // Making className optional
 }
 
+// Function to get a human-readable label for content types
+export const getTypeLabel = (type: ContentType): string => {
+  switch (type) {
+    case 'image':
+      return 'Image';
+    case 'video':
+      return 'Vidéo';
+    case 'powerpoint':
+      return 'PowerPoint';
+    case 'google-slides':
+      return 'Google Slides';
+    case 'pdf':
+      return 'PDF';
+    case 'html':
+      return 'HTML';
+    default:
+      return 'Inconnu';
+  }
+};
+
 const ContentTypeIcon: React.FC<ContentTypeIconProps> = ({ type, className = '' }) => {
   switch (type) {
     case 'image':
