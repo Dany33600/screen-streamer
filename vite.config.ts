@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     hmr: {
       // Allow external connections for HMR (for screens)
-      host: 'localhost',
+      host: '127.0.0.1',
       port: 8080,
       // Désactiver les pings lorsque la connexion au serveur échoue répétitivement
       clientPort: 8080,
