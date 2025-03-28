@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 // Recréer l'équivalent de __dirname pour les modules ES
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +55,3 @@ export function saveConfigData(config) {
     return false;
   }
 }
-
-// Corrigeons le dirname qui n'est pas défini
-import { dirname } from 'path';
