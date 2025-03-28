@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { DEFAULT_IP_ADDRESS, DEFAULT_BASE_PORT } from '@/config/constants';
+import { configService } from '@/services/config/configService';
 
 export const NetworkSettings = () => {
   const basePort = useAppStore((state) => state.basePort);
@@ -81,11 +82,20 @@ export const NetworkSettings = () => {
       setBaseIpAddress(ipValue);
       setApiPort(newApiPort);
       
+      const newApiIpAddress = useBaseIpForApi ? ipValue : apiIpValue;
+      
       if (useBaseIpForApi) {
         setApiIpAddress(ipValue);
       } else {
         setApiIpAddress(apiIpValue);
       }
+      
+      configService.updateApiBaseUrl({
+        baseIpAddress: ipValue,
+        apiPort: newApiPort,
+        apiIpAddress: newApiIpAddress,
+        useBaseIpForApi: useBaseIpForApi
+      });
       
       setIsSaving(false);
       toast({

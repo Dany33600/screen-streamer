@@ -80,6 +80,14 @@ class ConfigService extends ApiService {
           console.log('Configuration chargée avec succès:', response.config);
           this.config = response.config;
           this.isLoaded = true;
+          
+          // Mise à jour de l'URL de l'API avec les valeurs chargées
+          this.updateApiBaseUrl({
+            baseIpAddress: this.config.baseIpAddress,
+            apiPort: this.config.apiPort,
+            apiIpAddress: this.config.apiIpAddress,
+            useBaseIpForApi: true
+          });
         } else {
           console.warn('Échec du chargement de la configuration, utilisation des valeurs par défaut');
         }
@@ -99,8 +107,16 @@ class ConfigService extends ApiService {
   public async saveConfig(config: AppConfig): Promise<boolean> {
     try {
       console.log('Sauvegarde de la configuration sur le backend:', config);
+      
+      // Mettre à jour l'URL de l'API avec la configuration actuelle
+      const useBaseIpForApi = true; // We're assuming backend and frontend are on same IP
+      const ipToUse = useBaseIpForApi ? config.baseIpAddress : config.apiIpAddress;
+      const apiUrl = `http://${ipToUse}:${config.apiPort}/api`;
+      
+      console.log(`URL de l'API pour la sauvegarde: ${apiUrl}/config`);
+      
       const response = await this.handleApiRequest<{success: boolean}>(
-        `${this.apiBaseUrl}/config`,
+        `${apiUrl}/config`,
         { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -111,6 +127,15 @@ class ConfigService extends ApiService {
       if (response.success) {
         console.log('Configuration sauvegardée avec succès');
         this.config = config;
+        
+        // Mise à jour de l'URL de l'API après la sauvegarde
+        this.updateApiBaseUrl({
+          baseIpAddress: config.baseIpAddress,
+          apiPort: config.apiPort,
+          apiIpAddress: config.apiIpAddress,
+          useBaseIpForApi: true
+        });
+        
         return true;
       } else {
         console.warn('Échec de la sauvegarde de la configuration');

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
@@ -71,6 +70,14 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     if (!useBaseIpValue) {
       setApiIpAddress(apiIpValue);
     }
+    
+    // Update API URL configuration in configService
+    configService.updateApiBaseUrl({
+      baseIpAddress: baseIpAddress,
+      apiPort: newApiPort,
+      apiIpAddress: useBaseIpValue ? baseIpAddress : apiIpValue,
+      useBaseIpForApi: useBaseIpValue
+    });
     
     setIsChecking(true);
     setCheckPassed(null);

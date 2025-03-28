@@ -1,4 +1,3 @@
-
 import { 
   DEFAULT_BASE_PORT, 
   DEFAULT_IP_ADDRESS, 
@@ -30,35 +29,15 @@ export interface ConfigState {
     preview: boolean;
   };
   
-  // Computed properties
-  apiUrl: string; // URL calculée à partir de apiIpAddress et apiPort
-  
-  // Actions
-  setBasePort: (port: number) => void;
-  setBaseIpAddress: (ipAddress: string) => void;
-  toggleConfigMode: () => void;
-  setConfigPin: (pin: string) => void;
-  verifyPin: (pin: string) => boolean;
-  resetPinVerification: () => void;
-  setRefreshInterval: (minutes: number) => void;
-  toggleMenuOption: (option: keyof ConfigState['menuOptions'], value: boolean) => void;
-  toggleDarkMode: () => void;
-  setHasCompletedOnboarding: (value: boolean) => void;
-  setHasAttemptedServerCheck: (value: boolean) => void;
-  setApiPort: (port: number) => void;
-  setUseBaseIpForApi: (value: boolean) => void;
-  setApiIpAddress: (ipAddress: string) => void;
-  saveConfig: () => Promise<boolean>;
+  apiUrl: string;
 }
 
 export const createConfigSlice = (
   get: () => any, 
   set: (fn: (state: any) => any) => void
 ) => {
-  // Fonction pour construire l'URL de l'API
   const buildApiUrl = (ipAddress: string, port: number) => `http://${ipAddress}:${port}/api`;
   
-  // Récupérer les valeurs de configuration du service
   const config = configService.getConfig();
   
   return {
@@ -75,14 +54,11 @@ export const createConfigSlice = (
     useBaseIpForApi: true,
     apiIpAddress: config.apiIpAddress,
     
-    // Computed property
     get apiUrl() {
-      // Utiliser l'IP appropriée selon la configuration
       const ipToUse = this.useBaseIpForApi ? this.baseIpAddress : this.apiIpAddress;
       return buildApiUrl(ipToUse, this.apiPort);
     },
     
-    // Default menu options - all enabled by default
     menuOptions: {
       dashboard: true,
       screens: true,
@@ -102,7 +78,6 @@ export const createConfigSlice = (
         baseIpAddress: ipAddress
       };
       
-      // Si useBaseIpForApi est vrai, mettre également à jour apiIpAddress
       if (state.useBaseIpForApi) {
         newState.apiIpAddress = ipAddress;
       }
@@ -111,15 +86,12 @@ export const createConfigSlice = (
     }),
     
     toggleConfigMode: () => set((state) => {
-      // If currently in config mode, reset pin verification when leaving
       if (state.isConfigMode) {
         return { ...state, isConfigMode: false, isPinVerified: false };
       }
-      // If verified, can enter config mode
       if (state.isPinVerified) {
         return { ...state, isConfigMode: true };
       }
-      // Otherwise, don't change the mode (PIN will be requested by UI)
       return state;
     }),
     
@@ -144,7 +116,7 @@ export const createConfigSlice = (
     
     setRefreshInterval: (minutes) => set((state) => ({ 
       ...state, 
-      refreshInterval: Math.min(Math.max(minutes, 1), 60) // Ensure value is between 1-60
+      refreshInterval: Math.min(Math.max(minutes, 1), 60) 
     })),
     
     toggleMenuOption: (option, value) => set((state) => ({
@@ -176,7 +148,6 @@ export const createConfigSlice = (
     })),
     
     setUseBaseIpForApi: (value) => set((state) => {
-      // Si on active l'option, on synchronise l'IP API avec l'IP de base
       if (value) {
         return { 
           ...state, 
@@ -194,14 +165,20 @@ export const createConfigSlice = (
       return { 
         ...state, 
         apiIpAddress: ipAddress,
-        // Si l'utilisateur modifie manuellement l'IP API, désactiver l'option d'utiliser l'IP de base
         useBaseIpForApi: false
       };
     }),
     
-    // Nouvelle fonction pour sauvegarder la configuration
     saveConfig: async () => {
       const state = get();
+      
+      configService.updateApiBaseUrl({
+        baseIpAddress: state.baseIpAddress,
+        apiPort: state.apiPort,
+        apiIpAddress: state.apiIpAddress,
+        useBaseIpForApi: state.useBaseIpForApi
+      });
+      
       const configToSave = {
         basePort: state.basePort,
         baseIpAddress: state.baseIpAddress,
@@ -209,7 +186,7 @@ export const createConfigSlice = (
         refreshInterval: state.refreshInterval,
         apiPort: state.apiPort,
         apiIpAddress: state.apiIpAddress,
-        forceOnboarding: false // On désactive forceOnboarding une fois la configuration sauvegardée
+        forceOnboarding: false
       };
       
       return await configService.saveConfig(configToSave);
