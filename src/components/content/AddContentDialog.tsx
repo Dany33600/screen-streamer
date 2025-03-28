@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useContentUpload } from '@/hooks/use-content-upload';
 import { useAppStore } from '@/store';
 import { toast } from 'sonner';
-import { DialogAlerts } from './DialogAlerts';
+import DialogAlerts from './DialogAlerts';
 
 interface AddContentDialogProps {
   open: boolean;
@@ -43,7 +43,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
     if (event.target.files && event.target.files.length > 0) {
       const selectedFile = event.target.files[0];
       
-      // Validate file size (max 50MB)
       if (selectedFile.size > 50 * 1024 * 1024) {
         setFileError("Le fichier est trop volumineux (taille maximale: 50MB)");
         return;
@@ -54,7 +53,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
         setName(selectedFile.name);
       }
       
-      // Auto-detect content type
       if (selectedFile.type.startsWith("image/")) {
         setContentType("image");
       } else if (selectedFile.type.startsWith("video/")) {
@@ -65,7 +63,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
                 selectedFile.type.includes("powerpoint")) {
         setContentType("powerpoint");
       } else {
-        setContentType("html"); // Default fallback
+        setContentType("html");
       }
     }
   };
@@ -90,7 +88,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
         const result = await uploadContent(file, contentType);
         
         if (result.success && result.url) {
-          // Add content with the uploaded file's URL
           addContent(name || file.name, contentType, result.url);
           resetForm();
           onOpenChange(false);
@@ -105,7 +102,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
           setName(`Contenu externe (${new Date().toLocaleDateString()})`);
         }
         
-        // Add content with the external URL
         addContent(name, contentType, url);
         resetForm();
         onOpenChange(false);
@@ -116,7 +112,6 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
     }
   };
   
-  // Check if API is configured
   const apiConfigured = Boolean(getApiUrl());
   
   return (
