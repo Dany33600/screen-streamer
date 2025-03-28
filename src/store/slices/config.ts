@@ -8,6 +8,7 @@ export interface ConfigState {
   isPinVerified: boolean;
   refreshInterval: number;
   isDarkMode: boolean;
+  hasCompletedOnboarding: boolean;
   menuOptions: {
     dashboard: boolean;
     screens: boolean;
@@ -27,6 +28,7 @@ export interface ConfigState {
   setRefreshInterval: (minutes: number) => void;
   toggleMenuOption: (option: keyof ConfigState['menuOptions'], value: boolean) => void;
   toggleDarkMode: () => void;
+  setHasCompletedOnboarding: (value: boolean) => void;
 }
 
 export const createConfigSlice = (
@@ -41,6 +43,7 @@ export const createConfigSlice = (
   isPinVerified: false,
   refreshInterval: 1, // Default to 1 minute
   isDarkMode: false, // Thème clair par défaut
+  hasCompletedOnboarding: false, // Par défaut, l'onboarding n'a pas été complété
   
   // Default menu options - all enabled by default
   menuOptions: {
@@ -114,5 +117,10 @@ export const createConfigSlice = (
   toggleDarkMode: () => set((state) => ({
     ...state,
     isDarkMode: !state.isDarkMode
+  })),
+  
+  setHasCompletedOnboarding: (value) => set((state) => ({
+    ...state,
+    hasCompletedOnboarding: value
   })),
 });

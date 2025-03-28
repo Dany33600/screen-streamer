@@ -13,6 +13,8 @@ import PlaylistsPage from "./pages/PlaylistsPage";
 import ConfigPage from "./pages/ConfigPage";
 import PreviewPage from "./pages/PreviewPage";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./components/onboarding/Onboarding";
+import { FORCE_ONBOARDING } from "./config/constants";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +31,8 @@ const ProtectedConfigRoute = () => {
 
 const App = () => {
   const setConfigPin = useAppStore((state) => state.setConfigPin);
+  const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding);
+  const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
   
   useEffect(() => {
     // Load the PIN from .env file if available
@@ -36,7 +40,24 @@ const App = () => {
     if (envPin) {
       setConfigPin(envPin);
     }
-  }, [setConfigPin]);
+    
+    // Force onboarding if needed (from constants)
+    if (FORCE_ONBOARDING) {
+      setHasCompletedOnboarding(false);
+    }
+  }, [setConfigPin, setHasCompletedOnboarding]);
+
+  // Show onboarding if it hasn't been completed
+  if (!hasCompletedOnboarding) {
+    return (
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Onboarding />
+        </TooltipProvider>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
