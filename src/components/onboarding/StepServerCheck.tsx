@@ -131,17 +131,21 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   };
   
   const handleComplete = async () => {
-    // Même si le serveur n'est pas accessible, on permet de terminer l'onboarding
-    // mais on sauvegarde quand même la configuration si possible
+    // On s'assure que le serveur est bien accessible avant de terminer l'onboarding
     if (checkPassed) {
       try {
+        // Sauvegarde de la configuration avant de terminer
         await saveConfig();
+        onComplete();
       } catch (error) {
         console.error('Erreur lors de la sauvegarde de la configuration:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Une erreur est survenue lors de la sauvegarde de la configuration.',
+          variant: 'destructive',
+        });
       }
     }
-    
-    onComplete();
   };
   
   return (
@@ -259,12 +263,17 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         <Button variant="outline" onClick={onBack} className="gap-2">
           <ArrowLeft size={16} /> Retour
         </Button>
-        <Button 
-          onClick={handleComplete}
-          className="gap-2"
-        >
-          {checkPassed ? 'Terminer' : 'Ignorer et terminer'}
-        </Button>
+        
+        {/* Montrer le bouton Terminer uniquement si la connexion a réussi */}
+        {checkPassed && (
+          <Button 
+            onClick={handleComplete}
+            className="gap-2"
+            variant="success"
+          >
+            Terminer
+          </Button>
+        )}
       </div>
     </div>
   );
