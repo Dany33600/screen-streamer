@@ -1,16 +1,13 @@
-
 // Script de démarrage du serveur Express pour les écrans
 import { createApiServer } from './server/screenServer.js';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { API_PORT } from './config/constants.js';
 
 // Recréer l'équivalent de __dirname pour les modules ES
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Port sur lequel le serveur API sera accessible
-const API_PORT = process.env.API_PORT || 5070;
 
 // Créer et démarrer le serveur API
 const server = createApiServer(API_PORT, __dirname);

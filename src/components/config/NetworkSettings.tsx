@@ -9,9 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-
-// API port value from server.js
-const API_PORT = 5000; // Default to 5000 since we can't access process.env in client code
+import { API_PORT } from '@/config/constants';
 
 export const NetworkSettings = () => {
   const basePort = useAppStore((state) => state.basePort);
