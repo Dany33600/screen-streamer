@@ -37,6 +37,9 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
               isLogoClickable ? 'cursor-pointer hover:bg-primary/20 transition-colors' : ''
             }`}
             onClick={isLogoClickable ? handleLogoClick : undefined}
+            role={isLogoClickable ? "button" : "presentation"}
+            tabIndex={isLogoClickable ? 0 : -1}
+            aria-label={isLogoClickable ? "Accéder au dashboard sans serveur" : "Logo ScreenCast"}
             title={isLogoClickable ? "Cliquez pour accéder au dashboard sans serveur" : "Logo ScreenCast"}
           >
             <MonitorPlay className="h-8 w-8 text-primary" />

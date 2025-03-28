@@ -19,10 +19,13 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const apiPort = useAppStore((state) => state.apiPort);
   const setApiPort = useAppStore((state) => state.setApiPort);
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
+  const hasAttemptedServerCheck = useAppStore((state) => state.hasAttemptedServerCheck);
   
   const [serverStatus, setServerStatus] = useState<'initial' | 'checking' | 'online' | 'offline'>('initial');
   const [isLoading, setIsLoading] = useState(false);
   const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
+  
+  console.log("État actuel hasAttemptedServerCheck:", hasAttemptedServerCheck);
   
   const checkServerStatus = async () => {
     setIsLoading(true);
@@ -44,6 +47,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     try {
       // Marquer que nous avons tenté de vérifier le serveur
       setHasAttemptedServerCheck(true);
+      console.log("Marquage hasAttemptedServerCheck à true");
       
       // Essayer de se connecter au serveur
       const apiUrl = `http://${baseIpAddress}:${newPort}/api/ping`;
