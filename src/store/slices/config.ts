@@ -1,4 +1,3 @@
-
 import { 
   DEFAULT_BASE_PORT, 
   DEFAULT_IP_ADDRESS, 
@@ -31,10 +30,10 @@ export interface ConfigState {
     playlists: boolean;
     preview: boolean;
   };
-  apiUrl: string;
 }
 
 export interface ConfigActions {
+  getApiUrl: () => string;
   setBasePort: (port: number) => void;
   setBaseIpAddress: (ipAddress: string) => void;
   toggleConfigMode: () => void;
@@ -78,7 +77,7 @@ export const createConfigSlice: StateCreator<
     useBaseIpForApi: true,
     apiIpAddress: config.apiIpAddress || DEFAULT_API_IP_ADDRESS,
     
-    get apiUrl() {
+    getApiUrl: () => {
       const state = get();
       const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
       return buildApiUrl(ipToUse, state.apiPort);

@@ -19,6 +19,7 @@ const PreviewPage = () => {
   const apiIpAddress = useAppStore((state) => state.apiIpAddress);
   const apiPort = useAppStore((state) => state.apiPort);
   const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
+  const getApiUrl = useAppStore((state) => state.getApiUrl);
   
   useEffect(() => {
     const handleFullscreenChange = () => {

@@ -29,7 +29,7 @@ export const createScreensSlice: StateCreator<
     try {
       set({ isLoadingScreens: true });
       
-      // Access the config properties from the AppState
+      // Access the config properties from the AppState via get()
       const state = get();
       const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
       const apiUrl = `http://${ipToUse}:${state.apiPort}/api`;

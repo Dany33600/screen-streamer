@@ -57,9 +57,6 @@ export const initializeApiUrl = () => {
 // This function should be called at app initialization
 export const initializeScreens = async () => {
   console.log('Initializing screens from server...');
-  const apiUrl = initializeApiUrl();
-  console.log(`Using API URL: ${apiUrl}`);
-  
   try {
     await useAppStore.getState().loadScreens();
   } catch (error) {
