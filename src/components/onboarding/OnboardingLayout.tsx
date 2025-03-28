@@ -18,7 +18,9 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   
   // Cette fonction permet de bypasser l'onboarding quand on clique sur le logo
   const handleLogoClick = () => {
-    setHasCompletedOnboarding(true);
+    if (step === 6) {
+      setHasCompletedOnboarding(true);
+    }
   };
   
   return (
@@ -26,10 +28,12 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
       <div className="w-full max-w-3xl px-4 py-8 space-y-8">
         <div className="flex flex-col items-center space-y-4 mb-8">
           <div 
-            className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2 cursor-pointer"
+            className={`flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2 ${
+              step === 6 ? 'cursor-pointer' : ''
+            }`}
             onClick={handleLogoClick}
-            role="button"
-            tabIndex={0}
+            role={step === 6 ? "button" : "presentation"}
+            tabIndex={step === 6 ? 0 : -1}
             aria-label="Logo ScreenCast"
           >
             <MonitorPlay className="h-8 w-8 text-primary" />
