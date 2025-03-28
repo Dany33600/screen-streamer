@@ -102,7 +102,8 @@ class ScreenServerRealService extends ApiService {
       const serverId = screenId; // Utiliser l'ID de l'écran directement comme ID du serveur
       
       // Récupérer l'adresse IP configurée 
-      const baseIpAddress = useAppStore.getState().baseIpAddress;
+      const state = useAppStore.getState();
+      const baseIpAddress = state.baseIpAddress;
       console.log(`Utilisation de l'adresse IP configurée: ${baseIpAddress}`);
       
       // Créer une URL pour accéder au serveur depuis l'extérieur

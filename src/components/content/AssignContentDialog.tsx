@@ -1,23 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Content, Screen } from '@/types';
-import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppStore } from '@/store';
-import { screenServerService } from '@/services/screenServerReal';
-import DisplayOptionsDialog from '@/components/screens/DisplayOptionsDialog';
-import { useQuery } from '@tanstack/react-query';
-import DialogAlerts from './DialogAlerts';
-import ScreenSelectionComponent from './ScreenSelectionComponent';
-import ContentSelectionComponent from './ContentSelectionComponent';
+import { toast } from 'sonner';
+import { Screen, Content } from '@/types';
+import ContentTypeIcon from './ContentTypeIcon';
+import { Loader2, RefreshCcw } from 'lucide-react';
 
 interface AssignContentDialogProps {
   open: boolean;
@@ -28,244 +19,170 @@ interface AssignContentDialogProps {
   screens: Screen[];
 }
 
-const AssignContentDialog: React.FC<AssignContentDialogProps> = ({
+const AssignContentDialog = ({
   open,
   onOpenChange,
   content,
   selectedScreenId,
   setSelectedScreenId,
-  screens
-}) => {
-  const assignContentToScreen = useAppStore(state => state.assignContentToScreen);
-  const baseIpAddress = useAppStore(state => state.baseIpAddress);
-  const apiIpAddress = useAppStore(state => state.apiIpAddress);
-  const apiPort = useAppStore(state => state.apiPort);
-  const useBaseIpForApi = useAppStore(state => state.useBaseIpForApi);
+  screens,
+}: AssignContentDialogProps) => {
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverScreens, setServerScreens] = useState<Screen[]>([]);
   
-  const getScreenById = (id: string) => screens.find(screen => screen.id === id);
-  const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false);
-  const [pendingScreenId, setPendingScreenId] = useState<string | null>(null);
-  const [serverContents, setServerContents] = useState<Content[]>([]);
-  const [selectedContentId, setSelectedContentId] = useState<string>('none');
-  const [isRetrying, setIsRetrying] = useState(false);
-
-  // Ensure API base URL is updated when the dialog opens
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
+  const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
+  const assignContentToScreen = useAppStore((state) => state.assignContentToScreen);
+  
+  // Récupérer les écrans du serveur lorsque la boîte de dialogue s'ouvre
   useEffect(() => {
-    if (open) {
-      screenServerService.updateApiBaseUrl({
-        baseIpAddress,
-        apiIpAddress,
-        apiPort,
-        useBaseIpForApi
-      });
-    }
-  }, [open, baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi]);
-
-  // Récupérer la liste des contenus depuis le serveur
-  const { 
-    data: serverContentData, 
-    isLoading: isLoadingContents, 
-    error: contentsError,
-    refetch: refetchContents 
-  } = useQuery({
-    queryKey: ['contents', baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi, open],
-    queryFn: async () => {
-      if (!baseIpAddress || !apiPort) throw new Error("L'API n'est pas configurée");
+    const getServerScreens = async () => {
+      if (!open) return;
       
-      // Make sure the API URL is updated before making the request
-      screenServerService.updateApiBaseUrl({
-        baseIpAddress,
-        apiIpAddress,
-        apiPort,
-        useBaseIpForApi
-      });
-      
-      // Add a slight delay to ensure the API is ready (helps with newly created screens)
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Construct the API URL without duplicating /api
-      const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
-      const url = `http://${ipToUse}:${apiPort}/api/content`;
-      
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Erreur lors de la récupération des contenus: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      return data.success ? data.contentList : [];
-    },
-    enabled: !!(baseIpAddress && apiPort && open),
-    retry: 1,
-  });
-
-  // Mettre à jour les contenus du serveur quand les données sont chargées
-  useEffect(() => {
-    if (serverContentData) {
-      setServerContents(serverContentData);
-      
-      // Si un contenu a été sélectionné, on vérifie qu'il existe toujours dans la liste
-      if (content && selectedContentId !== 'none') {
-        const contentExists = serverContentData.some(c => c.id === selectedContentId);
-        if (!contentExists) {
-          setSelectedContentId('none');
+      setIsLoading(true);
+      try {
+        // Add a slight delay to ensure the API is ready (helps with newly created screens)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Construct the API URL without duplicating /api
+        const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
+        const url = `http://${ipToUse}:${apiPort}/api/content`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
         }
+        
+        const data = await response.json();
+        if (data.success && data.screens) {
+          setServerScreens(data.screens);
+        }
+      } catch (error) {
+        console.error('Error fetching screens:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    getServerScreens();
+  }, [open, baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi]);
+  
+  // Combiner les écrans locaux et ceux du serveur
+  const allScreens = screens;
+  
+  const handleAssign = async () => {
+    if (!content) return;
+    
+    setIsAssigning(true);
+    try {
+      const selectedScreen = screens.find(s => s.id === selectedScreenId);
+      if (!selectedScreen) {
+        throw new Error("L'écran sélectionné n'a pas été trouvé.");
       }
       
-      setIsRetrying(false);
-    }
-  }, [serverContentData, content, selectedContentId]);
-
-  // Initialiser le contenu sélectionné lors de l'ouverture du dialogue
-  useEffect(() => {
-    if (open && content) {
-      setSelectedContentId(content.id);
-    } else if (open) {
-      setSelectedContentId('none');
-    }
-  }, [open, content]);
-
-  const handleRetry = () => {
-    setIsRetrying(true);
-    screenServerService.updateApiBaseUrl({
-      baseIpAddress,
-      apiIpAddress,
-      apiPort,
-      useBaseIpForApi
-    });
-    refetchContents();
-  };
-
-  const handleAssignContent = async () => {
-    if (!selectedScreenId) return;
-    
-    // Si aucun contenu n'est sélectionné, on désassigne le contenu de l'écran
-    if (selectedContentId === 'none') {
-      assignContentToScreen(selectedScreenId, undefined);
-      onOpenChange(false);
-      toast.success("Contenu retiré de l'écran avec succès");
-      return;
-    }
-    
-    // Récupérer le contenu sélectionné
-    const selectedContent = serverContents.find(c => c.id === selectedContentId);
-    if (!selectedContent) {
-      toast.error("Le contenu sélectionné n'existe pas");
-      return;
-    }
-    
-    const screen = getScreenById(selectedScreenId);
-    if (!screen) return;
-    
-    // Sauvegarder l'ancien contentId pour vérifier si le contenu a changé
-    const previousContentId = screen.contentId;
-    
-    // Assigner le nouveau contenu
-    assignContentToScreen(selectedScreenId, selectedContent.id);
-    
-    // Vérifier si le serveur est en cours d'exécution
-    const isServerRunning = screenServerService.isServerRunning(selectedScreenId);
-    
-    // Si le contenu a changé et que le serveur est en cours d'exécution
-    if (isServerRunning && previousContentId !== selectedContent.id) {
-      // Demander à l'utilisateur de configurer les options d'affichage
-      setPendingScreenId(selectedScreenId);
-      setIsDisplayOptionsOpen(true);
-    } else {
-      // Fermer le dialogue d'assignation
-      onOpenChange(false);
-      toast.success("Contenu assigné à l'écran avec succès");
+      const wasAssigned = await assignContentToScreen(selectedScreenId, content.id);
+      
+      if (wasAssigned) {
+        toast.success('Contenu assigné', {
+          description: `${content.name} assigné à ${selectedScreen.name}`,
+        });
+        onOpenChange(false);
+      } else {
+        toast.error('Erreur', {
+          description: "Impossible d'assigner le contenu à l'écran.",
+        });
+      }
+    } catch (error) {
+      console.error('Error assigning content:', error);
+      toast.error('Erreur', {
+        description: error instanceof Error ? error.message : "Une erreur s'est produite",
+      });
+    } finally {
+      setIsAssigning(false);
     }
   };
   
-  const handleConfirmDisplayOptions = async (displayOptions: any) => {
-    if (!pendingScreenId) return;
-    
-    // Récupérer le contenu sélectionné
-    const selectedContent = serverContents.find(c => c.id === selectedContentId);
-    if (!selectedContent) return;
-    
-    const screen = getScreenById(pendingScreenId);
-    if (!screen) return;
-    
-    console.log(`Mise à jour du serveur pour l'écran ${screen.name} avec le nouveau contenu ${selectedContent.name}`);
-    console.log(`Options d'affichage:`, displayOptions);
-    
-    const success = await screenServerService.updateServer(pendingScreenId, screen.port, selectedContent, displayOptions);
-    
-    if (success) {
-      toast.success(`Le serveur pour l'écran "${screen.name}" a été mis à jour avec le nouveau contenu.`);
-    } else {
-      toast.error(`Impossible de mettre à jour le serveur pour l'écran "${screen.name}".`);
-    }
-    
-    // Réinitialiser les états
-    setPendingScreenId(null);
-    onOpenChange(false);
-  };
-
-  const noScreens = screens.length === 0;
-  const serverNotConfigured = !baseIpAddress || !apiPort;
-
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assigner à un écran</DialogTitle>
-            <DialogDescription>
-              Choisissez le contenu à diffuser sur l'écran
-            </DialogDescription>
-          </DialogHeader>
-          
-          <DialogAlerts 
-            serverNotConfigured={serverNotConfigured}
-            noScreens={noScreens}
-          />
-          
-          <div className="space-y-4 py-4">
-            <ScreenSelectionComponent
-              screens={screens}
-              selectedScreenId={selectedScreenId}
-              setSelectedScreenId={setSelectedScreenId}
-              disabled={noScreens}
-            />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Assigner le contenu à un écran</DialogTitle>
+        </DialogHeader>
+        
+        {content ? (
+          <div className="space-y-4">
+            <div className="flex items-center p-3 border rounded-md bg-muted/50">
+              <div className="mr-3">
+                <ContentTypeIcon type={content.type} className="h-8 w-8" />
+              </div>
+              <div>
+                <h3 className="font-medium">{content.name}</h3>
+                <p className="text-sm text-muted-foreground">{content.type}</p>
+              </div>
+            </div>
             
-            <ContentSelectionComponent
-              isLoadingContents={isLoadingContents}
-              isRetrying={isRetrying}
-              contentsError={contentsError as Error | null}
-              serverContents={serverContents}
-              selectedContentId={selectedContentId}
-              setSelectedContentId={setSelectedContentId}
-              handleRetry={handleRetry}
-              disabled={noScreens || serverNotConfigured}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="screen-select">Choisir un écran</Label>
+              <Select 
+                value={selectedScreenId} 
+                onValueChange={setSelectedScreenId}
+                disabled={isAssigning || isLoading}
+              >
+                <SelectTrigger id="screen-select">
+                  <SelectValue placeholder="Sélectionner un écran" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allScreens.length > 0 ? (
+                    allScreens.map(screen => (
+                      <SelectItem key={screen.id} value={screen.id}>
+                        {screen.name} ({screen.ipAddress}:{screen.port})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      Aucun écran disponible
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              
+              {isLoading && (
+                <div className="flex items-center justify-center py-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Chargement des écrans...</span>
+                </div>
+              )}
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
-            </Button>
-            <Button 
-              onClick={handleAssignContent} 
-              disabled={!selectedScreenId || noScreens || serverNotConfigured || isLoadingContents || isRetrying}
-            >
-              Assigner
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {selectedContentId !== 'none' && (
-        <DisplayOptionsDialog
-          open={isDisplayOptionsOpen}
-          onOpenChange={setIsDisplayOptionsOpen}
-          content={serverContents.find(c => c.id === selectedContentId) || null}
-          onConfirm={handleConfirmDisplayOptions}
-          initialOptions={pendingScreenId ? screenServerService.getServerInstance(pendingScreenId)?.displayOptions : undefined}
-        />
-      )}
-    </>
+        ) : (
+          <div className="py-4 text-center text-muted-foreground">
+            Aucun contenu à afficher
+          </div>
+        )}
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button 
+            onClick={handleAssign} 
+            disabled={!selectedScreenId || selectedScreenId === 'none' || isAssigning || !content || isLoading}
+          >
+            {isAssigning ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Assignation...
+              </>
+            ) : (
+              'Assigner'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

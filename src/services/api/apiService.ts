@@ -1,5 +1,6 @@
 
 import { toast } from 'sonner';
+import { useAppStore } from '@/store';
 
 interface ApiUrlConfig {
   baseIpAddress?: string;
@@ -18,8 +19,7 @@ export class ApiService {
   
   public updateApiBaseUrl(config: ApiUrlConfig = {}): void {
     try {
-      // Importer dynamiquement le store pour éviter la dépendance circulaire
-      const { useAppStore } = require('@/store');
+      // Accéder au store via le hook importé
       const state = useAppStore.getState();
       
       const { 

@@ -35,7 +35,8 @@ export function useContentData() {
         useBaseIpForApi
       });
       
-      const response = await fetch(`${apiUrl}/api/content`);
+      // Fix: Remove duplicate 'api' in the URL
+      const response = await fetch(`${apiUrl}/content`);
       if (!response.ok) {
         throw new Error(`Erreur lors de la récupération des contenus: ${response.statusText}`);
       }
