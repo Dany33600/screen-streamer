@@ -11,7 +11,6 @@ export function useServerStatusCheck(screen: Screen) {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const updateScreen = useAppStore((state) => state.updateScreen);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
-  const apiUrl = useAppStore((state) => state.apiUrl);
   
   /**
    * Function to verify server status
@@ -26,7 +25,6 @@ export function useServerStatusCheck(screen: Screen) {
       const isRunning = await checkServerStatus(
         screen,
         isCurrentlyOnline,
-        apiUrl,
         baseIpAddress,
         contentId
       );
