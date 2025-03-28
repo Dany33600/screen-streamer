@@ -22,4 +22,4 @@ export const DEFAULT_REFRESH_INTERVAL = 1;
 
 // Constante pour forcer le redémarrage de l'onboarding
 // Mettre à true pour forcer le redémarrage de l'onboarding
-export const FORCE_ONBOARDING = false; // Désactivé par défaut, activé dans la configuration JSON si nécessaire
+export const FORCE_ONBOARDING = true; // Activé pour forcer l'onboarding à redémarrer
