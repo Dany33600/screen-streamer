@@ -1,4 +1,3 @@
-
 import { Content } from '@/types';
 import { screenServerService } from '@/services/screenServerReal';
 import { useAppStore } from '@/store';
@@ -7,7 +6,12 @@ import { toast } from '@/hooks/use-toast';
 export function useServerOperations(screenId: string, port: number, ipAddress: string, screenName: string) {
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiUrl = useAppStore((state) => state.apiUrl);
+  const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   const updateScreen = useAppStore((state) => state.updateScreen);
+  
+  // Get the correct IP to use based on configuration
+  const apiIpToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
   
   // Fonction pour démarrer le serveur
   const startServer = async (content?: Content, displayOptions?: any) => {
@@ -32,7 +36,9 @@ export function useServerOperations(screenId: string, port: number, ipAddress: s
     // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
     screenServerService.updateApiBaseUrl({
       apiUrl,
-      baseIpAddress
+      baseIpAddress,
+      apiIpAddress,
+      useBaseIpForApi
     });
     
     const success = await screenServerService.startServer(screenId, port, content, displayOptions);
@@ -94,7 +100,9 @@ export function useServerOperations(screenId: string, port: number, ipAddress: s
     // Mettre à jour l'URL de l'API pour utiliser l'adresse IP correcte
     screenServerService.updateApiBaseUrl({
       apiUrl,
-      baseIpAddress
+      baseIpAddress,
+      apiIpAddress,
+      useBaseIpForApi
     });
     
     // Mettre à jour l'adresse IP de l'écran avec celle de la configuration

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store';
@@ -15,6 +14,9 @@ const PreviewPage = () => {
   const contents = useAppStore((state) => state.contents);
   const screens = useAppStore((state) => state.screens);
   const refreshInterval = useAppStore((state) => state.refreshInterval);
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -32,7 +34,9 @@ const PreviewPage = () => {
       const state = useAppStore.getState();
       screenServerService.updateApiBaseUrl({
         apiUrl: state.apiUrl,
-        baseIpAddress: state.baseIpAddress
+        baseIpAddress: state.baseIpAddress,
+        apiIpAddress: state.apiIpAddress,
+        useBaseIpForApi: state.useBaseIpForApi
       });
       
       setTimeout(() => {

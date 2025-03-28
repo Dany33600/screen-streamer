@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppStore } from '@/store';
@@ -23,6 +22,8 @@ const ScreensPage = () => {
   
   // Get configuration mode from store
   const isConfigMode = useAppStore((state) => state.isConfigMode);
+  const apiIpAddress = useAppStore((state) => state.apiIpAddress);
+  const useBaseIpForApi = useAppStore((state) => state.useBaseIpForApi);
   
   // Custom hooks for data and operations
   const {
@@ -82,7 +83,9 @@ const ScreensPage = () => {
     const state = useAppStore.getState();
     screenServerService.updateApiBaseUrl({
       apiUrl: state.apiUrl,
-      baseIpAddress: state.baseIpAddress
+      baseIpAddress: state.baseIpAddress,
+      apiIpAddress: state.apiIpAddress,
+      useBaseIpForApi: state.useBaseIpForApi
     });
     
     // Refresh content data before opening the dialog

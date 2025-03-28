@@ -1,15 +1,22 @@
-
 import { Content } from '@/types';
 import { ApiService } from '../api/apiService';
 import { htmlGenerator } from '../htmlGenerator';
+import { useAppStore } from '@/store';
 
 export class ServerManagementService extends ApiService {
   /**
    * Démarre un serveur HTTP réel sur le port spécifié
    */
   public async startHttpServer(port: number, content: Content, html: string): Promise<void> {
+    // Get latest state from the store
+    const state = useAppStore.getState();
+    
     // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
-    this.updateApiBaseUrl();
+    this.updateApiBaseUrl({
+      baseIpAddress: state.baseIpAddress,
+      apiIpAddress: state.apiIpAddress,
+      useBaseIpForApi: state.useBaseIpForApi
+    });
     
     // Utiliser l'URL de l'API configurée dans le constructeur
     const apiUrl = `${this.apiBaseUrl}/start-server`;
@@ -43,8 +50,15 @@ export class ServerManagementService extends ApiService {
    * Arrête un serveur HTTP réel
    */
   public stopHttpServer(port: number): void {
+    // Get latest state from the store
+    const state = useAppStore.getState();
+    
     // Mettre à jour l'URL de l'API pour s'assurer qu'elle utilise l'adresse IP actuelle
-    this.updateApiBaseUrl();
+    this.updateApiBaseUrl({
+      baseIpAddress: state.baseIpAddress,
+      apiIpAddress: state.apiIpAddress,
+      useBaseIpForApi: state.useBaseIpForApi
+    });
     
     // Envoyer une requête à notre backend pour arrêter le serveur
     const apiUrl = `${this.apiBaseUrl}/stop-server`;

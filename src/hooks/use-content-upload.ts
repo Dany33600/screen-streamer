@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAppStore } from '@/store';
 import { ContentType } from '@/types';
@@ -15,6 +14,8 @@ export const useContentUpload = () => {
   const [isLoading, setIsLoading] = useState(false);
   const apiUrl = useAppStore(state => state.apiUrl);
   const baseIpAddress = useAppStore(state => state.baseIpAddress);
+  const apiIpAddress = useAppStore(state => state.apiIpAddress);
+  const useBaseIpForApi = useAppStore(state => state.useBaseIpForApi);
 
   const uploadContent = async (
     file: File,
@@ -27,15 +28,18 @@ export const useContentUpload = () => {
         throw new Error("L'URL de l'API n'est pas configurée");
       }
       
+      // Determine which IP address to use
+      const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
+      
       // Use the IP address from the app configuration rather than localhost
-      const formattedApiUrl = apiUrl.replace('localhost', baseIpAddress);
+      const formattedApiUrl = apiUrl.replace('localhost', ipToUse);
       
       // Ensure the API URL doesn't have trailing slashes
       const baseUrl = formattedApiUrl.endsWith('/') 
         ? formattedApiUrl.slice(0, -1) 
         : formattedApiUrl;
       
-      console.log(`Using IP address from config: ${baseIpAddress}`);
+      console.log(`Using IP address for API: ${ipToUse}`);
       console.log(`Uploading to API URL: ${baseUrl}/api/upload`);
       
       // Générer un ID de contenu basé sur l'horodatage et le nom du fichier (pour être plus unique)
