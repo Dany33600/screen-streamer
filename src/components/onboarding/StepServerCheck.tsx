@@ -1,8 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/store';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Check, RefreshCw, ServerCrash, Terminal } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Check, ServerCrash, Loader2, Server } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { API_PORT } from '@/config/constants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -12,39 +15,82 @@ interface StepServerCheckProps {
 }
 
 const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack }) => {
-  const [isChecking, setIsChecking] = useState(false);
-  const [serverStatus, setServerStatus] = useState<'unchecked' | 'online' | 'offline'>('unchecked');
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
+  const setApiPort = useAppStore((state) => state.setApiPort);
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
-  const hasAttemptedServerCheck = useAppStore((state) => state.hasAttemptedServerCheck);
+  
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
   
   const checkServerStatus = async () => {
-    setIsChecking(true);
-    setServerStatus('unchecked');
+    setIsLoading(true);
+    setServerStatus('checking');
+    
+    const newPort = parseInt(apiPortValue, 10);
+    if (isNaN(newPort) || newPort < 1 || newPort > 65535) {
+      toast({
+        title: 'Veuillez entrer un numéro de port valide (1-65535)',
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Mettre à jour le port API dans le store
+    setApiPort(newPort);
     
     try {
-      const response = await fetch(`http://${baseIpAddress}:${API_PORT}/api/ping`, {
+      // Marquer que nous avons tenté de vérifier le serveur
+      setHasAttemptedServerCheck(true);
+      
+      // Essayer de se connecter au serveur
+      const apiUrl = `http://${baseIpAddress}:${newPort}/api/ping`;
+      console.log(`Vérification du serveur à l'adresse: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl, { 
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Adding a timeout to the fetch request
-        signal: AbortSignal.timeout(5000)
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000) // Timeout après 5 secondes
       });
       
       if (response.ok) {
         setServerStatus('online');
+        toast({
+          title: 'Connexion au serveur réussie',
+        });
       } else {
         setServerStatus('offline');
+        toast({
+          title: 'Impossible de se connecter au serveur',
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Erreur lors de la vérification du serveur:', error);
       setServerStatus('offline');
+      toast({
+        title: 'Serveur inaccessible',
+        description: 'Vérifiez que le serveur est démarré et accessible',
+        variant: "destructive",
+      });
     } finally {
-      setIsChecking(false);
-      // Marquer qu'une tentative de vérification a été effectuée
-      setHasAttemptedServerCheck(true);
+      setIsLoading(false);
     }
+  };
+  
+  useEffect(() => {
+    // Vérifier le serveur au chargement, mais avec un court délai
+    const timer = setTimeout(() => {
+      checkServerStatus();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  const handleComplete = () => {
+    onComplete();
   };
   
   return (
@@ -52,89 +98,92 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       <div className="space-y-2">
         <h2 className="text-2xl font-bold">Vérification du serveur</h2>
         <p className="text-muted-foreground">
-          Pour terminer la configuration, veuillez démarrer le serveur backend et vérifier sa connexion.
+          Vérifions que votre serveur API est accessible.
         </p>
       </div>
       
-      <Alert className="bg-muted">
-        <Terminal className="h-4 w-4" />
-        <AlertDescription>
-          Avant de continuer, démarrez le serveur backend avec la commande suivante dans un terminal:
-        </AlertDescription>
-      </Alert>
-      
-      <div className="bg-black text-white p-4 rounded-md font-mono text-sm overflow-x-auto">
-        node src/server.js
-      </div>
-      
-      <div className={`p-6 border rounded-lg ${
-        serverStatus === 'online' 
-          ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900' 
-          : serverStatus === 'offline'
-            ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900'
-            : 'bg-gray-50 border-gray-200 dark:bg-gray-950/20 dark:border-gray-900'
-      }`}>
-        <div className="flex items-center gap-3">
-          {serverStatus === 'online' ? (
-            <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-          ) : serverStatus === 'offline' ? (
-            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-              <ServerCrash className="h-5 w-5 text-red-600 dark:text-red-400" />
-            </div>
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-              <Terminal className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            </div>
-          )}
+      <div className="space-y-6">
+        <div className="grid gap-2">
+          <Label htmlFor="api-port">Port du serveur API</Label>
+          <Input
+            id="api-port"
+            value={apiPortValue}
+            onChange={(e) => setApiPortValue(e.target.value)}
+            placeholder={API_PORT.toString()}
+          />
+          <p className="text-sm text-muted-foreground">
+            Port utilisé par le serveur API backend
+          </p>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button 
+            onClick={checkServerStatus} 
+            disabled={isLoading} 
+            variant="outline"
+            className="gap-2"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Vérification...
+              </>
+            ) : (
+              <>
+                <Server className="w-4 h-4" />
+                Vérifier la connexion
+              </>
+            )}
+          </Button>
           
-          <div>
-            <h3 className="font-medium">
-              {serverStatus === 'online' 
-                ? 'Serveur en ligne !' 
-                : serverStatus === 'offline'
-                  ? 'Serveur hors ligne'
-                  : 'Statut du serveur inconnu'}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {serverStatus === 'online' 
-                ? `Le serveur est accessible à l'adresse http://${baseIpAddress}:${API_PORT}` 
-                : serverStatus === 'offline'
-                  ? "Impossible de se connecter au serveur. Vérifiez qu'il est bien démarré."
-                  : "Cliquez sur le bouton pour vérifier l'état du serveur"}
-            </p>
+          <div className="flex items-center gap-2 ml-2">
+            {serverStatus === 'checking' && (
+              <Loader2 className="w-5 h-5 text-yellow-500 animate-spin" />
+            )}
+            {serverStatus === 'online' && (
+              <Check className="w-5 h-5 text-green-500" />
+            )}
+            {serverStatus === 'offline' && (
+              <ServerCrash className="w-5 h-5 text-red-500" />
+            )}
+            
+            <span>
+              {serverStatus === 'checking' && "Vérification en cours..."}
+              {serverStatus === 'online' && "Serveur en ligne"}
+              {serverStatus === 'offline' && "Serveur hors ligne"}
+            </span>
           </div>
         </div>
+        
+        {serverStatus === 'offline' && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Le serveur API n'est pas accessible. Assurez-vous que le serveur est démarré avec la commande <code>node src/server.js</code> et que le port {apiPortValue} est accessible.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {serverStatus === 'online' && (
+          <Alert>
+            <Check className="h-4 w-4" />
+            <AlertDescription>
+              Connexion au serveur réussie. Vous pouvez maintenant accéder au dashboard.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
       
       <div className="pt-4 flex justify-between">
         <Button variant="outline" onClick={onBack} className="gap-2">
           <ArrowLeft size={16} /> Retour
         </Button>
-        
-        {serverStatus === 'online' ? (
-          <Button onClick={onComplete} className="gap-2">
-            Terminer la configuration <Check size={16} />
-          </Button>
-        ) : (
-          <Button 
-            onClick={checkServerStatus} 
-            variant="outline" 
-            disabled={isChecking}
-            className="gap-2"
-          >
-            {isChecking ? (
-              <>
-                <RefreshCw size={16} className="animate-spin" /> Vérification...
-              </>
-            ) : (
-              <>
-                <RefreshCw size={16} /> Vérifier la connexion
-              </>
-            )}
-          </Button>
-        )}
+        <Button 
+          onClick={handleComplete} 
+          className="gap-2"
+          disabled={isLoading}
+        >
+          Terminer
+        </Button>
       </div>
     </div>
   );

@@ -10,24 +10,36 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { API_PORT, DEFAULT_IP_ADDRESS, DEFAULT_BASE_PORT } from '@/config/constants';
+import { DEFAULT_IP_ADDRESS, DEFAULT_BASE_PORT } from '@/config/constants';
 
 export const NetworkSettings = () => {
   const basePort = useAppStore((state) => state.basePort);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const apiPort = useAppStore((state) => state.apiPort);
   const setBasePort = useAppStore((state) => state.setBasePort);
   const setBaseIpAddress = useAppStore((state) => state.setBaseIpAddress);
+  const setApiPort = useAppStore((state) => state.setApiPort);
   
   const [portValue, setPortValue] = useState(basePort.toString());
   const [ipValue, setIpValue] = useState(baseIpAddress);
+  const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
   const [isSaving, setIsSaving] = useState(false);
   
   const handleSaveNetworkConfig = () => {
     const newPort = parseInt(portValue, 10);
+    const newApiPort = parseInt(apiPortValue, 10);
     
     if (isNaN(newPort) || newPort < 1 || newPort > 65535) {
       toast({
         title: 'Veuillez entrer un numéro de port valide (1-65535)',
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (isNaN(newApiPort) || newApiPort < 1 || newApiPort > 65535) {
+      toast({
+        title: 'Veuillez entrer un numéro de port API valide (1-65535)',
         variant: "destructive",
       });
       return;
@@ -48,6 +60,7 @@ export const NetworkSettings = () => {
     setTimeout(() => {
       setBasePort(newPort);
       setBaseIpAddress(ipValue);
+      setApiPort(newApiPort);
       setIsSaving(false);
       toast({
         title: 'Configuration réseau mise à jour',
@@ -76,12 +89,25 @@ export const NetworkSettings = () => {
         </div>
         
         <p className="text-sm text-muted-foreground">
-          Ce serveur démarrera sur le port {API_PORT} par défaut et permettra à vos écrans d'être accessibles via leurs ports respectifs.
+          Ce serveur démarrera sur le port configuré et permettra à vos écrans d'être accessibles via leurs ports respectifs.
           Assurez-vous que ces ports sont ouverts dans votre pare-feu.
         </p>
         
+        <div className="grid gap-2 mt-4">
+          <Label htmlFor="api-port">Port du serveur API</Label>
+          <Input
+            id="api-port"
+            placeholder="5000"
+            value={apiPortValue}
+            onChange={(e) => setApiPortValue(e.target.value)}
+          />
+          <p className="text-sm text-muted-foreground">
+            Le port sur lequel le serveur API backend fonctionnera
+          </p>
+        </div>
+        
         <p className="text-sm text-muted-foreground">
-          Le serveur API backend est accessible à l'adresse : <span className="font-medium">{ipValue}:{API_PORT}</span>
+          Le serveur API backend est accessible à l'adresse : <span className="font-medium">{ipValue}:{apiPortValue}</span>
         </p>
       </CardContent>
     </Card>

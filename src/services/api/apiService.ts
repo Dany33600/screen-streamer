@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 interface ApiUrlConfig {
   apiUrl?: string;
   baseIpAddress?: string;
+  apiPort?: number;
 }
 
 export class ApiService {
@@ -16,7 +17,11 @@ export class ApiService {
   
   public updateApiBaseUrl(config: ApiUrlConfig = {}): void {
     const state = useAppStore.getState();
-    const { apiUrl = state.apiUrl, baseIpAddress = state.baseIpAddress } = config;
+    const { 
+      apiUrl = state.apiUrl, 
+      baseIpAddress = state.baseIpAddress,
+      apiPort = state.apiPort 
+    } = config;
     
     if (apiUrl) {
       // Replace 'localhost' with the base IP address if provided
@@ -35,7 +40,7 @@ export class ApiService {
     } else {
       // Fallback to determine the API URL based on the current window location
       const hostname = baseIpAddress || window.location.hostname;
-      const port = 5000; // Default API port
+      const port = apiPort || 5000; // Use configured port or default to 5000
       this.apiBaseUrl = `http://${hostname}:${port}/api`;
       console.log(`No API URL provided, using default: ${this.apiBaseUrl}`);
     }

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { DEFAULT_IP_ADDRESS, DEFAULT_BASE_PORT, API_PORT } from '@/config/constants';
+import { DEFAULT_IP_ADDRESS, DEFAULT_BASE_PORT } from '@/config/constants';
 
 interface StepNetworkConfigProps {
   onNext: () => void;
@@ -21,7 +21,6 @@ const StepNetworkConfig: React.FC<StepNetworkConfigProps> = ({ onNext, onBack })
   
   const [portValue, setPortValue] = useState(basePort.toString());
   const [ipValue, setIpValue] = useState(baseIpAddress);
-  const [apiPortValue, setApiPortValue] = useState(API_PORT.toString());
   
   const handleNext = () => {
     const newPort = parseInt(portValue, 10);
@@ -82,19 +81,6 @@ const StepNetworkConfig: React.FC<StepNetworkConfigProps> = ({ onNext, onBack })
           />
           <p className="text-sm text-muted-foreground">
             Le premier port utilisé pour les écrans (incrémenté pour chaque écran)
-          </p>
-        </div>
-        
-        <div className="grid gap-2">
-          <Label htmlFor="api-port">Port du serveur API (lecture seule)</Label>
-          <Input
-            id="api-port"
-            value={apiPortValue}
-            disabled
-            className="bg-muted"
-          />
-          <p className="text-sm text-muted-foreground">
-            Port utilisé par le serveur API backend (configuré dans le code source)
           </p>
         </div>
       </div>

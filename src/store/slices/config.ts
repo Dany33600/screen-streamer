@@ -1,9 +1,9 @@
-
 import { 
   DEFAULT_BASE_PORT, 
   DEFAULT_IP_ADDRESS, 
   DEFAULT_PIN, 
-  DEFAULT_REFRESH_INTERVAL 
+  DEFAULT_REFRESH_INTERVAL,
+  API_PORT
 } from '@/config/constants';
 
 export interface ConfigState {
@@ -17,6 +17,7 @@ export interface ConfigState {
   isDarkMode: boolean;
   hasCompletedOnboarding: boolean;
   hasAttemptedServerCheck: boolean;
+  apiPort: number;
   menuOptions: {
     dashboard: boolean;
     screens: boolean;
@@ -38,6 +39,7 @@ export interface ConfigState {
   toggleDarkMode: () => void;
   setHasCompletedOnboarding: (value: boolean) => void;
   setHasAttemptedServerCheck: (value: boolean) => void;
+  setApiPort: (port: number) => void;
 }
 
 export const createConfigSlice = (
@@ -54,6 +56,7 @@ export const createConfigSlice = (
   isDarkMode: false, // Thème clair par défaut
   hasCompletedOnboarding: false, // Par défaut, l'onboarding n'a pas été complété
   hasAttemptedServerCheck: false, // Par défaut, aucune tentative de vérification du serveur n'a été effectuée
+  apiPort: API_PORT, // Port API par défaut
   
   // Default menu options - all enabled by default
   menuOptions: {
@@ -137,5 +140,10 @@ export const createConfigSlice = (
   setHasAttemptedServerCheck: (value) => set((state) => ({
     ...state,
     hasAttemptedServerCheck: value
+  })),
+  
+  setApiPort: (port) => set((state) => ({ 
+    ...state, 
+    apiPort: port 
   })),
 });
