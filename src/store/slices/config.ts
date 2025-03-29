@@ -1,4 +1,3 @@
-
 import { StateCreator } from 'zustand';
 import { AppState } from '../index';
 import { configService } from '@/services/config/configService';
@@ -67,9 +66,12 @@ export const createConfigSlice: StateCreator<
   
   // Fonction utilitaire pour sauvegarder la configuration après chaque modification
   const saveConfigAfterUpdate = async () => {
-    const state = get();
+    // Ne pas sauvegarder automatiquement si nous sommes en onboarding
+    if (!get().hasCompletedOnboarding) {
+      console.log('Onboarding en cours, sauvegarde automatique de la configuration désactivée');
+      return true;
+    }
     
-    // Sauvegarder la configuration via le service
     try {
       await get().saveConfig();
       console.log('Configuration sauvegardée automatiquement après modification');
