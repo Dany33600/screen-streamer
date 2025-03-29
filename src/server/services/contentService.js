@@ -1,4 +1,3 @@
-
 import fs from 'fs';
 import path from 'path';
 import { CONTENT_DIR, UPLOADS_DIR } from '../utils/fileStorage.js';
@@ -264,5 +263,54 @@ export function deleteContent(contentId) {
   } catch (error) {
     console.error(`Erreur lors de la suppression du contenu ${contentId}:`, error);
     return false;
+  }
+}
+
+// Get all contents (function that was missing but is imported in apiRoutes.js)
+export function getContents() {
+  return listAllContent();
+}
+
+// Save content (function that was missing but is imported in apiRoutes.js)
+export function saveContent(content) {
+  try {
+    // Generate a unique ID if not provided
+    if (!content.id) {
+      content.id = Date.now().toString();
+    }
+    
+    console.log(`Sauvegarde du contenu avec ID: ${content.id}`);
+    console.log(`Données de contenu:`, content);
+    
+    return saveContentData(content.id, content);
+  } catch (error) {
+    console.error(`Erreur lors de la sauvegarde du contenu:`, error);
+    return false;
+  }
+}
+
+// Update content (function that was missing but is imported in apiRoutes.js)
+export function updateContent(contentId, contentData) {
+  try {
+    // Check if content exists first
+    const existingContent = getContentData(contentId);
+    if (!existingContent) {
+      console.log(`Contenu avec ID ${contentId} non trouvé pour mise à jour`);
+      return null;
+    }
+    
+    console.log(`Mise à jour du contenu avec ID: ${contentId}`);
+    console.log(`Données de contenu:`, contentData);
+    
+    // Merge the existing content with the new data
+    const updatedContent = { ...existingContent, ...contentData, id: contentId };
+    
+    if (saveContentData(contentId, updatedContent)) {
+      return updatedContent;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Erreur lors de la mise à jour du contenu ${contentId}:`, error);
+    return null;
   }
 }

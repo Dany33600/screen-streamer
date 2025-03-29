@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { getConfigData, saveConfigData, configFileExists } from '../services/configService.js';
 import { getScreens, saveScreens, deleteScreen, addScreen, updateScreen } from '../services/screenService.js';
