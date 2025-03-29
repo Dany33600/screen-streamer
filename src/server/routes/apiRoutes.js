@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { getConfigData, saveConfigData, configFileExists } from '../services/configService.js';
 import { getScreens, saveScreens, deleteScreen, addScreen, updateScreen } from '../services/screenService.js';
@@ -95,8 +96,16 @@ router.get('/screens', async (req, res) => {
 router.post('/screens', async (req, res) => {
   try {
     const { screen } = req.body;
+    if (!screen) {
+      return res.status(400).json({ success: false, message: 'Données d\'écran manquantes' });
+    }
+    
     const newScreen = await addScreen(screen);
-    res.status(201).json({ success: true, screen: newScreen });
+    if (newScreen) {
+      res.status(201).json({ success: true, screen: newScreen });
+    } else {
+      res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout d\'un écran' });
+    }
   } catch (error) {
     console.error('API: Erreur lors de l\'ajout d\'un écran:', error);
     res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout d\'un écran' });
@@ -107,6 +116,10 @@ router.put('/screens/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { screen } = req.body;
+    if (!screen) {
+      return res.status(400).json({ success: false, message: 'Données d\'écran manquantes' });
+    }
+    
     const updatedScreen = await updateScreen(id, screen);
     if (updatedScreen) {
       res.json({ success: true, screen: updatedScreen });
@@ -137,6 +150,10 @@ router.delete('/screens/:id', async (req, res) => {
 router.post('/screens/save', async (req, res) => {
   try {
     const { screens } = req.body;
+    if (!screens || !Array.isArray(screens)) {
+      return res.status(400).json({ success: false, message: 'Données d\'écrans manquantes ou invalides' });
+    }
+    
     const saved = await saveScreens(screens);
     if (saved) {
       res.json({ success: true });

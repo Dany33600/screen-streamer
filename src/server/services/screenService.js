@@ -22,8 +22,8 @@ function ensureScreensDirectory() {
 // Initialize storage directory
 ensureScreensDirectory();
 
-// Get all screens
-export function getAllScreens() {
+// Get all screens - this will be exported as getScreens
+export function getScreens() {
   try {
     ensureScreensDirectory();
     
@@ -50,25 +50,56 @@ export function getAllScreens() {
   }
 }
 
-// Get a screen by ID
-export function getScreenById(screenId) {
+// Save all screens at once
+export function saveScreens(screens) {
+  try {
+    ensureScreensDirectory();
+    
+    // Validate input
+    if (!Array.isArray(screens)) {
+      console.error('saveScreens expected an array, got:', typeof screens);
+      return false;
+    }
+    
+    // Create or update each screen file
+    for (const screen of screens) {
+      if (!screen.id) {
+        screen.id = uuidv4();
+      }
+      
+      const filePath = path.join(SCREENS_DIR, `${screen.id}.json`);
+      fs.writeFileSync(filePath, JSON.stringify(screen, null, 2));
+    }
+    
+    console.log(`Saved ${screens.length} screens`);
+    return true;
+  } catch (error) {
+    console.error('Error saving screens:', error);
+    return false;
+  }
+}
+
+// Delete a screen - this is already correctly exported as deleteScreen
+export function deleteScreen(screenId) {
   try {
     const filePath = path.join(SCREENS_DIR, `${screenId}.json`);
     
     if (!fs.existsSync(filePath)) {
-      return null;
+      return false;
     }
     
-    const fileContent = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(fileContent);
+    fs.unlinkSync(filePath);
+    console.log(`Screen deleted: ${screenId}`);
+    
+    return true;
   } catch (error) {
-    console.error(`Error getting screen ${screenId}:`, error);
-    return null;
+    console.error(`Error deleting screen ${screenId}:`, error);
+    return false;
   }
 }
 
-// Save a screen
-export function saveScreen(screen) {
+// Add a new screen - renamed from saveScreen to addScreen
+export function addScreen(screen) {
   try {
     ensureScreensDirectory();
     
@@ -79,16 +110,16 @@ export function saveScreen(screen) {
     const filePath = path.join(SCREENS_DIR, `${screen.id}.json`);
     
     fs.writeFileSync(filePath, JSON.stringify(screen, null, 2));
-    console.log(`Screen saved: ${screen.id}`);
+    console.log(`Screen added: ${screen.id}`);
     
     return screen;
   } catch (error) {
-    console.error('Error saving screen:', error);
+    console.error('Error adding screen:', error);
     return null;
   }
 }
 
-// Update a screen
+// Update a screen - This is already correctly exported as updateScreen
 export function updateScreen(screenId, screenData) {
   try {
     const filePath = path.join(SCREENS_DIR, `${screenId}.json`);
@@ -112,21 +143,21 @@ export function updateScreen(screenId, screenData) {
   }
 }
 
-// Delete a screen
-export function deleteScreen(screenId) {
+// For backward compatibility
+export const getAllScreens = getScreens;
+export const getScreenById = (screenId) => {
   try {
     const filePath = path.join(SCREENS_DIR, `${screenId}.json`);
     
     if (!fs.existsSync(filePath)) {
-      return false;
+      return null;
     }
     
-    fs.unlinkSync(filePath);
-    console.log(`Screen deleted: ${screenId}`);
-    
-    return true;
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(fileContent);
   } catch (error) {
-    console.error(`Error deleting screen ${screenId}:`, error);
-    return false;
+    console.error(`Error getting screen ${screenId}:`, error);
+    return null;
   }
-}
+};
+export const saveScreen = addScreen;
