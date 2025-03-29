@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAppStore } from '@/store';
+import { useNavigate } from 'react-router-dom';
 import OnboardingLayout from './OnboardingLayout';
 import StepWelcome from './StepWelcome';
 import StepNetworkConfig from './StepNetworkConfig';
@@ -11,6 +12,7 @@ import StepServerCheck from './StepServerCheck';
 
 const Onboarding: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const navigate = useNavigate();
   const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
   
   const totalSteps = 6;
@@ -24,7 +26,12 @@ const Onboarding: React.FC = () => {
   };
   
   const handleComplete = () => {
+    console.log('Onboarding terminé, redirection vers le tableau de bord');
     setHasCompletedOnboarding(true);
+    // Redirection forcée vers le tableau de bord
+    setTimeout(() => {
+      navigate('/', { replace: true });
+    }, 100);
   };
   
   const renderStep = () => {

@@ -17,7 +17,14 @@ import Onboarding from "./components/onboarding/Onboarding";
 import { configService } from "./services/config/configService";
 import { toast } from "sonner";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1, // Limitons le nombre de tentatives de requête
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 // Protected route component to handle restricted access
 const ProtectedConfigRoute = () => {
@@ -36,16 +43,21 @@ const App = () => {
   const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
   const [isLoading, setIsLoading] = useState(true);
   const [configExists, setConfigExists] = useState(false);
+  const [hasCheckedConfig, setHasCheckedConfig] = useState(false);
   
   useEffect(() => {
-    // Vérifier si la configuration existe et la charger
+    // Vérifier si la configuration existe et la charger (une seule fois)
     const loadConfiguration = async () => {
+      if (hasCheckedConfig) return;
+      
       console.log('App: Vérification et chargement de la configuration...');
       setIsLoading(true);
+      
       try {
         // Vérifier si un fichier de configuration existe sur le serveur
         const configExistsOnServer = await configService.checkConfigExists();
         setConfigExists(configExistsOnServer);
+        setHasCheckedConfig(true);
         
         if (configExistsOnServer) {
           // Si la config existe, on la charge et on force l'affichage de l'application principale
@@ -66,9 +78,13 @@ const App = () => {
         }
       } catch (error) {
         console.error('App: Erreur lors de la vérification/chargement de la configuration:', error);
+        setHasCheckedConfig(true); // Éviter de retenter en boucle
         toast.error('Erreur de configuration', {
           description: 'Impossible de vérifier si une configuration existe'
         });
+        
+        // En cas d'erreur, on affiche quand même l'application
+        // selon l'état actuel de hasCompletedOnboarding
       } finally {
         setIsLoading(false);
       }
@@ -81,7 +97,7 @@ const App = () => {
     if (envPin && setConfigPin) {
       setConfigPin(envPin);
     }
-  }, [setConfigPin, setHasCompletedOnboarding]);
+  }, [setConfigPin, setHasCompletedOnboarding, hasCheckedConfig]);
 
   // Afficher un écran de chargement pendant la vérification
   if (isLoading) {
@@ -102,8 +118,12 @@ const App = () => {
     return (
       <ThemeProvider>
         <TooltipProvider>
-          <Toaster />
-          <Onboarding />
+          <BrowserRouter>
+            <Toaster />
+            <Routes>
+              <Route path="*" element={<Onboarding />} />
+            </Routes>
+          </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
     );

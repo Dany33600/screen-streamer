@@ -94,10 +94,13 @@ export const createConfigActions = (
       isDarkMode: !state.isDarkMode
     })),
     
-    setHasCompletedOnboarding: (value) => set((state) => ({
-      ...state,
-      hasCompletedOnboarding: value
-    })),
+    setHasCompletedOnboarding: (value) => set((state) => {
+      console.log(`Changement du statut d'onboarding: ${value}`);
+      return {
+        ...state,
+        hasCompletedOnboarding: value
+      };
+    }),
     
     setHasAttemptedServerCheck: (value) => set((state) => ({
       ...state,
@@ -109,34 +112,48 @@ export const createConfigActions = (
         ...state, 
         apiPort: port
       }));
+      
+      // Mettre à jour l'URL de l'API dans le service de configuration
+      const state = get();
+      updateApiUrlInService(state);
+      
       saveConfigAfterUpdate(get);
     },
     
     setUseBaseIpForApi: (value) => {
       set((state) => {
-        if (value) {
-          return { 
-            ...state, 
-            useBaseIpForApi: value,
-            apiIpAddress: state.baseIpAddress
-          };
-        }
-        return { 
+        const newState = value ? { 
+          ...state, 
+          useBaseIpForApi: value,
+          apiIpAddress: state.baseIpAddress
+        } : { 
           ...state, 
           useBaseIpForApi: value 
         };
+        
+        // Mettre à jour l'URL de l'API dans le service
+        updateApiUrlInService(newState);
+        
+        return newState;
       });
+      
       saveConfigAfterUpdate(get);
     },
     
     setApiIpAddress: (ipAddress) => {
       set((state) => {
-        return { 
+        const newState = { 
           ...state, 
           apiIpAddress: ipAddress,
           useBaseIpForApi: false
         };
+        
+        // Mettre à jour l'URL de l'API dans le service
+        updateApiUrlInService(newState);
+        
+        return newState;
       });
+      
       saveConfigAfterUpdate(get);
     },
     
@@ -158,8 +175,14 @@ export const createConfigActions = (
         forceOnboarding: false
       };
       
-      // Sauvegarder la configuration via le service
-      return await configService.saveConfig(configToSave);
+      try {
+        console.log('Sauvegarde de la configuration:', configToSave);
+        // Sauvegarder la configuration via le service
+        return await configService.saveConfig(configToSave);
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la configuration:', error);
+        return false;
+      }
     }
   };
 };

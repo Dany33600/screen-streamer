@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useAppStore } from '@/store';
 import { checkApiServerStatus } from '@/utils/server-status';
 import { configService } from '@/services/config/configService';
@@ -18,6 +19,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const [isChecking, setIsChecking] = useState(false);
   const [checkPassed, setCheckPassed] = useState<boolean | null>(null);
   const [ipReachable, setIpReachable] = useState<boolean | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
   const saveConfig = useAppStore((state) => state.saveConfig);
@@ -125,6 +127,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     // On s'assure que le serveur est bien accessible avant de terminer l'onboarding
     if (checkPassed) {
       try {
+        setIsSaving(true);
         // Sauvegarde finale de la configuration seulement lors de la finalisation
         const configSaved = await saveConfig();
         
@@ -133,7 +136,10 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
             title: 'Configuration sauvegardée',
             description: 'La configuration a été enregistrée sur le serveur.',
           });
-          onComplete();
+          // Délai court pour que le toast soit visible avant la redirection
+          setTimeout(() => {
+            onComplete();
+          }, 500);
         } else {
           toast({
             title: 'Erreur',
@@ -148,7 +154,21 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
           description: 'Une erreur est survenue lors de la sauvegarde de la configuration.',
           variant: 'destructive',
         });
+      } finally {
+        setIsSaving(false);
       }
+    } else if (checkPassed === false) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez vérifier la connexion avec le serveur avant de terminer.',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Attention',
+        description: 'Veuillez tester la connexion au serveur d\'abord.',
+        variant: 'warning',
+      });
     }
   };
   
@@ -273,8 +293,9 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
             onClick={handleComplete}
             className="gap-2"
             variant="success"
+            disabled={isSaving}
           >
-            Terminer
+            {isSaving ? 'Finalisation...' : 'Terminer'}
           </Button>
         )}
       </div>
