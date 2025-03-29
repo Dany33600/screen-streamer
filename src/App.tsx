@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import Index from "./pages/Index";
@@ -15,6 +15,7 @@ import PreviewPage from "./pages/PreviewPage";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./components/onboarding/Onboarding";
 import { configService } from "./services/config/configService";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
@@ -33,26 +34,43 @@ const App = () => {
   const setConfigPin = useAppStore((state) => state.setConfigPin);
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding);
   const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
+  const [isLoading, setIsLoading] = useState(true);
+  const [configExists, setConfigExists] = useState(false);
   
   useEffect(() => {
-    // Charger la configuration
+    // Vérifier si la configuration existe et la charger
     const loadConfiguration = async () => {
-      console.log('App: Chargement de la configuration...');
+      console.log('App: Vérification et chargement de la configuration...');
+      setIsLoading(true);
       try {
-        const config = await configService.loadConfig();
-        console.log('App: Configuration chargée:', config);
+        // Vérifier si un fichier de configuration existe sur le serveur
+        const configExistsOnServer = await configService.checkConfigExists();
+        setConfigExists(configExistsOnServer);
         
-        // Appliquer le PIN de configuration
-        if (setConfigPin) {
-          setConfigPin(config.configPin);
-        }
-        
-        // Force onboarding si nécessaire
-        if (config.forceOnboarding && setHasCompletedOnboarding) {
+        if (configExistsOnServer) {
+          // Si la config existe, on la charge et on force l'affichage de l'application principale
+          const config = await configService.loadConfig();
+          console.log('App: Configuration chargée depuis le serveur:', config);
+          
+          // Appliquer le PIN de configuration
+          if (setConfigPin) {
+            setConfigPin(config.configPin);
+          }
+          
+          // Forcer le bypass de l'onboarding si config existe
+          setHasCompletedOnboarding(true);
+        } else {
+          console.log('App: Aucune configuration trouvée sur le serveur, affichage de l\'onboarding');
+          // Si pas de config, forcer l'affichage de l'onboarding
           setHasCompletedOnboarding(false);
         }
       } catch (error) {
-        console.error('App: Erreur lors du chargement de la configuration:', error);
+        console.error('App: Erreur lors de la vérification/chargement de la configuration:', error);
+        toast.error('Erreur de configuration', {
+          description: 'Impossible de vérifier si une configuration existe'
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -65,8 +83,22 @@ const App = () => {
     }
   }, [setConfigPin, setHasCompletedOnboarding]);
 
-  // Show onboarding if it hasn't been completed
-  if (!hasCompletedOnboarding) {
+  // Afficher un écran de chargement pendant la vérification
+  if (isLoading) {
+    return (
+      <ThemeProvider>
+        <div className="h-screen w-screen flex items-center justify-center bg-background">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            <p className="text-muted-foreground">Chargement de la configuration...</p>
+          </div>
+        </div>
+      </ThemeProvider>
+    );
+  }
+
+  // Show onboarding if no configuration exists or if it hasn't been completed
+  if (!hasCompletedOnboarding || !configExists) {
     return (
       <ThemeProvider>
         <TooltipProvider>

@@ -51,6 +51,36 @@ class ConfigService extends ApiService {
     }
     return ConfigService.instance;
   }
+
+  // Vérifier si un fichier de configuration existe sur le serveur
+  public async checkConfigExists(): Promise<boolean> {
+    try {
+      console.log('ConfigService: Vérification si une configuration existe sur le serveur');
+
+      // S'assurer que l'URL de l'API est configurée avec les paramètres par défaut pour cette vérification
+      this.updateApiBaseUrl({
+        baseIpAddress: this.config.baseIpAddress,
+        apiPort: this.config.apiPort,
+        apiIpAddress: this.config.apiIpAddress,
+        useBaseIpForApi: this.config.useBaseIpForApi
+      });
+
+      const configUrl = `${this.apiBaseUrl}/config/exists`;
+      console.log(`ConfigService: URL de vérification: ${configUrl}`);
+
+      const response = await this.handleApiRequest<{ exists: boolean }>(
+        configUrl,
+        { method: 'GET' }
+      );
+
+      console.log('ConfigService: Réponse de vérification:', response);
+      return response.exists === true;
+    } catch (error) {
+      console.error('ConfigService: Erreur lors de la vérification de l\'existence de la configuration:', error);
+      // En cas d'erreur, on suppose qu'il n'y a pas de configuration
+      return false;
+    }
+  }
   
   // Charger la configuration à partir du backend
   public async loadConfig(): Promise<AppConfig> {

@@ -25,6 +25,12 @@ function ensureDataDirExists() {
   }
 }
 
+// Vérifier si le fichier de configuration existe
+export function configFileExists() {
+  ensureDataDirExists();
+  return fs.existsSync(configFilePath);
+}
+
 // Charger les données de configuration
 export function getConfigData() {
   try {
