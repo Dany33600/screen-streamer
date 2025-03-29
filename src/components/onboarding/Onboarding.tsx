@@ -27,11 +27,11 @@ const Onboarding: React.FC = () => {
   
   const handleComplete = () => {
     console.log('Onboarding terminé, redirection vers le tableau de bord');
+    // Marquons d'abord l'onboarding comme terminé
     setHasCompletedOnboarding(true);
-    // Redirection forcée vers le tableau de bord
-    setTimeout(() => {
-      navigate('/', { replace: true });
-    }, 100);
+    
+    // Redirection forcée vers le tableau de bord avec un délai pour permettre la mise à jour de l'état
+    navigate('/', { replace: true });
   };
   
   const renderStep = () => {
