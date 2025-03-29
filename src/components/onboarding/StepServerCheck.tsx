@@ -18,6 +18,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const [isChecking, setIsChecking] = useState(false);
   const [checkPassed, setCheckPassed] = useState<boolean | null>(null);
   const [ipReachable, setIpReachable] = useState<boolean | null>(null);
+  const [isConfigSaved, setIsConfigSaved] = useState<boolean>(false);
   
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
   const saveConfig = useAppStore((state) => state.saveConfig);
@@ -98,20 +99,23 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
           description: 'La connexion au serveur a été établie avec succès.',
         });
         
-        // Sauvegarder la configuration
-        const configSaved = await saveConfig();
-        
-        if (configSaved) {
-          toast({
-            title: 'Configuration sauvegardée',
-            description: 'La configuration a été enregistrée sur le serveur.',
-          });
-        } else {
-          toast({
-            title: 'Avertissement',
-            description: 'La connexion a réussi mais la configuration n\'a pas pu être sauvegardée.',
-            variant: 'destructive',
-          });
+        // Sauvegarder la configuration seulement si elle n'a pas encore été sauvegardée
+        if (!isConfigSaved) {
+          const configSaved = await saveConfig();
+          setIsConfigSaved(true);
+          
+          if (configSaved) {
+            toast({
+              title: 'Configuration sauvegardée',
+              description: 'La configuration a été enregistrée sur le serveur.',
+            });
+          } else {
+            toast({
+              title: 'Avertissement',
+              description: 'La connexion a réussi mais la configuration n\'a pas pu être sauvegardée.',
+              variant: 'destructive',
+            });
+          }
         }
       } else {
         toast({
@@ -141,8 +145,11 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     // On s'assure que le serveur est bien accessible avant de terminer l'onboarding
     if (checkPassed) {
       try {
-        // Sauvegarde de la configuration avant de terminer
-        await saveConfig();
+        // Sauvegarde finale de la configuration avant de terminer
+        if (!isConfigSaved) {
+          await saveConfig();
+          setIsConfigSaved(true);
+        }
         onComplete();
       } catch (error) {
         console.error('Erreur lors de la sauvegarde de la configuration:', error);

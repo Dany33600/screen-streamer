@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { getConfigData, saveConfigData, configFileExists } from '../services/configService.js';
 import { getScreens, saveScreens, deleteScreen, addScreen, updateScreen } from '../services/screenService.js';
@@ -33,6 +34,11 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+// Endpoint pour le statut du serveur API - ajouté pour vérifier que le serveur est en ligne
+router.get('/status', (req, res) => {
+  res.json({ status: 'ok', serverRunning: true });
+});
 
 // Endpoint pour vérifier si le fichier de configuration existe
 router.get('/config/exists', (req, res) => {
