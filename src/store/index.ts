@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { 
@@ -17,7 +16,7 @@ import {
   createConfigSlice, 
   ConfigState,
   ConfigActions
-} from './slices/config';
+} from './slices/config'; // Cet import pointe maintenant vers le dossier config/
 
 // Combine all slices with their respective actions
 export type AppState = ScreensState & ContentsState & PlaylistsState & ConfigState & ConfigActions;
