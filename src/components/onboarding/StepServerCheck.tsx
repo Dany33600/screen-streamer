@@ -151,7 +151,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   };
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="space-y-2">
         <h2 className="text-2xl font-bold">Vérification du serveur</h2>
         <p className="text-muted-foreground">
@@ -159,7 +159,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         </p>
       </div>
       
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="border-b pb-4">
           <h3 className="font-medium mb-3">Configuration du serveur API</h3>
           
@@ -211,13 +211,13 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
           </div>
         </div>
         
-        <div className="p-6 border rounded-lg flex flex-col items-center justify-center space-y-4 bg-card/50">
+        <div className="p-4 border rounded-lg flex flex-col items-center justify-center space-y-4 bg-card/50">
           {checkPassed === null ? (
-            <div className="text-center py-4">
-              <p className="mb-4">
+            <div className="text-center py-2">
+              <p className="mb-2">
                 Adresse du serveur API: <strong>{ipToUse}:{apiPortValue}</strong>
               </p>
-              <p className="mb-4">Cliquez sur le bouton ci-dessous pour vérifier la connexion au serveur.</p>
+              <p className="mb-3">Cliquez sur le bouton ci-dessous pour vérifier la connexion au serveur.</p>
               <Button 
                 onClick={handleCheckServer}
                 disabled={isChecking}
@@ -232,8 +232,8 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
               </Button>
             </div>
           ) : checkPassed ? (
-            <div className="text-center py-4 space-y-4">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+            <div className="text-center py-2 space-y-3">
+              <CheckCircle className="h-14 w-14 text-green-500 mx-auto" />
               <h3 className="text-xl font-semibold text-green-500">Connexion réussie</h3>
               <p>Le serveur est accessible et opérationnel.</p>
               <Button onClick={handleCheckServer} variant="outline" className="gap-2">
@@ -242,8 +242,8 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
               </Button>
             </div>
           ) : (
-            <div className="text-center py-4 space-y-4">
-              <XCircle className="h-16 w-16 text-red-500 mx-auto" />
+            <div className="text-center py-2 space-y-3">
+              <XCircle className="h-14 w-14 text-red-500 mx-auto" />
               <h3 className="text-xl font-semibold text-red-500">Échec de la connexion</h3>
               {ipReachable === false ? (
                 <p>L'adresse IP <strong>{ipToUse}</strong> n'est pas accessible sur le réseau.</p>

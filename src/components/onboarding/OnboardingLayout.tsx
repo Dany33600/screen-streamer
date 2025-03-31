@@ -24,8 +24,8 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   };
   
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-background">
-      <div className="w-full max-w-3xl px-4 py-6 space-y-6">
+    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-background py-6">
+      <div className="w-full max-w-3xl px-4 space-y-6 flex flex-col">
         <div className="flex flex-col items-center space-y-3 mb-4">
           <div 
             className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10"
@@ -45,11 +45,11 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
           </p>
         </div>
         
-        <div className="w-full bg-card rounded-lg border shadow-sm p-5">
+        <div className="w-full bg-card rounded-lg border shadow-sm p-5 overflow-y-auto max-h-[70vh]">
           {children}
         </div>
         
-        <div className="w-full flex justify-between items-center">
+        <div className="w-full flex justify-between items-center mt-4">
           <div className="text-sm text-muted-foreground">
             Étape {step} sur {totalSteps}
           </div>
