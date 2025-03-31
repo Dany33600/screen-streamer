@@ -41,6 +41,7 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Route pour gérer l'upload de fichier physique
 router.post('/', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
@@ -65,6 +66,62 @@ router.post('/', upload.single('file'), async (req, res) => {
     }
   } catch (error) {
     console.error('API: Erreur lors de l\'ajout d\'un contenu:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout d\'un contenu' });
+  }
+});
+
+// Nouvelle route pour gérer l'ajout de contenus par URL
+router.post('/url', async (req, res) => {
+  try {
+    const { content } = req.body;
+    
+    if (!content || !content.name || !content.url || !content.type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Données de contenu incomplètes. Assurez-vous de fournir name, url et type.'
+      });
+    }
+    
+    console.log('API: Réception d\'un contenu URL:', content);
+    
+    // Enregistrer le contenu URL
+    const saved = await saveContent(content);
+    
+    if (saved) {
+      res.status(201).json({ success: true, content: content });
+    } else {
+      res.status(500).json({ success: false, message: 'Erreur lors de la sauvegarde du contenu URL' });
+    }
+  } catch (error) {
+    console.error('API: Erreur lors de l\'ajout d\'un contenu URL:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout d\'un contenu URL' });
+  }
+});
+
+// Ajout d'une route pour traiter la soumission JSON directe (pour les URLs)
+router.post('/', async (req, res) => {
+  try {
+    const { content } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({
+        success: false, 
+        message: 'Aucune donnée de contenu reçue'
+      });
+    }
+    
+    console.log('API: Réception d\'un contenu JSON:', content);
+    
+    // Sauvegarder le contenu
+    const saved = await saveContent(content);
+    
+    if (saved) {
+      res.status(201).json({ success: true, content: content });
+    } else {
+      res.status(500).json({ success: false, message: 'Erreur lors de la sauvegarde du contenu' });
+    }
+  } catch (error) {
+    console.error('API: Erreur lors de l\'ajout d\'un contenu JSON:', error);
     res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout d\'un contenu' });
   }
 });

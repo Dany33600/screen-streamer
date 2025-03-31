@@ -19,6 +19,8 @@ import { useContentUpload } from '@/hooks/use-content-upload';
 import { useAppStore } from '@/store';
 import { toast } from 'sonner';
 import DialogAlerts from './DialogAlerts';
+import { v4 as uuidv4 } from 'uuid';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AddContentDialogProps {
   open: boolean;
@@ -28,6 +30,8 @@ interface AddContentDialogProps {
 const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange }) => {
   const addContent = useAppStore((state) => state.addContent);
   const getApiUrl = useAppStore((state) => state.getApiUrl);
+  const baseIpAddress = useAppStore((state) => state.baseIpAddress);
+  const queryClient = useQueryClient();
   
   const [activeTab, setActiveTab] = useState<string>("upload");
   const [name, setName] = useState<string>("");
@@ -35,6 +39,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
   const [url, setUrl] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isSubmittingUrl, setIsSubmittingUrl] = useState<boolean>(false);
   
   const { uploadContent, isLoading } = useContentUpload();
   
@@ -77,6 +82,51 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
     setFileError(null);
     setActiveTab("upload");
   };
+
+  // Nouvelle fonction pour enregistrer un contenu URL sur le serveur
+  const saveUrlContent = async (name: string, type: ContentType, url: string) => {
+    try {
+      // Préparer l'URL de l'API
+      let apiUrl = getApiUrl();
+      if (apiUrl.endsWith('/')) {
+        apiUrl = apiUrl.slice(0, -1);
+      }
+      apiUrl = apiUrl.replace('localhost', baseIpAddress);
+
+      console.log(`Enregistrement du contenu URL sur: ${apiUrl}/content`);
+      
+      const content = {
+        id: uuidv4(),
+        name,
+        type,
+        url,
+        createdAt: Date.now()
+      };
+      
+      // Envoyer la requête à l'API
+      const response = await fetch(`${apiUrl}/content`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      return {
+        success: data.success,
+        content: data.content || content
+      };
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement du contenu URL:", error);
+      throw error;
+    }
+  };
   
   const handleSubmit = async () => {
     try {
@@ -92,6 +142,8 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
           addContent(name || file.name, contentType, result.url);
           resetForm();
           onOpenChange(false);
+          // Rafraîchir la liste des contenus
+          queryClient.invalidateQueries({ queryKey: ['contents'] });
         }
       } else if (activeTab === "url") {
         if (!url) {
@@ -103,9 +155,29 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
           setName(`Contenu externe (${new Date().toLocaleDateString()})`);
         }
         
-        addContent(name, contentType, url);
-        resetForm();
-        onOpenChange(false);
+        setIsSubmittingUrl(true);
+        
+        try {
+          // Enregistrer le contenu URL sur le serveur
+          const result = await saveUrlContent(name, contentType, url);
+          
+          if (result.success) {
+            // Ajouter le contenu au store local
+            addContent(name, contentType, url);
+            toast.success("Contenu URL ajouté avec succès");
+            resetForm();
+            onOpenChange(false);
+            // Rafraîchir la liste des contenus
+            queryClient.invalidateQueries({ queryKey: ['contents'] });
+          } else {
+            toast.error("Erreur lors de l'ajout du contenu URL");
+          }
+        } catch (error) {
+          console.error("Erreur lors de l'ajout du contenu URL:", error);
+          toast.error("Erreur lors de l'ajout du contenu URL");
+        } finally {
+          setIsSubmittingUrl(false);
+        }
       }
     } catch (error) {
       console.error("Erreur lors de l'ajout du contenu:", error);
@@ -282,8 +354,12 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? "Chargement..." : "Ajouter"}
+          <Button 
+            type="button" 
+            onClick={handleSubmit} 
+            disabled={isLoading || isSubmittingUrl}
+          >
+            {isLoading || isSubmittingUrl ? "Chargement..." : "Ajouter"}
           </Button>
         </DialogFooter>
       </DialogContent>

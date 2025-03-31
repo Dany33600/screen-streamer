@@ -21,18 +21,38 @@ export const createContentsSlice: StateCreator<
 > = (set, get) => ({
   contents: [],
   
-  addContent: (name, type, url) => set((state) => ({
-    contents: [
-      ...state.contents,
-      {
-        id: uuidv4(),
-        name,
-        type,
-        url,
-        createdAt: Date.now(),
-      },
-    ],
-  })),
+  addContent: (name, type, url) => set((state) => {
+    const newContent: Content = {
+      id: uuidv4(),
+      name,
+      type,
+      url,
+      createdAt: Date.now(),
+    };
+    
+    console.log(`Ajout d'un contenu au store: ${name} (${type}), URL: ${url}`);
+    
+    // Vérifier si le contenu existe déjà (pour éviter les doublons)
+    const existingContent = state.contents.find(
+      content => content.url === url && content.type === type
+    );
+    
+    if (existingContent) {
+      console.log(`Ce contenu existe déjà, mise à jour...`);
+      return {
+        contents: state.contents.map(content =>
+          content.id === existingContent.id ? { ...content, name } : content
+        )
+      };
+    }
+    
+    return {
+      contents: [
+        ...state.contents,
+        newContent,
+      ],
+    };
+  }),
   
   updateContent: (id, data) => set((state) => ({
     contents: state.contents.map((content: Content) =>
