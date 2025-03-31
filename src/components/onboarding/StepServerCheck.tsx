@@ -48,20 +48,14 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     // Validate inputs first
     const newApiPort = parseInt(apiPortValue, 10);
     if (isNaN(newApiPort) || newApiPort < 1 || newApiPort > 65535) {
-      toast({
-        title: 'Veuillez entrer un numéro de port API valide (1-65535)',
-        variant: "destructive",
-      });
+      toast.error('Veuillez entrer un numéro de port API valide (1-65535)');
       return;
     }
     
     if (!useBaseIpValue) {
       const ipPattern = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
       if (!ipPattern.test(apiIpValue)) {
-        toast({
-          title: 'Veuillez entrer une adresse IP API valide',
-          variant: "destructive",
-        });
+        toast.error('Veuillez entrer une adresse IP API valide');
         return;
       }
     }
@@ -95,27 +89,22 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       setCheckPassed(result.serverRunning);
       
       if (result.serverRunning) {
-        toast({
-          title: 'Connexion réussie',
-          description: 'La connexion au serveur a été établie avec succès.',
+        toast.success('Connexion réussie', {
+          description: 'La connexion au serveur a été établie avec succès.'
         });
       } else {
-        toast({
-          title: 'Échec de la connexion',
+        toast.error('Échec de la connexion', {
           description: result.ipReachable 
             ? 'L\'API du serveur n\'est pas accessible.'
-            : 'L\'adresse IP n\'est pas accessible sur le réseau.',
-          variant: 'destructive',
+            : 'L\'adresse IP n\'est pas accessible sur le réseau.'
         });
       }
     } catch (error) {
       console.error('Erreur lors de la vérification du serveur:', error);
       setCheckPassed(false);
       
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la vérification du serveur.',
-        variant: 'destructive',
+      toast.error('Erreur', {
+        description: 'Une erreur est survenue lors de la vérification du serveur.'
       });
     } finally {
       setIsChecking(false);
@@ -132,42 +121,31 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         const configSaved = await saveConfig();
         
         if (configSaved) {
-          toast({
-            title: 'Configuration sauvegardée',
-            description: 'La configuration a été enregistrée sur le serveur.',
+          toast.success('Configuration sauvegardée', {
+            description: 'La configuration a été enregistrée sur le serveur.'
           });
-          // Délai court pour que le toast soit visible avant la redirection
-          setTimeout(() => {
-            onComplete();
-          }, 500);
+          // On redirige directement sans délai
+          onComplete();
         } else {
-          toast({
-            title: 'Erreur',
-            description: 'Une erreur est survenue lors de la sauvegarde de la configuration.',
-            variant: 'destructive',
+          toast.error('Erreur', {
+            description: 'Une erreur est survenue lors de la sauvegarde de la configuration.'
           });
         }
       } catch (error) {
         console.error('Erreur lors de la sauvegarde de la configuration:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Une erreur est survenue lors de la sauvegarde de la configuration.',
-          variant: 'destructive',
+        toast.error('Erreur', {
+          description: 'Une erreur est survenue lors de la sauvegarde de la configuration.'
         });
       } finally {
         setIsSaving(false);
       }
     } else if (checkPassed === false) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez vérifier la connexion avec le serveur avant de terminer.',
-        variant: 'destructive',
+      toast.error('Erreur', {
+        description: 'Veuillez vérifier la connexion avec le serveur avant de terminer.'
       });
     } else {
-      toast({
-        title: 'Attention',
-        description: 'Veuillez tester la connexion au serveur d\'abord.',
-        variant: 'warning',
+      toast.warning('Attention', {
+        description: 'Veuillez tester la connexion au serveur d\'abord.'
       });
     }
   };

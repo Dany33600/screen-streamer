@@ -30,7 +30,7 @@ const Onboarding: React.FC = () => {
     // Marquons d'abord l'onboarding comme terminé
     setHasCompletedOnboarding(true);
     
-    // Redirection forcée vers le tableau de bord avec un délai pour permettre la mise à jour de l'état
+    // Redirection forcée vers le tableau de bord avec remplacement dans l'historique
     navigate('/', { replace: true });
   };
   
