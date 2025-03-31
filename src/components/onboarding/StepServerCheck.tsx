@@ -119,12 +119,14 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   
   // Étape 4: Redirection sans serveur (si test échoué)
   const handleContinueWithoutServer = () => {
+    // Marquons l'onboarding comme terminé
     setHasCompletedOnboarding(true);
     
     toast.warning('Passage au tableau de bord', {
       description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
     });
     
+    // Appeler la fonction onComplete pour rediriger vers le dashboard
     onComplete();
   };
   
@@ -160,6 +162,17 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     } finally {
       setIsSaving(false);
     }
+  };
+  
+  // Étape 6: Continuer sans sauvegarde
+  const handleContinueWithoutSave = () => {
+    setHasCompletedOnboarding(true);
+    
+    toast.warning('Passage au tableau de bord sans sauvegarde', {
+      description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
+    });
+    
+    onComplete();
   };
   
   return (
@@ -296,9 +309,14 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
                   onClick={handleSaveConfig}
                   className="gap-2"
                   variant="success"
+                  disabled={isSaving}
                 >
-                  <CheckCircle className="h-4 w-4" />
-                  Sauvegarder et terminer
+                  {isSaving ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4" />
+                  )}
+                  {isSaving ? 'Sauvegarde en cours...' : 'Sauvegarder et terminer'}
                 </Button>
               </>
             ) : (
@@ -318,7 +336,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         </div>
       )}
       
-      {/* Étape 5 et 6: Sauvegarde et résultat de la sauvegarde */}
+      {/* Étape 5 et 6: Résultat de la sauvegarde */}
       {saveAttempted && !savePassed && (
         <div className="border-b pb-4">
           <h3 className="font-medium mb-3">5. Résultat de la sauvegarde</h3>
@@ -326,7 +344,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
             <XCircle className="h-10 w-10 text-red-500 mx-auto mb-2" />
             <p className="mb-4 text-red-800">La sauvegarde de la configuration a échoué.</p>
             <Button 
-              onClick={handleContinueWithoutServer}
+              onClick={handleContinueWithoutSave}
               className="gap-2"
               variant="default"
             >
