@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, RefreshCw, XCircle, ArrowRight } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -149,6 +148,13 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       });
     }
   };
+
+  const handleSkipToMain = () => {
+    toast.warning('Passage au tableau de bord', {
+      description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
+    });
+    onComplete();
+  };
   
   return (
     <div className="space-y-4">
@@ -274,6 +280,26 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
             disabled={isSaving}
           >
             {isSaving ? 'Finalisation...' : 'Terminer'}
+          </Button>
+        )}
+        
+        {checkPassed === false && (
+          <Button 
+            onClick={handleSkipToMain}
+            className="gap-2"
+            variant="default"
+          >
+            <ArrowRight size={16} /> Continuer sans serveur
+          </Button>
+        )}
+        
+        {checkPassed === null && (
+          <Button 
+            onClick={handleSkipToMain}
+            className="gap-2"
+            variant="outline"
+          >
+            <ArrowRight size={16} /> Ignorer cette étape
           </Button>
         )}
       </div>

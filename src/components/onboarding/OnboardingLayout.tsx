@@ -2,6 +2,7 @@
 import React, { ReactNode } from 'react';
 import { MonitorPlay } from 'lucide-react';
 import { useAppStore } from '@/store';
+import { useNavigate } from 'react-router-dom';
 
 interface OnboardingLayoutProps {
   children: ReactNode;
@@ -15,10 +16,14 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   totalSteps
 }) => {
   const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
+  const navigate = useNavigate();
   
   // Cette fonction permet de bypasser l'onboarding quand on clique sur le logo
   const handleLogoClick = () => {
+    // Marquer l'onboarding comme terminé
     setHasCompletedOnboarding(true);
+    // Rediriger vers le tableau de bord
+    navigate('/', { replace: true });
   };
   
   return (
