@@ -25,6 +25,8 @@ const Onboarding: React.FC = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
   
+  // Ce gestionnaire permet de finaliser l'onboarding normalement
+  // Note: Le logo est également cliquable pour bypasser l'onboarding complet
   const handleComplete = () => {
     console.log('Onboarding terminé, redirection vers le tableau de bord');
     // Marquons d'abord l'onboarding comme terminé
