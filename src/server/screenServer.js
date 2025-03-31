@@ -32,6 +32,7 @@ function createApiServer(apiPort = 5000) {
 
   app.options('*', cors());
   
+  // Servir les fichiers statiques depuis le répertoire uploads
   app.use('/uploads', express.static(UPLOADS_DIR));
   
   // Servir les fichiers statiques depuis node_modules reveal.js
@@ -77,15 +78,11 @@ function createApiServer(apiPort = 5000) {
     });
   });
   
-  // Route pour l'upload de fichiers directement à la racine de l'API
-  app.post('/api/upload', (req, res) => {
-    // Rediriger vers le gestionnaire approprié dans contentRoutes
-    console.log('API: Upload de fichier reçu, redirection vers le gestionnaire approprié');
-    apiRoutes(req, res);
-  });
-  
-  // Mount API routes
+  // Mount API routes - cela gère automatiquement /api/upload
   app.use('/api', apiRoutes);
+  
+  // Supprimer la redirection redondante qui cause des problèmes
+  // Cette redirection était la cause du problème de double "api" dans l'URL
   
   // 404 handler
   app.use((req, res) => {
@@ -100,8 +97,8 @@ function createApiServer(apiPort = 5000) {
         'POST /api/start-server',
         'POST /api/stop-server',
         'POST /api/update-server',
-        'POST /api/content',
         'GET /api/content',
+        'POST /api/content',
         'GET /api/content/:contentId',
         'DELETE /api/content/:contentId'
       ]

@@ -25,30 +25,18 @@ export const useContentUpload = () => {
     setIsLoading(true);
 
     try {
-      const apiUrl = getApiUrl();
-      if (!apiUrl) {
-        throw new Error("L'URL de l'API n'est pas configurée");
-      }
-      
       // Determine which IP address to use
       const ipToUse = useBaseIpForApi ? baseIpAddress : apiIpAddress;
       
-      // Use the IP address from the app configuration rather than localhost
-      const formattedApiUrl = apiUrl.replace('localhost', ipToUse);
-      
-      // Extract the base URL (without /api) to avoid duplication
-      const baseUrl = formattedApiUrl.includes('/api')
-        ? formattedApiUrl.split('/api')[0]
-        : formattedApiUrl.endsWith('/')
-          ? formattedApiUrl.slice(0, -1)
-          : formattedApiUrl;
-      
+      // Build the base API URL with the correct IP
+      const baseUrl = `http://${ipToUse}:5000`;
+      const uploadUrl = `${baseUrl}/api/upload`;
+
       console.log(`Using IP address for API: ${ipToUse}`);
-      console.log(`Uploading to API URL: ${baseUrl}/api/upload`);
+      console.log(`Uploading to URL: ${uploadUrl}`);
       
-      // Générer un ID de contenu basé sur l'horodatage et le nom du fichier (pour être plus unique)
+      // Générer un ID de contenu basé sur l'horodatage et le nom du fichier
       const timestamp = Date.now();
-      // Supprimer les caractères spéciaux et les espaces du nom de fichier pour éviter les problèmes
       const safeFileName = file.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
       const contentId = `${timestamp}-${safeFileName}`;
       console.log(`Génération d'un content ID: ${contentId}`);
@@ -60,16 +48,10 @@ export const useContentUpload = () => {
       formData.append('contentId', contentId);
       formData.append('originalName', file.name);
 
-      // Build the correct upload URL without duplication
-      const uploadUrl = `${baseUrl}/api/upload`;
-      console.log(`Sending upload request to: ${uploadUrl}`);
-      console.log(`File details: ${file.name}, size: ${file.size}, type: ${file.type}`);
-
       // Upload to server
       const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
-        // Add explicit handling of CORS
         mode: 'cors',
         credentials: 'same-origin',
       });
@@ -83,11 +65,11 @@ export const useContentUpload = () => {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
         } catch (e) {
-          // If the response is not valid JSON, use the raw text
+          // Si la réponse n'est pas du JSON valide
           try {
             errorMessage = await response.text();
           } catch (e2) {
-            // Si on ne peut pas lire le texte non plus, garder le message d'erreur par défaut
+            // Si on ne peut pas lire le texte non plus
           }
         }
         throw new Error(errorMessage);
@@ -100,17 +82,13 @@ export const useContentUpload = () => {
         throw new Error(data.message || "Échec de l'upload pour une raison inconnue");
       }
 
-      // Extraire le baseApiUrl (sans /api) pour accéder aux fichiers statiques
-      const apiBaseWithoutPath = baseUrl;
-      
       // Construire l'URL complète avec l'adresse IP et le port
-      // Si l'URL commence par un slash, supprimer le slash pour éviter les doubles slashes
       const fileUrl = data.url || data.filePath;
       const fullFileUrl = fileUrl.startsWith('http') 
-        ? fileUrl // Si l'URL est déjà complète (commence par http), utiliser telle quelle
+        ? fileUrl 
         : fileUrl.startsWith('/') 
-          ? `${apiBaseWithoutPath}${fileUrl}`
-          : `${apiBaseWithoutPath}/${fileUrl}`;
+          ? `${baseUrl}${fileUrl}`
+          : `${baseUrl}/${fileUrl}`;
       
       console.log("Generated full file URL:", fullFileUrl);
       

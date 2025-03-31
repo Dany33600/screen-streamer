@@ -20,11 +20,11 @@ const upload = multer({
 // Route d'upload directe au niveau API
 router.post('/upload', upload.single('file'), (req, res) => {
   try {
-    // Récupérer les données du middleware multer
+    // Vérifier si le fichier a été uploadé correctement
     const file = req.file;
-    const { name, contentType } = req.body;
     
     if (!file) {
+      console.error('API: Aucun fichier reçu dans la requête');
       return res.status(400).json({ success: false, message: 'Aucun fichier reçu' });
     }
     
@@ -32,6 +32,13 @@ router.post('/upload', upload.single('file'), (req, res) => {
     const fileUrl = `/uploads/${file.filename}`;
     
     console.log(`API: Fichier reçu et stocké avec succès à ${fileUrl}`);
+    console.log(`API: Détails du fichier:`, {
+      path: file.path,
+      filename: file.filename,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
     
     // Retourner les informations sur le fichier uploadé
     return res.status(201).json({
@@ -45,7 +52,7 @@ router.post('/upload', upload.single('file'), (req, res) => {
     });
   } catch (error) {
     console.error('API: Erreur lors de l\'upload du fichier:', error);
-    return res.status(500).json({ success: false, message: 'Erreur lors de l\'upload du fichier' });
+    return res.status(500).json({ success: false, message: 'Erreur lors de l\'upload du fichier', error: error.message });
   }
 });
 
@@ -53,6 +60,6 @@ router.post('/upload', upload.single('file'), (req, res) => {
 router.use('/status', statusRoutes);
 router.use('/config', configRoutes);
 router.use('/screens', screenRoutes);
-router.use('/content', contentRoutes); // Ici la route est content (singulier)
+router.use('/content', contentRoutes); // Route content (singulier)
 
 export default router;
