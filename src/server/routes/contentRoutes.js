@@ -70,7 +70,7 @@ router.post('/', upload.single('file'), async (req, res) => {
   }
 });
 
-// Nouvelle route pour gérer l'ajout de contenus par URL
+// Route pour gérer l'ajout de contenus par URL
 router.post('/url', async (req, res) => {
   try {
     const { content } = req.body;
@@ -95,34 +95,6 @@ router.post('/url', async (req, res) => {
   } catch (error) {
     console.error('API: Erreur lors de l\'ajout d\'un contenu URL:', error);
     res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout d\'un contenu URL' });
-  }
-});
-
-// Ajout d'une route pour traiter la soumission JSON directe (pour les URLs)
-router.post('/', async (req, res) => {
-  try {
-    const { content } = req.body;
-    
-    if (!content) {
-      return res.status(400).json({
-        success: false, 
-        message: 'Aucune donnée de contenu reçue'
-      });
-    }
-    
-    console.log('API: Réception d\'un contenu JSON:', content);
-    
-    // Sauvegarder le contenu
-    const saved = await saveContent(content);
-    
-    if (saved) {
-      res.status(201).json({ success: true, content: content });
-    } else {
-      res.status(500).json({ success: false, message: 'Erreur lors de la sauvegarde du contenu' });
-    }
-  } catch (error) {
-    console.error('API: Erreur lors de l\'ajout d\'un contenu JSON:', error);
-    res.status(500).json({ success: false, message: 'Erreur lors de l\'ajout d\'un contenu' });
   }
 });
 

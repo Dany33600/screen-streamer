@@ -91,6 +91,13 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
         >
           HTML
         </Button>
+        <Button
+          variant={activeTab === 'google-slides' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveTab('google-slides')}
+        >
+          URL
+        </Button>
       </div>
     </>
   );
