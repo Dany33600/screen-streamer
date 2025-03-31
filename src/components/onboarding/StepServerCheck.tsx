@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, RefreshCw, XCircle, ArrowRight } from 'lucide-react';
@@ -21,6 +22,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const [isSaving, setIsSaving] = useState(false);
   
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
+  const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
   const saveConfig = useAppStore((state) => state.saveConfig);
   const baseIpAddress = useAppStore((state) => state.baseIpAddress);
   const apiPort = useAppStore((state) => state.apiPort);
