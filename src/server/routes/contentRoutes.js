@@ -102,7 +102,41 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
+    
+    console.log('API: Mise à jour du contenu', id);
+    console.log('Données reçues:', content);
+    
+    // Si c'est un contenu HTML avec htmlContent, nous devons également mettre à jour le fichier physique
+    if (content.type === 'html' && content.htmlContent) {
+      // Vérifier si l'URL existe déjà
+      const existingContent = await getContents().then(contents => 
+        contents.find(c => c.id === id)
+      );
+      
+      if (existingContent) {
+        try {
+          // Gérer les URLs relatives
+          let filePath;
+          if (existingContent.url.startsWith('/uploads/')) {
+            filePath = path.join(__dirname, '..', 'data', existingContent.url);
+          } else {
+            // Créer un nouveau fichier HTML s'il n'existe pas déjà
+            const fileName = `html-${Date.now()}.html`;
+            filePath = path.join(uploadsDir, fileName);
+            content.url = `/uploads/${fileName}`;
+          }
+          
+          // Écrire le contenu HTML dans le fichier
+          fs.writeFileSync(filePath, content.htmlContent, 'utf8');
+          console.log(`Fichier HTML mis à jour: ${filePath}`);
+        } catch (fileError) {
+          console.error('Erreur lors de l\'écriture du fichier HTML:', fileError);
+        }
+      }
+    }
+    
     const updatedContent = await updateContent(id, content);
+    
     if (updatedContent) {
       res.json({ success: true, content: updatedContent });
     } else {

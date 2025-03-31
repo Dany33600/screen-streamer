@@ -1,4 +1,5 @@
 
+
 export type ContentType = 'image' | 'video' | 'powerpoint' | 'pdf' | 'html' | 'google-slides';
 
 export interface Content {
@@ -10,6 +11,7 @@ export interface Content {
   thumbnail?: string;
   duration?: number; // en secondes pour les vidéos
   createdAt: number;
+  htmlContent?: string; // Contenu HTML pour les types 'html'
 }
 
 export interface Screen {
@@ -28,3 +30,4 @@ export interface Playlist {
   contentIds: string[];
   createdAt: number;
 }
+

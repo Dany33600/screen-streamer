@@ -8,7 +8,7 @@ export interface ContentsState {
   contents: Content[];
   
   // Actions
-  addContent: (name: string, type: ContentType, url: string) => void;
+  addContent: (name: string, type: ContentType, url: string, htmlContent?: string) => void;
   updateContent: (id: string, data: Partial<Content>) => void;
   removeContent: (id: string) => void;
 }
@@ -21,13 +21,14 @@ export const createContentsSlice: StateCreator<
 > = (set, get) => ({
   contents: [],
   
-  addContent: (name, type, url) => set((state) => {
+  addContent: (name, type, url, htmlContent) => set((state) => {
     const newContent: Content = {
       id: uuidv4(),
       name,
       type,
       url,
       createdAt: Date.now(),
+      htmlContent // Ajout du contenu HTML
     };
     
     console.log(`Ajout d'un contenu au store: ${name} (${type}), URL: ${url}`);
@@ -41,7 +42,9 @@ export const createContentsSlice: StateCreator<
       console.log(`Ce contenu existe déjà, mise à jour...`);
       return {
         contents: state.contents.map(content =>
-          content.id === existingContent.id ? { ...content, name } : content
+          content.id === existingContent.id 
+          ? { ...content, name, htmlContent: htmlContent || content.htmlContent }
+          : content
         )
       };
     }
