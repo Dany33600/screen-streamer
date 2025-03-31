@@ -36,10 +36,12 @@ export const useContentUpload = () => {
       // Use the IP address from the app configuration rather than localhost
       const formattedApiUrl = apiUrl.replace('localhost', ipToUse);
       
-      // Ensure the API URL doesn't have trailing slashes
-      const baseUrl = formattedApiUrl.endsWith('/') 
-        ? formattedApiUrl.slice(0, -1) 
-        : formattedApiUrl;
+      // Extract the base URL (without /api) to avoid duplication
+      const baseUrl = formattedApiUrl.includes('/api')
+        ? formattedApiUrl.split('/api')[0]
+        : formattedApiUrl.endsWith('/')
+          ? formattedApiUrl.slice(0, -1)
+          : formattedApiUrl;
       
       console.log(`Using IP address for API: ${ipToUse}`);
       console.log(`Uploading to API URL: ${baseUrl}/api/upload`);
@@ -58,7 +60,7 @@ export const useContentUpload = () => {
       formData.append('contentId', contentId);
       formData.append('originalName', file.name);
 
-      // Use the full API URL from the store
+      // Build the correct upload URL without duplication
       const uploadUrl = `${baseUrl}/api/upload`;
       console.log(`Sending upload request to: ${uploadUrl}`);
       console.log(`File details: ${file.name}, size: ${file.size}, type: ${file.type}`);
@@ -99,7 +101,7 @@ export const useContentUpload = () => {
       }
 
       // Extraire le baseApiUrl (sans /api) pour accéder aux fichiers statiques
-      const apiBaseWithoutPath = baseUrl.split('/api')[0];
+      const apiBaseWithoutPath = baseUrl;
       
       // Construire l'URL complète avec l'adresse IP et le port
       // Si l'URL commence par un slash, supprimer le slash pour éviter les doubles slashes
@@ -111,10 +113,6 @@ export const useContentUpload = () => {
           : `${apiBaseWithoutPath}/${fileUrl}`;
       
       console.log("Generated full file URL:", fullFileUrl);
-
-      // Vérifier si le contenu a été correctement créé en appelant l'API pour récupérer les détails
-      // IMPORTANT: Suppression de la vérification et de l'enregistrement manuel, qui causaient
-      // la création de multiples fichiers JSON pour le même contenu
       
       toast.success(`Fichier "${file.name}" uploadé avec succès`);
       

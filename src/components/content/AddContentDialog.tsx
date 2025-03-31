@@ -92,8 +92,13 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
         apiUrl = apiUrl.slice(0, -1);
       }
       apiUrl = apiUrl.replace('localhost', baseIpAddress);
+      
+      // Extraire la base URL sans le chemin "/api" pour éviter la duplication
+      const baseUrl = apiUrl.includes('/api')
+        ? apiUrl.split('/api')[0]
+        : apiUrl;
 
-      console.log(`Enregistrement du contenu URL sur: ${apiUrl}/content`);
+      console.log(`Enregistrement du contenu URL sur: ${baseUrl}/api/content/url`);
       
       const content = {
         id: uuidv4(),
@@ -104,7 +109,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
       };
       
       // Envoyer la requête à l'API
-      const response = await fetch(`${apiUrl}/content`, {
+      const response = await fetch(`${baseUrl}/api/content/url`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

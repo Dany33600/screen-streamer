@@ -77,6 +77,13 @@ function createApiServer(apiPort = 5000) {
     });
   });
   
+  // Route pour l'upload de fichiers directement à la racine de l'API
+  app.post('/api/upload', (req, res) => {
+    // Rediriger vers le gestionnaire approprié dans contentRoutes
+    console.log('API: Upload de fichier reçu, redirection vers le gestionnaire approprié');
+    apiRoutes(req, res);
+  });
+  
   // Mount API routes
   app.use('/api', apiRoutes);
   
