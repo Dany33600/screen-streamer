@@ -85,6 +85,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     setIsChecking(true);
     setCheckPassed(null);
     setSaveAttempted(false); // Réinitialiser l'état de sauvegarde quand on refait un test
+    setSavePassed(false);
     
     try {
       const result = await checkApiServerStatus({ 
@@ -114,6 +115,17 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       setIsChecking(false);
       setHasAttemptedServerCheck(true);
     }
+  };
+  
+  // Étape 4: Redirection sans serveur (si test échoué)
+  const handleContinueWithoutServer = () => {
+    setHasCompletedOnboarding(true);
+    
+    toast.warning('Passage au tableau de bord', {
+      description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
+    });
+    
+    onComplete();
   };
   
   // Étape 5: Sauvegarde de la configuration
@@ -148,17 +160,6 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     } finally {
       setIsSaving(false);
     }
-  };
-
-  // Étape 4 et 6: Continuer sans serveur ou sans sauvegarde
-  const handleContinueWithoutServer = () => {
-    setHasCompletedOnboarding(true);
-    
-    toast.warning('Passage au tableau de bord', {
-      description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
-    });
-    
-    onComplete();
   };
   
   return (
@@ -283,33 +284,44 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         </div>
       </div>
       
-      {/* Étape 5 et 6: Sauvegarde et finalisation - N'apparaît que si test de connexion réussi */}
-      {checkPassed === true && !saveAttempted && (
+      {/* Étape 4: Boutons d'action basés sur le résultat du test */}
+      {checkPassed !== null && !saveAttempted && (
         <div className="border-b pb-4">
-          <h3 className="font-medium mb-3">4. Sauvegarder la configuration</h3>
+          <h3 className="font-medium mb-3">4. Action</h3>
           <div className="p-4 border rounded-lg text-center bg-card/50">
-            <p className="mb-4">La configuration sera sauvegardée dans un fichier sur le serveur.</p>
-            <Button 
-              onClick={handleSaveConfig}
-              className="gap-2"
-              variant="success"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle className="h-4 w-4" />
-              )}
-              {isSaving ? 'Sauvegarde en cours...' : 'Sauvegarder et terminer'}
-            </Button>
+            {checkPassed ? (
+              <>
+                <p className="mb-4">La connexion est établie. Voulez-vous sauvegarder la configuration et terminer?</p>
+                <Button 
+                  onClick={handleSaveConfig}
+                  className="gap-2"
+                  variant="success"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Sauvegarder et terminer
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="mb-4">La connexion a échoué. Voulez-vous continuer sans serveur?</p>
+                <Button 
+                  onClick={handleContinueWithoutServer}
+                  className="gap-2"
+                  variant="default"
+                >
+                  <ArrowRight size={16} />
+                  Continuer sans serveur
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
       
-      {/* Étape 6: Affichage de l'échec de sauvegarde si tentée et échouée */}
+      {/* Étape 5 et 6: Sauvegarde et résultat de la sauvegarde */}
       {saveAttempted && !savePassed && (
         <div className="border-b pb-4">
-          <h3 className="font-medium mb-3">Échec de la sauvegarde</h3>
+          <h3 className="font-medium mb-3">5. Résultat de la sauvegarde</h3>
           <div className="p-4 border border-red-200 rounded-lg text-center bg-red-50">
             <XCircle className="h-10 w-10 text-red-500 mx-auto mb-2" />
             <p className="mb-4 text-red-800">La sauvegarde de la configuration a échoué.</p>
@@ -318,28 +330,18 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
               className="gap-2"
               variant="default"
             >
-              <ArrowRight size={16} /> Continuer sans sauvegarde
+              <ArrowRight size={16} />
+              Continuer sans sauvegarde
             </Button>
           </div>
         </div>
       )}
       
-      {/* Boutons d'action */}
+      {/* Bouton de retour toujours visible */}
       <div className="pt-4 flex justify-between">
         <Button variant="outline" onClick={onBack} className="gap-2">
           <ArrowLeft size={16} /> Retour
         </Button>
-        
-        {/* Étape 4: Afficher le bouton pour continuer sans serveur si le test a échoué */}
-        {checkPassed === false && (
-          <Button 
-            onClick={handleContinueWithoutServer}
-            className="gap-2"
-            variant="default"
-          >
-            <ArrowRight size={16} /> Continuer sans serveur
-          </Button>
-        )}
       </div>
     </div>
   );
