@@ -117,7 +117,7 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[450px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Ajouter du contenu</DialogTitle>
           <DialogDescription>
@@ -129,12 +129,12 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
           <DialogAlerts serverNotConfigured={!apiConfigured} />
         ) : (
           <Tabs defaultValue="upload" className="space-y-4" onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="upload" className="gap-2">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="upload" className="flex items-center justify-center gap-2">
                 <FileUp size={16} />
                 Upload
               </TabsTrigger>
-              <TabsTrigger value="url" className="gap-2">
+              <TabsTrigger value="url" className="flex items-center justify-center gap-2">
                 <LinkIcon size={16} />
                 URL
               </TabsTrigger>
@@ -159,8 +159,8 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
                   onChange={handleFileChange}
                   className="hidden"
                 />
-                <Button variant="outline" asChild>
-                  <Label htmlFor="file" className="cursor-pointer gap-2">
+                <Button variant="outline" asChild className="w-full">
+                  <Label htmlFor="file" className="cursor-pointer flex items-center justify-center gap-2 m-0 w-full">
                     <FileUp className="h-4 w-4" />
                     Sélectionner un fichier
                   </Label>
@@ -180,11 +180,12 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
               
               <div className="grid gap-2">
                 <Label>Type de contenu</Label>
-                <div className="flex items-center space-x-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <Button
                     variant={contentType === "image" ? "default" : "outline"}
                     onClick={() => setContentType("image")}
-                    className="gap-2"
+                    className="w-full flex items-center justify-center gap-2"
+                    type="button"
                   >
                     <ImageIcon className="h-4 w-4" />
                     Image
@@ -192,7 +193,8 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
                   <Button
                     variant={contentType === "video" ? "default" : "outline"}
                     onClick={() => setContentType("video")}
-                    className="gap-2"
+                    className="w-full flex items-center justify-center gap-2"
+                    type="button"
                   >
                     <Film className="h-4 w-4" />
                     Vidéo
@@ -200,7 +202,8 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
                   <Button
                     variant={contentType === "html" ? "default" : "outline"}
                     onClick={() => setContentType("html")}
-                    className="gap-2"
+                    className="w-full flex items-center justify-center gap-2"
+                    type="button"
                   >
                     <FileText className="h-4 w-4" />
                     HTML
@@ -208,7 +211,8 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
                   <Button
                     variant={contentType === "powerpoint" ? "default" : "outline"}
                     onClick={() => setContentType("powerpoint")}
-                    className="gap-2"
+                    className="w-full flex items-center justify-center gap-2"
+                    type="button"
                   >
                     <Presentation className="h-4 w-4" />
                     PowerPoint
@@ -240,11 +244,12 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
               
               <div className="grid gap-2">
                 <Label>Type de contenu</Label>
-                <div className="flex items-center space-x-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   <Button
                     variant={contentType === "image" ? "default" : "outline"}
                     onClick={() => setContentType("image")}
-                    className="gap-2"
+                    className="w-full flex items-center justify-center gap-2"
+                    type="button"
                   >
                     <ImageIcon className="h-4 w-4" />
                     Image
@@ -252,7 +257,8 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
                   <Button
                     variant={contentType === "video" ? "default" : "outline"}
                     onClick={() => setContentType("video")}
-                    className="gap-2"
+                    className="w-full flex items-center justify-center gap-2"
+                    type="button"
                   >
                     <Film className="h-4 w-4" />
                     Vidéo
@@ -260,7 +266,8 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
                   <Button
                     variant={contentType === "html" ? "default" : "outline"}
                     onClick={() => setContentType("html")}
-                    className="gap-2"
+                    className="w-full flex items-center justify-center gap-2"
+                    type="button"
                   >
                     <FileText className="h-4 w-4" />
                     HTML
@@ -272,7 +279,10 @@ const AddContentDialog: React.FC<AddContentDialogProps> = ({ open, onOpenChange 
         )}
         
         <DialogFooter>
-          <Button type="submit" onClick={handleSubmit} disabled={isLoading}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button type="button" onClick={handleSubmit} disabled={isLoading}>
             {isLoading ? "Chargement..." : "Ajouter"}
           </Button>
         </DialogFooter>
