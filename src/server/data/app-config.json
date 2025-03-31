@@ -1,0 +1,11 @@
+
+{
+  "basePort": 5550,
+  "baseIpAddress": "127.0.0.1",
+  "configPin": "0000",
+  "refreshInterval": 5,
+  "apiPort": 5070,
+  "apiIpAddress": "192.168.0.12",
+  "useBaseIpForApi": false,
+  "forceOnboarding": false
+}
