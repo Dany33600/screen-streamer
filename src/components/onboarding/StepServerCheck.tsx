@@ -51,8 +51,9 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   // IP à utiliser pour la connexion
   const ipToUse = useBaseIpValue ? baseIpAddress : apiIpValue;
   
-  // Étape 3: Test de la connexion au serveur API
+  // ÉTAPE 3: Test de la connexion au serveur API
   const handleCheckServer = async () => {
+    // Validation des entrées
     const newApiPort = parseInt(apiPortValue, 10);
     if (isNaN(newApiPort) || newApiPort < 1 || newApiPort > 65535) {
       toast.error('Veuillez entrer un numéro de port API valide (1-65535)');
@@ -82,17 +83,21 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       useBaseIpForApi: useBaseIpValue
     });
     
+    // Réinitialisation des états avant le test
     setIsChecking(true);
     setCheckPassed(null);
-    setSaveAttempted(false); // Réinitialiser l'état de sauvegarde quand on refait un test
+    setSaveAttempted(false);
     setSavePassed(false);
     
     try {
+      console.log(`Vérification du serveur API: ${ipToUse}:${newApiPort}`);
+      
       const result = await checkApiServerStatus({ 
         ipAddress: ipToUse, 
         port: newApiPort 
       });
       
+      console.log(`Résultat de la vérification:`, result);
       setCheckPassed(result.serverRunning);
       
       if (result.serverRunning) {
@@ -117,8 +122,10 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     }
   };
   
-  // Étape 4: Redirection sans serveur (si test échoué)
+  // ÉTAPE 4: Redirection sans serveur (si test échoué)
   const handleContinueWithoutServer = () => {
+    console.log('Continuer sans serveur - début');
+    
     // Marquons l'onboarding comme terminé
     setHasCompletedOnboarding(true);
     
@@ -126,15 +133,20 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
     });
     
+    console.log('Continuer sans serveur - avant onComplete');
     // Appeler la fonction onComplete pour rediriger vers le dashboard
     onComplete();
+    console.log('Continuer sans serveur - après onComplete');
   };
   
-  // Étape 5: Sauvegarde de la configuration
+  // ÉTAPE 5: Sauvegarde de la configuration
   const handleSaveConfig = async () => {
+    console.log('Sauvegarde de la configuration - début');
     try {
       setIsSaving(true);
       setSaveAttempted(true);
+      
+      console.log('Tentative de sauvegarde de la configuration');
       const configSaved = await saveConfig();
       
       setSavePassed(configSaved);
@@ -144,9 +156,13 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
           description: 'La configuration a été enregistrée sur le serveur.'
         });
         
+        console.log('Configuration sauvegardée, marquage de l\'onboarding terminé');
         // Étape 6: Redirection si la sauvegarde est réussie
         setHasCompletedOnboarding(true);
+        
+        console.log('Avant appel à onComplete');
         onComplete();
+        console.log('Après appel à onComplete');
       } else {
         toast.error('Erreur de sauvegarde', {
           description: 'Impossible de sauvegarder la configuration sur le serveur.'
@@ -164,15 +180,19 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     }
   };
   
-  // Étape 6: Continuer sans sauvegarde
+  // ÉTAPE 6: Continuer sans sauvegarde
   const handleContinueWithoutSave = () => {
+    console.log('Continuer sans sauvegarde - début');
+    
     setHasCompletedOnboarding(true);
     
     toast.warning('Passage au tableau de bord sans sauvegarde', {
       description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
     });
     
+    console.log('Continuer sans sauvegarde - avant onComplete');
     onComplete();
+    console.log('Continuer sans sauvegarde - après onComplete');
   };
   
   return (
@@ -184,7 +204,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         </p>
       </div>
       
-      {/* Étape 1: Configuration du serveur API */}
+      {/* ÉTAPE 1: Configuration du serveur API */}
       <div className="space-y-4 border-b pb-4">
         <h3 className="font-medium">1. Configuration du serveur API</h3>
         
@@ -236,7 +256,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         </div>
       </div>
       
-      {/* Étape 2: Rappel de démarrage du serveur */}
+      {/* ÉTAPE 2: Rappel de démarrage du serveur */}
       <div className="border-b pb-4">
         <h3 className="font-medium mb-3">2. Démarrez le serveur API</h3>
         <p className="text-sm text-muted-foreground mb-2">
@@ -251,7 +271,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         </div>
       </div>
       
-      {/* Étape 3: Test de connexion */}
+      {/* ÉTAPE 3: Test de connexion */}
       <div className="border-b pb-4">
         <h3 className="font-medium mb-3">3. Vérifiez la connexion</h3>
         <div className="p-4 border rounded-lg flex flex-col items-center justify-center space-y-4 bg-card/50">
@@ -297,7 +317,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         </div>
       </div>
       
-      {/* Étape 4: Boutons d'action basés sur le résultat du test */}
+      {/* ÉTAPE 4: Boutons d'action basés sur le résultat du test */}
       {checkPassed !== null && !saveAttempted && (
         <div className="border-b pb-4">
           <h3 className="font-medium mb-3">4. Action</h3>
@@ -336,7 +356,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
         </div>
       )}
       
-      {/* Étape 5 et 6: Résultat de la sauvegarde */}
+      {/* ÉTAPE 5 et 6: Résultat de la sauvegarde */}
       {saveAttempted && !savePassed && (
         <div className="border-b pb-4">
           <h3 className="font-medium mb-3">5. Résultat de la sauvegarde</h3>
