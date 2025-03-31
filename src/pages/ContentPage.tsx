@@ -46,16 +46,16 @@ const ContentPage = () => {
     queryKey: ['contents'],
     queryFn: async () => {
       const formattedApiUrl = getFormattedApiUrl();
-      console.log(`Récupération des contenus depuis: ${formattedApiUrl}/content`);
+      console.log(`Récupération des contenus depuis: ${formattedApiUrl}/content`); // Notez /content (singulier)
       
-      const response = await fetch(`${formattedApiUrl}/content`);
+      const response = await fetch(`${formattedApiUrl}/content`); // Utilisons /content (singulier)
       if (!response.ok) {
         throw new Error(`Erreur HTTP ${response.status}`);
       }
       
       const data = await response.json();
       console.log('Données de contenu reçues:', data);
-      return data.contentList || [];
+      return data.contents || []; // Changé de contentList à contents pour s'adapter à la structure de la réponse
     },
     refetchOnWindowFocus: false,
   });

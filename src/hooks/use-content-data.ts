@@ -30,7 +30,7 @@ export const useContentData = () => {
     queryKey: ['contents', baseIpAddress, apiIpAddress, apiPort, useBaseIpForApi], // Dépendances pour le refetch automatique
     queryFn: async () => {
       const formattedApiUrl = getFormattedApiUrl();
-      console.log(`Récupération des contenus depuis: ${formattedApiUrl}/content`);
+      console.log(`Récupération des contenus depuis: ${formattedApiUrl}/content`); // Notez /content (singulier)
       
       try {
         // Mettre à jour l'URL de l'API dans configService pour s'assurer qu'elle est à jour
@@ -41,14 +41,14 @@ export const useContentData = () => {
           useBaseIpForApi
         });
         
-        const response = await fetch(`${formattedApiUrl}/content`);
+        const response = await fetch(`${formattedApiUrl}/content`); // Utilisons /content (singulier)
         
         if (!response.ok) {
           throw new Error(`Erreur HTTP ${response.status}`);
         }
         
         const data = await response.json();
-        return data.contentList || [];
+        return data.contents || []; // Changé de contentList à contents pour s'adapter à la structure de la réponse
       } catch (error) {
         console.error('Erreur lors de la récupération des contenus:', error);
         toast.error('Erreur', { 

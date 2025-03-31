@@ -34,7 +34,8 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const contents = await getContents();
-    res.json({ success: true, contents });
+    console.log('API: Envoi des contenus:', contents);
+    res.json({ success: true, contents }); // Assurez-vous que la clé est "contents"
   } catch (error) {
     console.error('API: Erreur lors de la récupération des contenus:', error);
     res.status(500).json({ success: false, message: 'Erreur lors de la récupération des contenus' });

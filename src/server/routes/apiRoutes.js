@@ -11,6 +11,6 @@ const router = express.Router();
 router.use('/status', statusRoutes);
 router.use('/config', configRoutes);
 router.use('/screens', screenRoutes);
-router.use('/contents', contentRoutes);
+router.use('/content', contentRoutes); // Ici la route est content (singulier)
 
 export default router;
