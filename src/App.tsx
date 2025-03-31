@@ -42,62 +42,17 @@ const App = () => {
   const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding);
   const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
   const [isLoading, setIsLoading] = useState(true);
-  const [configExists, setConfigExists] = useState(false);
-  const [hasCheckedConfig, setHasCheckedConfig] = useState(false);
   
   useEffect(() => {
-    // Vérifier si la configuration existe et la charger (une seule fois)
-    const loadConfiguration = async () => {
-      if (hasCheckedConfig) return;
-      
-      console.log('App: Vérification et chargement de la configuration...');
-      setIsLoading(true);
-      
-      try {
-        // Vérifier si un fichier de configuration existe sur le serveur
-        const configExistsOnServer = await configService.checkConfigExists();
-        setConfigExists(configExistsOnServer);
-        setHasCheckedConfig(true);
-        
-        if (configExistsOnServer) {
-          // Si la config existe, on la charge et on force l'affichage de l'application principale
-          const config = await configService.loadConfig();
-          console.log('App: Configuration chargée depuis le serveur:', config);
-          
-          // Appliquer le PIN de configuration
-          if (setConfigPin) {
-            setConfigPin(config.configPin);
-          }
-          
-          // Forcer le bypass de l'onboarding si config existe
-          setHasCompletedOnboarding(true);
-        } else {
-          console.log('App: Aucune configuration trouvée sur le serveur, affichage de l\'onboarding');
-          // Si pas de config, forcer l'affichage de l'onboarding
-          setHasCompletedOnboarding(false);
-        }
-      } catch (error) {
-        console.error('App: Erreur lors de la vérification/chargement de la configuration:', error);
-        setHasCheckedConfig(true); // Éviter de retenter en boucle
-        toast.error('Erreur de configuration', {
-          description: 'Impossible de vérifier si une configuration existe'
-        });
-        
-        // En cas d'erreur, on affiche quand même l'application
-        // selon l'état actuel de hasCompletedOnboarding
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadConfiguration();
-    
     // Charger le PIN depuis .env file si disponible
     const envPin = import.meta.env.VITE_CONFIG_PIN;
     if (envPin && setConfigPin) {
       setConfigPin(envPin);
     }
-  }, [setConfigPin, setHasCompletedOnboarding, hasCheckedConfig]);
+    
+    // Skip checking for config file existence - onboarding will always show if not completed
+    setIsLoading(false);
+  }, [setConfigPin]);
 
   // Afficher un écran de chargement pendant la vérification
   if (isLoading) {
@@ -113,8 +68,8 @@ const App = () => {
     );
   }
 
-  // Show onboarding if no configuration exists or if it hasn't been completed
-  if (!hasCompletedOnboarding || !configExists) {
+  // Show onboarding if it hasn't been completed
+  if (!hasCompletedOnboarding) {
     return (
       <ThemeProvider>
         <TooltipProvider>

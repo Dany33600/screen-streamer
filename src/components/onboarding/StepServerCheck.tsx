@@ -27,7 +27,6 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const setApiIpAddress = useAppStore((state) => state.setApiIpAddress);
   const setHasAttemptedServerCheck = useAppStore((state) => state.setHasAttemptedServerCheck);
   const setHasCompletedOnboarding = useAppStore((state) => state.setHasCompletedOnboarding);
-  const saveConfig = useAppStore((state) => state.saveConfig);
   
   // Form state
   const [apiPortValue, setApiPortValue] = useState(apiPort.toString());
@@ -37,7 +36,6 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   // Process state
   const [isChecking, setIsChecking] = useState(false);
   const [checkPassed, setCheckPassed] = useState<boolean | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   
   // Calculate the IP to use based on form state
   const ipToUse = useBaseIpValue ? baseIpAddress : apiIpValue;
@@ -119,56 +117,7 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
     }
   };
   
-  // Function to save configuration and complete onboarding
-  const handleSaveConfig = async () => {
-    console.log('Sauvegarde de la configuration - début');
-    setIsSaving(true);
-    
-    try {
-      console.log('Tentative de sauvegarde de la configuration');
-      const configSaved = await saveConfig();
-      
-      if (configSaved) {
-        toast.success('Configuration sauvegardée', {
-          description: 'La configuration a été enregistrée sur le serveur.'
-        });
-        
-        console.log('Configuration sauvegardée, marquage de l\'onboarding terminé');
-        setHasCompletedOnboarding(true);
-        
-        console.log('Appel à onComplete pour terminer');
-        onComplete();
-      } else {
-        toast.error('Erreur de sauvegarde', {
-          description: 'Impossible de sauvegarder la configuration sur le serveur.'
-        });
-        setIsSaving(false);
-      }
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde de la configuration:', error);
-      
-      toast.error('Erreur', {
-        description: 'Une erreur est survenue lors de la sauvegarde de la configuration.'
-      });
-      
-      setIsSaving(false);
-    }
-  };
-  
-  // Function to continue without saving (for connection success case)
-  const handleContinueWithoutSave = () => {
-    console.log('Continuer sans sauvegarde - début');
-    setHasCompletedOnboarding(true);
-    
-    toast.warning('Passage au tableau de bord sans sauvegarde', {
-      description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
-    });
-    
-    console.log('Continuer sans sauvegarde - appel à onComplete');
-    onComplete();
-  };
-  
-  // Function to continue without server (for connection failure case)
+  // Function to complete onboarding without attempting to save configuration
   const handleContinueWithoutServer = () => {
     console.log('Continuer sans serveur - début');
     setHasCompletedOnboarding(true);
@@ -311,35 +260,15 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
           <div className="p-4 border rounded-lg text-center bg-card/50">
             {checkPassed ? (
               <>
-                <p className="mb-4">La connexion est établie. Voulez-vous sauvegarder la configuration et terminer?</p>
+                <p className="mb-4">La connexion est établie. Voulez-vous terminer l'onboarding?</p>
                 <div className="space-y-4">
                   <Button 
-                    onClick={handleSaveConfig}
+                    onClick={handleContinueWithoutServer}
                     className="gap-2 w-full sm:w-auto"
                     variant="default"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        Sauvegarde en cours...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="h-4 w-4" />
-                        Sauvegarder et terminer
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button 
-                    onClick={handleContinueWithoutSave}
-                    className="gap-2 w-full sm:w-auto"
-                    variant="outline"
-                    disabled={isSaving}
                   >
                     <ArrowRight className="h-4 w-4" />
-                    Continuer sans sauvegarder
+                    Terminer l'onboarding
                   </Button>
                 </div>
               </>
