@@ -44,7 +44,6 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   const ipToUse = useBaseIpValue ? baseIpAddress : apiIpValue;
   
   const handleCheckServer = async () => {
-    // Validate inputs first
     const newApiPort = parseInt(apiPortValue, 10);
     if (isNaN(newApiPort) || newApiPort < 1 || newApiPort > 65535) {
       toast.error('Veuillez entrer un numéro de port API valide (1-65535)');
@@ -59,14 +58,12 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
       }
     }
     
-    // Save the API configuration
     setApiPort(newApiPort);
     setUseBaseIpForApi(useBaseIpValue);
     if (!useBaseIpValue) {
       setApiIpAddress(apiIpValue);
     }
     
-    // Update API URL configuration in configService
     configService.updateApiBaseUrl({
       baseIpAddress: baseIpAddress,
       apiPort: newApiPort,
@@ -112,18 +109,18 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   };
   
   const handleComplete = async () => {
-    // On s'assure que le serveur est bien accessible avant de terminer l'onboarding
     if (checkPassed) {
       try {
         setIsSaving(true);
-        // Sauvegarde finale de la configuration seulement lors de la finalisation
         const configSaved = await saveConfig();
         
         if (configSaved) {
           toast.success('Configuration sauvegardée', {
             description: 'La configuration a été enregistrée sur le serveur.'
           });
-          // On redirige directement sans délai
+          
+          setHasCompletedOnboarding(true);
+          
           onComplete();
         } else {
           toast.error('Erreur', {
@@ -150,9 +147,12 @@ const StepServerCheck: React.FC<StepServerCheckProps> = ({ onComplete, onBack })
   };
 
   const handleSkipToMain = () => {
+    setHasCompletedOnboarding(true);
+    
     toast.warning('Passage au tableau de bord', {
       description: 'Vous pourrez configurer la connexion au serveur plus tard dans les paramètres.'
     });
+    
     onComplete();
   };
   
