@@ -17,6 +17,7 @@ export const useContentUpload = () => {
   const baseIpAddress = useAppStore(state => state.baseIpAddress);
   const apiIpAddress = useAppStore(state => state.apiIpAddress);
   const useBaseIpForApi = useAppStore(state => state.useBaseIpForApi);
+  const addContent = useAppStore(state => state.addContent);
 
   const uploadContent = async (
     file: File,
@@ -92,12 +93,15 @@ export const useContentUpload = () => {
       
       console.log("Generated full file URL:", fullFileUrl);
       
+      // Ajouter le contenu au store pour mise à jour immédiate de l'interface
+      addContent(data.originalName || file.name, contentType, fullFileUrl);
+      
       toast.success(`Fichier "${file.name}" uploadé avec succès`);
       
       return {
         success: true,
         url: fullFileUrl,
-        contentId: contentId,
+        contentId: data.contentId || contentId,
       };
     } catch (error) {
       console.error('Erreur d\'upload:', error);

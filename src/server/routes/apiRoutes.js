@@ -6,6 +6,7 @@ import screenRoutes from './screenRoutes.js';
 import contentRoutes from './contentRoutes.js';
 import multer from 'multer';
 import { createMulterStorage } from '../utils/fileStorage.js';
+import { saveContentData } from '../services/content/contentStorage.js';
 
 const router = express.Router();
 
@@ -28,6 +29,13 @@ router.post('/upload', upload.single('file'), (req, res) => {
       return res.status(400).json({ success: false, message: 'Aucun fichier reçu' });
     }
     
+    // Récupérer le contentId et contentType du corps de la requête
+    const contentId = req.body.contentId || `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const contentType = req.body.contentType || 'unknown';
+    
+    console.log(`API: ContentId reçu: ${contentId}`);
+    console.log(`API: ContentType reçu: ${contentType}`);
+    
     // Construire l'URL du fichier
     const fileUrl = `/uploads/${file.filename}`;
     
@@ -40,6 +48,21 @@ router.post('/upload', upload.single('file'), (req, res) => {
       size: file.size
     });
     
+    // Créer les données de contenu
+    const contentData = {
+      id: contentId,
+      name: req.body.originalName || file.originalname,
+      type: contentType,
+      url: fileUrl,
+      createdAt: Date.now(),
+      mimetype: file.mimetype,
+      size: file.size
+    };
+    
+    // Sauvegarder les données du contenu dans un fichier JSON
+    const jsonSaved = saveContentData(contentId, contentData);
+    console.log(`API: Sauvegarde des métadonnées du contenu: ${jsonSaved ? 'Réussie' : 'Échouée'}`);
+    
     // Retourner les informations sur le fichier uploadé
     return res.status(201).json({
       success: true,
@@ -48,7 +71,9 @@ router.post('/upload', upload.single('file'), (req, res) => {
       filename: file.filename,
       originalName: file.originalname,
       mimetype: file.mimetype,
-      size: file.size
+      size: file.size,
+      contentId: contentId,
+      jsonSaved: jsonSaved
     });
   } catch (error) {
     console.error('API: Erreur lors de l\'upload du fichier:', error);

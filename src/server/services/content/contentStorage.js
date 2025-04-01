@@ -11,12 +11,18 @@ export function saveContentData(contentId, contentData) {
     console.log(`Sauvegarde du contenu avec ID: ${contentId}`);
     console.log(`Données de contenu:`, JSON.stringify(contentData, null, 2));
     
+    // S'assurer que le répertoire de contenu existe
+    if (!fs.existsSync(CONTENT_DIR)) {
+      fs.mkdirSync(CONTENT_DIR, { recursive: true });
+      console.log(`Répertoire de contenu créé: ${CONTENT_DIR}`);
+    }
+    
     // S'assurer que le contentId est une chaîne valide pour un nom de fichier
     const sanitizedContentId = sanitizeContentId(contentId);
     const contentPath = path.join(CONTENT_DIR, `${sanitizedContentId}.json`);
     
     // Écrire le fichier JSON
-    fs.writeFileSync(contentPath, JSON.stringify(contentData, null, 2));
+    fs.writeFileSync(contentPath, JSON.stringify(contentData, null, 2), 'utf8');
     console.log(`Contenu sauvegardé avec succès dans: ${contentPath}`);
     
     return true;
