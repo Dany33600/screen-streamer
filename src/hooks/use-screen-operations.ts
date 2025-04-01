@@ -68,13 +68,20 @@ export function useScreenOperations() {
   ) => {
     if (!screen) return false;
     
-    const previousContentId = screen.contentId;
-    const newContentId = contentId === 'none' ? undefined : contentId;
-    
-    // Mettre à jour l'écran avec le nouveau contenu
-    const updatedScreen = await assignContentToScreen(screen.id, newContentId);
-    
-    if (updatedScreen) {
+    try {
+      const previousContentId = screen.contentId;
+      const newContentId = contentId === 'none' ? undefined : contentId;
+      
+      console.log(`Assigning content: ${contentId} to screen: ${screen.id}`);
+      
+      // Mettre à jour l'écran avec le nouveau contenu
+      const updatedScreen = await assignContentToScreen(screen.id, newContentId);
+      
+      if (!updatedScreen) {
+        toast.error('Erreur lors de l\'assignation du contenu');
+        return false;
+      }
+      
       // Vérifier si le serveur est en cours d'exécution
       const isServerRunning = screenServerService.isServerRunning(screen.id);
       
@@ -116,9 +123,13 @@ export function useScreenOperations() {
       
       toast.success('Contenu assigné avec succès');
       return true;
+    } catch (error) {
+      console.error('Erreur lors de l\'assignation du contenu:', error);
+      toast.error('Erreur', {
+        description: error instanceof Error ? error.message : "Une erreur s'est produite lors de l'assignation"
+      });
+      return false;
     }
-    
-    return false;
   };
   
   const handleRetry = () => {

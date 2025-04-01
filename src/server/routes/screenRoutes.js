@@ -36,12 +36,16 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { screen } = req.body;
-    if (!screen) {
+    const screenData = req.body.screen || req.body;
+    
+    console.log('API: Mise à jour de l\'écran:', id);
+    console.log('API: Données reçues:', JSON.stringify(screenData, null, 2));
+    
+    if (!screenData) {
       return res.status(400).json({ success: false, message: 'Données d\'écran manquantes' });
     }
     
-    const updatedScreen = await updateScreen(id, screen);
+    const updatedScreen = await updateScreen(id, screenData);
     if (updatedScreen) {
       res.json({ success: true, screen: updatedScreen });
     } else {

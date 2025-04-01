@@ -122,17 +122,32 @@ export function addScreen(screen) {
 // Update a screen - This is already correctly exported as updateScreen
 export function updateScreen(screenId, screenData) {
   try {
+    ensureScreensDirectory();
     const filePath = path.join(SCREENS_DIR, `${screenId}.json`);
     
+    console.log(`Updating screen ${screenId} with data:`, JSON.stringify(screenData, null, 2));
+    
     if (!fs.existsSync(filePath)) {
+      console.error(`Screen file not found: ${filePath}`);
       return null;
     }
     
+    // Read the existing screen data
     const fileContent = fs.readFileSync(filePath, 'utf8');
-    const existingScreen = JSON.parse(fileContent);
+    let existingScreen;
     
+    try {
+      existingScreen = JSON.parse(fileContent);
+    } catch (parseError) {
+      console.error(`Error parsing screen file ${screenId}:`, parseError);
+      return null;
+    }
+    
+    // Merge the existing data with the new data
     const updatedScreen = { ...existingScreen, ...screenData };
+    console.log(`Updated screen data:`, JSON.stringify(updatedScreen, null, 2));
     
+    // Write the updated screen back to the file
     fs.writeFileSync(filePath, JSON.stringify(updatedScreen, null, 2));
     console.log(`Screen updated: ${screenId}`);
     

@@ -2,7 +2,7 @@
 import React from 'react';
 import AddScreenDialog from '@/components/screens/AddScreenDialog';
 import EditScreenDialog from '@/components/screens/EditScreenDialog';
-import AssignContentDialog from '@/components/content/AssignContentDialog';
+import AssignContentDialog from '@/components/screens/AssignContentDialog';
 import { Screen, Content } from '@/types';
 
 interface ScreenDialogManagerProps {
@@ -58,10 +58,12 @@ const ScreenDialogManager: React.FC<ScreenDialogManagerProps> = ({
       <AssignContentDialog
         open={isAssignDialogOpen}
         onOpenChange={setIsAssignDialogOpen}
-        content={currentScreen?.contentId ? serverContents.find(c => c.id === currentScreen.contentId) || null : null}
-        selectedScreenId={currentScreen?.id || ''}
-        setSelectedScreenId={() => {}}
+        screen={currentScreen}
+        selectedContentId={selectedContentId}
+        setSelectedContentId={(id: string) => {}}
         screens={screens}
+        contents={serverContents}
+        onAssignContent={onAssignContent}
       />
     </>
   );

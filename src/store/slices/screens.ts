@@ -134,16 +134,28 @@ export const createScreensSlice: StateCreator<
       const ipToUse = state.useBaseIpForApi ? state.baseIpAddress : state.apiIpAddress;
       const apiUrl = `http://${ipToUse}:${state.apiPort}/api`;
       
+      console.log(`Updating screen at: ${apiUrl}/screens/${id}`);
+      console.log('With data:', JSON.stringify(data, null, 2));
+      
       // Update the screen on the API
       if (apiUrl) {
-        console.log(`Updating screen at: ${apiUrl}/screens/${id}`);
-        await fetch(`${apiUrl}/screens/${id}`, {
+        const response = await fetch(`${apiUrl}/screens/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ data }),
+          body: JSON.stringify({ screen: data }),
         });
+        
+        if (!response.ok) {
+          console.error(`Error updating screen: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('Error details:', errorText);
+          throw new Error(`Failed to update screen: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Update response:', result);
       }
       
       // Update the local state
@@ -158,7 +170,8 @@ export const createScreensSlice: StateCreator<
       return get().screens.find((screen) => screen.id === id) as Screen;
     } catch (error) {
       console.error('Error updating screen:', error);
-      // Still update the local state
+      
+      // Still update the local state if API call fails
       set((state) => ({
         ...state,
         screens: state.screens.map((screen) =>
@@ -209,7 +222,8 @@ export const createScreensSlice: StateCreator<
   
   assignContentToScreen: async (screenId, contentId) => {
     try {
-      // Update the screen data
+      console.log(`Assigning content ${contentId} to screen ${screenId}`);
+      // Update the screen data with contentId
       const updatedScreen = await get().updateScreen(screenId, { contentId });
       return updatedScreen;
     } catch (error) {
